@@ -28,3 +28,12 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+JWT_ACCESS_SECRET = "fe1db23ccdada8ae71ebeb2023926d643ea2f19ea888a0e10967079cd7d80a44"
+JWT_REFRESH_SECRET = "80738d988ad8988be9681f7c863293cfb886da90066066deb49b17c9007f01e4"
+JWT_ACCESS_EXPIRES_IN = "15m"
+NODE_ENV = "production"
+FRONTEND_URL = "https://e43f5662-ea5d-4e5a-90f2-bb851368d3ca-00-3f6fkabtb10rr.riker.replit.dev"

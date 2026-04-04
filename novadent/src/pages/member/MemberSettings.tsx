@@ -28,7 +28,7 @@ export function MemberSettings() {
   }
 
   useEffect(() => {
-    apiFetch('/api/auth/me')
+    apiFetch('/auth/me')
       .then(r => r.json())
       .then(data => { setProfile(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -41,7 +41,7 @@ export function MemberSettings() {
     if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('新密碼與確認密碼不一致'); return; }
     setPwSaving(true);
     try {
-      const res = await apiFetch('/api/auth/change-password', {
+      const res = await apiFetch('/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

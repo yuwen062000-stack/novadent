@@ -13,6 +13,7 @@ import {
   users, passwordResetTokens, refreshTokens, auditLogs
 } from '../database/schema';
 import { LoginDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from './dto/auth.dto';
+import { MailService } from '../mail/mail.service';
 
 const SALT_ROUNDS = 12;
 
@@ -22,6 +23,7 @@ export class AuthService {
     @Inject(DB_TOKEN) private db: Db,
     private jwt: JwtService,
     private config: ConfigService,
+    private mailService: MailService,
   ) {}
 
   // ── Login ────────────────────────────────────────────────
@@ -101,10 +103,9 @@ export class AuthService {
       expiresAt,
     } as any);
 
-    // TODO: 串接 Resend 發送 Email
-    // 目前暫時用 console.log 顯示 token（開發用）
-    const resetUrl = `${this.config.get('FRONTEND_URL')}/reset-password?token=${token}`;
+    const resetUrl = `${this.config.get('FRONTEND_URL') || ''}/reset-password?token=${token}`;
     console.log(`[DEV] 密碼重設連結：${resetUrl}`);
+    await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
 
     await this.writeAuditLog(user.id, 'FORGOT_PASSWORD', 'user', user.id);
   }

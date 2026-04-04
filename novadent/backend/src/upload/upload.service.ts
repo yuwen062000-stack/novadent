@@ -1,15 +1,18 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary } from 'cloudinary';
+import * as fs from 'fs';
+import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UploadService {
+  private uploadDir: string;
+
   constructor(private config: ConfigService) {
-    cloudinary.config({
-      cloud_name: config.get('CLOUDINARY_CLOUD_NAME'),
-      api_key: config.get('CLOUDINARY_API_KEY'),
-      api_secret: config.get('CLOUDINARY_API_SECRET'),
-    });
+    this.uploadDir = path.join(process.cwd(), '..', 'uploads');
+    if (!fs.existsSync(this.uploadDir)) {
+      fs.mkdirSync(this.uploadDir, { recursive: true });
+    }
   }
 
   async uploadFile(file: Express.Multer.File, folder = 'novadent'): Promise<{ url: string; publicId: string }> {
@@ -22,14 +25,20 @@ export class UploadService {
       throw new BadRequestException('檔案大小不能超過 10MB');
     }
 
-    return new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder, resource_type: 'auto', quality: 'auto', fetch_format: 'auto' },
-        (error, result) => {
-          if (error || !result) return reject(new BadRequestException(error?.message || '上傳失敗'));
-          resolve({ url: result.secure_url, publicId: result.public_id });
-        }
-      ).end(file.buffer);
-    });
+    const folderPath = path.join(this.uploadDir, folder);
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath, { recursive: true });
+    }
+
+    const ext = path.extname(file.originalname) || '.bin';
+    const filename = `${uuidv4()}${ext}`;
+    const filePath = path.join(folderPath, filename);
+
+    fs.writeFileSync(filePath, file.buffer);
+
+    const publicId = `${folder}/${filename}`;
+    const url = `/api/uploads/${publicId}`;
+
+    return { url, publicId };
   }
 }

@@ -57,8 +57,8 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
   useEffect(() => {
     if (!caseId) return;
     Promise.all([
-      apiFetch(`/api/cases/${caseId}`).then(r => r.json()),
-      apiFetch('/api/labs?status=ACTIVE').then(r => r.json()),
+      apiFetch(`/cases/${caseId}`).then(r => r.json()),
+      apiFetch('/labs?status=ACTIVE').then(r => r.json()),
     ]).then(([c, labData]) => {
       setCaseData(c);
       setSelectedLabId(c.labId || '');
@@ -75,7 +75,7 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
     if (!selectedLabId || !caseData) return;
     setAssigningLab(true);
     try {
-      const res = await apiFetch(`/api/cases/${caseData.id}/assign`, {
+      const res = await apiFetch(`/cases/${caseData.id}/assign`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ labId: selectedLabId }),
@@ -96,7 +96,7 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
     if (!confirm('確認案件製作完成？')) return;
     setCompleting(true);
     try {
-      const res = await apiFetch(`/api/cases/${caseData.id}/complete`, {
+      const res = await apiFetch(`/cases/${caseData.id}/complete`, {
         method: 'PATCH',
       });
       if (!res.ok) throw new Error();

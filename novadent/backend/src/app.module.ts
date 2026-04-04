@@ -16,21 +16,19 @@ import { DatabaseModule } from './database/database.module';
 import { QaQuestionsModule } from './qa-questions/qa-questions.module';
 import { MfgStepTemplatesModule } from './mfg-step-templates/mfg-step-templates.module';
 import { UploadModule } from './upload/upload.module';
+import { SystemSettingsModule } from './system-settings/system-settings.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
-    // 載入 .env 環境變數（全域可用）
     ConfigModule.forRoot({ isGlobal: true }),
-    // 部署時 serve 前端 build（dist/）
-    // 本機開發時 dist/ 不存在也不影響
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', '..', 'dist'),
       exclude: ['/api/(.*)'],
       serveStaticOptions: { fallthrough: true },
     }),
-    // 資料庫模組（提供 db 給所有模組）
     DatabaseModule,
-    // 功能模組
+    MailModule,
     AuthModule,
     UsersModule,
     ClinicsModule,
@@ -43,6 +41,7 @@ import { UploadModule } from './upload/upload.module';
     QaQuestionsModule,
     MfgStepTemplatesModule,
     UploadModule,
+    SystemSettingsModule,
   ],
 })
 export class AppModule {}

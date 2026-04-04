@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw } from 'lucide-react';
+import { Plus, Search, RefreshCw, Pencil } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface User {
@@ -7,12 +7,13 @@ interface User {
   name: string;
   email: string;
   role: string;
+  phone?: string;
   status: string;
   createdAt: string;
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: '超級管理員', ADMIN: '管理員', CLINIC: '診所', LAB: '牙技所', MEMBER: '會員',
+  SUPER_ADMIN: '超級管理員', ADMIN: '管理員', CLINIC: '診所', LAB: '牙技所', MEMBER: '會員', INSURER: '保險業者',
 };
 
 export function AdminUsers() {
@@ -21,6 +22,9 @@ export function AdminUsers() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', phone: '' });
   const [form, setForm] = useState({ name: '', email: '', role: 'CLINIC', password: '' });
   const [submitting, setSubmitting] = useState(false);
 
@@ -67,6 +71,34 @@ export function AdminUsers() {
   const handleToggleStatus = async (user: User) => {
     await apiFetch(`/users/${user.id}/toggle-status`, { method: 'POST' });
     load();
+  };
+
+  const openEditModal = (user: User) => {
+    setEditUser(user);
+    setEditForm({ name: user.name, phone: user.phone || '' });
+    setShowEditModal(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editUser) return;
+    setSubmitting(true);
+    try {
+      const res = await apiFetch(`/users/${editUser.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        setShowEditModal(false);
+        setEditUser(null);
+        load();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`更新失敗：${err.message || '未知錯誤'}`);
+      }
+    } catch (e: any) {
+      alert(`更新失敗：${e.message}`);
+    }
+    setSubmitting(false);
   };
 
   const handleResetPwd = async (userId: string) => {
@@ -135,6 +167,10 @@ export function AdminUsers() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
+                      <button onClick={() => openEditModal(u)} className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
+                        <Pencil size={12} /> 編輯
+                      </button>
+                      <span className="text-slate-200">|</span>
                       <button onClick={() => handleToggleStatus(u)} className="text-xs font-bold text-slate-500 hover:text-blue-800 transition-colors">
                         {u.status === 'ACTIVE' ? '停用' : '啟用'}
                       </button>
@@ -177,6 +213,32 @@ export function AdminUsers() {
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">取消</button>
               <button onClick={handleCreate} disabled={submitting} className="flex-1 py-2.5 bg-blue-800 text-white rounded-xl text-sm font-bold hover:bg-blue-900 disabled:opacity-50">
                 {submitting ? '建立中...' : '建立帳號'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && editUser && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">編輯用戶 — {editUser.email}</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">姓名</label>
+                <input type="text" value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">電話</label>
+                <input type="text" value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => { setShowEditModal(false); setEditUser(null); }} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">取消</button>
+              <button onClick={handleEdit} disabled={submitting} className="flex-1 py-2.5 bg-blue-800 text-white rounded-xl text-sm font-bold hover:bg-blue-900 disabled:opacity-50">
+                {submitting ? '更新中...' : '儲存變更'}
               </button>
             </div>
           </div>

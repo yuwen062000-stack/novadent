@@ -246,6 +246,17 @@ export const clinicRecommendations = pgTable('clinic_recommendations', {
   createdAt:      timestamp('created_at').notNull().defaultNow(),
 });
 
+// ── system_settings（系統參數設定）────────────────────────
+export const systemSettings = pgTable('system_settings', {
+  id:          uuid('id').primaryKey().defaultRandom(),
+  key:         varchar('key', { length: 100 }).notNull().unique(),
+  value:       text('value'),
+  encrypted:   boolean('encrypted').notNull().default(false),
+  description: varchar('description', { length: 255 }),
+  updatedAt:   timestamp('updated_at').notNull().defaultNow(),
+  updatedBy:   uuid('updated_by').references(() => users.id),
+});
+
 // ── mfg_step_templates（製程節點模板 — SuperAdmin 管理）────
 export const mfgStepTemplates = pgTable('mfg_step_templates', {
   id:          integer('id').primaryKey().generatedAlwaysAsIdentity(),

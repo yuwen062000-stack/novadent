@@ -61,7 +61,7 @@ export function LabCaseDetail({ caseId, setView }: Props) {
 
   useEffect(() => {
     if (!caseId) return;
-    apiFetch(`/api/cases/${caseId}`)
+    apiFetch(`/cases/${caseId}`)
       .then(r => r.json())
       .then(data => {
         setCaseData(data);
@@ -77,7 +77,7 @@ export function LabCaseDetail({ caseId, setView }: Props) {
     if (!caseData) return;
     setAccepting(true);
     try {
-      const res = await apiFetch(`/api/cases/${caseData.id}/accept`, { method: 'PATCH' });
+      const res = await apiFetch(`/cases/${caseData.id}/accept`, { method: 'PATCH' });
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setCaseData(updated);
@@ -115,13 +115,13 @@ export function LabCaseDetail({ caseId, setView }: Props) {
       if (stepPhoto) {
         const formData = new FormData();
         formData.append('file', stepPhoto);
-        const uploadRes = await apiFetch('/api/upload', { method: 'POST', body: formData });
+        const uploadRes = await apiFetch('/upload', { method: 'POST', body: formData });
         if (!uploadRes.ok) throw new Error('照片上傳失敗');
         const uploadData = await uploadRes.json();
         photoUrl = uploadData.url;
       }
 
-      const res = await apiFetch(`/api/cases/${caseData.id}/mfg-steps/${editingStep.id}`, {
+      const res = await apiFetch(`/cases/${caseData.id}/mfg-steps/${editingStep.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +146,7 @@ export function LabCaseDetail({ caseId, setView }: Props) {
     if (!newStepName.trim() || !caseData) return;
     setAddingStep(true);
     try {
-      const res = await apiFetch(`/api/cases/${caseData.id}/mfg-steps`, {
+      const res = await apiFetch(`/cases/${caseData.id}/mfg-steps`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newStepName.trim() }),

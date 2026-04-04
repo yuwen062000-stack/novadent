@@ -30,8 +30,14 @@ class UpdateMenuConfigDto {
   @IsArray() items: MenuItemDto[];
 }
 
+class BroadcastNotificationDto {
+  @IsString() title: string;
+  @IsString() content: string;
+  @IsOptional() @IsArray() targetRoles?: string[];
+}
+
 // ── Admin & SuperAdmin Controller ─────────────────────────────
-@Controller('admin')
+@Controller('api/admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')
 export class AdminController {
@@ -83,10 +89,18 @@ export class AdminController {
   deletePartnerLink(@Param('id') id: string) {
     return this.adminService.deletePartnerLink(id);
   }
+
+  @Post('notifications/broadcast')
+  broadcastNotification(
+    @Body() dto: BroadcastNotificationDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.broadcastNotification(dto.title, dto.content, dto.targetRoles, user.id);
+  }
 }
 
 // ── SuperAdmin Only: Audit Logs ───────────────────────────────
-@Controller('admin/audit-logs')
+@Controller('api/admin/audit-logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN')
 export class AuditLogsController {

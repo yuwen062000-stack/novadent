@@ -25,8 +25,10 @@ import { AdminClinics } from './pages/admin/AdminClinics';
 import { AdminLabs } from './pages/admin/AdminLabs';
 import { AdminPartnerLinks } from './pages/admin/AdminPartnerLinks';
 import { AdminArticles } from './pages/admin/AdminArticles';
+import { AdminNotificationCMS } from './pages/admin/AdminNotificationCMS';
 // ── SuperAdmin Pages ───────────────────────────────────────
 import { SuperAuditLogs } from './pages/super/SuperAuditLogs';
+import { SuperSystemSettings } from './pages/super/SuperSystemSettings';
 import { SuperQAQuestions } from './pages/super/SuperQAQuestions';
 import { SuperMfgTemplates } from './pages/super/SuperMfgTemplates';
 import { SuperMenuManager } from './pages/super/SuperMenuManager';
@@ -1139,10 +1141,12 @@ function AppContent() {
               <NavItem icon={<Microscope size={20} />} label="牙技所管理" active={view === 'ADMIN_LABS'} onClick={() => { setView('ADMIN_LABS'); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<Activity size={20} />} label="合作連結" active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => { setView('ADMIN_PARTNER_LINKS'); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<FileText size={20} />} label="文章管理" active={view === 'ADMIN_ARTICLES'} onClick={() => { setView('ADMIN_ARTICLES'); setIsMobileMenuOpen(false); }} />
+              <NavItem icon={<Bell size={20} />} label="通知廣播" active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => { setView('ADMIN_NOTIFICATION_CMS'); setIsMobileMenuOpen(false); }} />
             </>
           )}
           {role === 'SUPER_ADMIN' && (
             <>
+              <NavItem icon={<Settings size={20} />} label="系統設定" active={view === 'SUPER_SYSTEM_SETTINGS'} onClick={() => { setView('SUPER_SYSTEM_SETTINGS'); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<Settings size={20} />} label="選單管理" active={view === 'SUPER_MENU'} onClick={() => { setView('SUPER_MENU'); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<ClipboardList size={20} />} label="QA問卷管理" active={view === 'SUPER_QA_QUESTIONS'} onClick={() => { setView('SUPER_QA_QUESTIONS'); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<CheckCircle2 size={20} />} label="製程模板" active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => { setView('SUPER_MFG_TEMPLATES'); setIsMobileMenuOpen(false); }} />
@@ -1393,7 +1397,9 @@ function AppContent() {
             {view === 'ADMIN_LABS' && <AdminLabs />}
             {view === 'ADMIN_PARTNER_LINKS' && <AdminPartnerLinks />}
             {view === 'ADMIN_ARTICLES' && <AdminArticles />}
+            {view === 'ADMIN_NOTIFICATION_CMS' && <AdminNotificationCMS />}
             {/* ── V1.2 SuperAdmin Pages ────────────────────── */}
+            {view === 'SUPER_SYSTEM_SETTINGS' && <SuperSystemSettings />}
             {view === 'SUPER_MENU' && <SuperMenuManager />}
             {view === 'SUPER_AUDIT_LOGS' && <SuperAuditLogs />}
             {view === 'SUPER_QA_QUESTIONS' && <SuperQAQuestions />}

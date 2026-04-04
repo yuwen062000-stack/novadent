@@ -1,32 +1,28 @@
 kind = "api"
-previewPath = "/api" # TODO - should be excluded from preview in the first place
-title = "API Server"
+previewPath = "/"
+title = "Novadent"
 version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
 [[services]]
-localPort = 8080
+localPort = 3001
 name = "API Server"
-paths = ["/api"]
+paths = ["/"]
 
 [services.development]
-run = "pnpm --filter @workspace/api-server run dev"
+run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
 
 [services.production]
 
 [services.production.build]
-args = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
+args = ["bash", "-c", "cd /home/runner/workspace/novadent && npm run build && cd /home/runner/workspace/novadent/backend && NODE_ENV=development ./node_modules/.bin/nest build"]
 
 [services.production.build.env]
 NODE_ENV = "production"
 
 [services.production.run]
-# we don't run through pnpm to make startup faster in production
-args = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
+args = ["node", "novadent/backend/dist/src/main.js"]
 
 [services.production.run.env]
-PORT = "8080"
+PORT = "3001"
 NODE_ENV = "production"
-
-[services.production.health.startup]
-path = "/api/healthz"

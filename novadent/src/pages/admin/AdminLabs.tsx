@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw } from 'lucide-react';
+import { Plus, Search, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface Lab {
@@ -20,6 +20,7 @@ export function AdminLabs() {
   const [editTarget, setEditTarget] = useState<Lab | null>(null);
   const [form, setForm] = useState({ name: '', leadTechnicianName: '', phone: '', email: '', city: '', detailedAddress: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -39,14 +40,26 @@ export function AdminLabs() {
   const handleSubmit = async () => {
     if (!form.name || !form.phone || !form.email || !form.city) return alert('請填入必要欄位');
     setSubmitting(true);
-    const url = editTarget ? `/labs/${editTarget.id}` : '/labs';
+    const url = editTarget ? `/admin/labs/${editTarget.id}` : '/admin/labs';
     const res = await apiFetch(url, {
-      method: editTarget ? 'PUT' : 'POST',
+      method: editTarget ? 'PATCH' : 'POST',
       body: JSON.stringify(form),
     });
     setSubmitting(false);
     if (res.ok) { setShowModal(false); load(); }
     else { const err = await res.json(); alert(err.message || '操作失敗'); }
+  };
+
+  const handleToggleStatus = async (l: Lab, newStatus: string) => {
+    setToggling(l.id);
+    try {
+      await apiFetch(`/admin/labs/${l.id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      load();
+    } catch { alert('操作失敗'); }
+    finally { setToggling(null); }
   };
 
   const STATUS_COLORS: Record<string, string> = { ACTIVE: 'bg-green-50 text-green-700', PENDING: 'bg-amber-50 text-amber-700', DISABLED: 'bg-red-50 text-red-700' };
@@ -89,7 +102,29 @@ export function AdminLabs() {
                   <td className="px-4 py-3 text-slate-600 text-sm">{l.phone}</td>
                   <td className="px-4 py-3 text-slate-600 text-sm">{l.city}</td>
                   <td className="px-4 py-3"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${STATUS_COLORS[l.status] || 'bg-slate-50 text-slate-600'}`}>{STATUS_LABELS[l.status] || l.status}</span></td>
-                  <td className="px-4 py-3"><button onClick={() => openEdit(l)} className="text-xs font-bold text-slate-500 hover:text-blue-800 transition-colors">編輯</button></td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2 flex-wrap">
+                      <button onClick={() => openEdit(l)} className="text-xs font-bold text-slate-500 hover:text-blue-800 transition-colors">編輯</button>
+                      {l.status === 'PENDING' && (
+                        <button onClick={() => handleToggleStatus(l, 'ACTIVE')} disabled={toggling === l.id}
+                          className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          <CheckCircle2 size={12} />審核通過
+                        </button>
+                      )}
+                      {l.status === 'ACTIVE' && (
+                        <button onClick={() => handleToggleStatus(l, 'DISABLED')} disabled={toggling === l.id}
+                          className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          <XCircle size={12} />停用
+                        </button>
+                      )}
+                      {l.status === 'DISABLED' && (
+                        <button onClick={() => handleToggleStatus(l, 'ACTIVE')} disabled={toggling === l.id}
+                          className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          <CheckCircle2 size={12} />啟用
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -25,7 +25,7 @@ export function MemberRecommendations({ setView }: Props) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    apiFetch('/api/clinics?status=ACTIVE&limit=10')
+    apiFetch('/clinics?status=ACTIVE&limit=10')
       .then(r => r.json())
       .then(data => {
         // data may be array or {data: [...]}

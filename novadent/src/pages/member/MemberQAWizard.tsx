@@ -26,7 +26,7 @@ export function MemberQAWizard({ setView }: Props) {
   const [consultationId, setConsultationId] = useState<string | null>(null);
 
   useEffect(() => {
-    apiFetch('/api/qa-questions')
+    apiFetch('/qa-questions')
       .then(r => r.json())
       .then((data: QAQuestion[]) => {
         if (data.length === 0) {
@@ -92,7 +92,7 @@ export function MemberQAWizard({ setView }: Props) {
           answer: Array.isArray(ans) ? ans.join(', ') : ans,
         }))
       };
-      const res = await apiFetch('/api/consultations', {
+      const res = await apiFetch('/consultations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

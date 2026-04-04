@@ -1,11 +1,11 @@
 // M-08 Admin Service — 後台管理
 import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, inArray } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import {
   users, clinics, labs, cases, articles,
-  partnerLinks, auditLogs, menuConfig,
+  partnerLinks, auditLogs, menuConfig, notifications,
 } from '../database/schema';
 
 @Injectable()
@@ -24,14 +24,14 @@ export class AdminService {
       this.db.select({ count: sql<number>`count(*)::int` }).from(articles),
     ]);
 
-    // 本月新增案件
     const thisMonth = new Date();
     thisMonth.setDate(1);
     thisMonth.setHours(0, 0, 0, 0);
+    const thisMonthStr = thisMonth.toISOString();
 
     const [monthlyCases] = await this.db.select({ count: sql<number>`count(*)::int` })
       .from(cases)
-      .where(sql`${cases.createdAt} >= ${thisMonth}`);
+      .where(sql`${cases.createdAt} >= ${thisMonthStr}::timestamp`);
 
     return {
       users:        userCount[0]?.count ?? 0,
@@ -145,6 +145,40 @@ export class AdminService {
 
     await this.db.delete(partnerLinks).where(eq(partnerLinks.id, id));
     return { success: true };
+  }
+
+  // ── 廣播通知 ─────────────────────────────────────────────────
+  async broadcastNotification(title: string, content: string, targetRoles?: string[], adminUserId?: string) {
+    let where: any = undefined;
+    if (targetRoles && targetRoles.length > 0) {
+      where = inArray(users.role, targetRoles as any);
+    }
+
+    const targetUsers = await this.db.select({ id: users.id })
+      .from(users)
+      .where(where);
+
+    if (targetUsers.length === 0) return { sent: 0 };
+
+    const notificationValues = targetUsers.map(u => ({
+      userId: u.id,
+      type: 'SYSTEM' as const,
+      title,
+      content,
+    }));
+
+    await this.db.insert(notifications).values(notificationValues as any);
+
+    if (adminUserId) {
+      await this.db.insert(auditLogs).values({
+        userId: adminUserId,
+        action: 'BROADCAST_NOTIFICATION',
+        targetType: 'notification',
+        detail: { title, targetRoles, recipientCount: targetUsers.length },
+      } as any).catch(() => {});
+    }
+
+    return { sent: targetUsers.length };
   }
 
   // ── 選單管理 ─────────────────────────────────────────────────

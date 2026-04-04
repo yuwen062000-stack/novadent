@@ -9,7 +9,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 // ── 公開 API ────────────────────────────────────────────────
-@Controller('articles')
+@Controller('api/articles')
 export class ArticlesPublicController {
   constructor(private articlesService: ArticlesService) {}
 
@@ -27,7 +27,7 @@ export class ArticlesPublicController {
 }
 
 // ── Admin API ────────────────────────────────────────────────
-@Controller('admin/articles')
+@Controller('api/admin/articles')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')
 export class ArticlesAdminController {

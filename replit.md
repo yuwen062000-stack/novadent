@@ -1,27 +1,93 @@
-# Workspace
+# Novadent (諾星) — Dental Integration Platform
 
 ## Overview
-
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+NestJS backend + React/Vite frontend dental industry platform. **Standalone npm project** (NOT pnpm monorepo). The backend serves both the API and the built frontend static files.
 
 ## Stack
+- **Backend**: NestJS 11 (TypeScript), Drizzle ORM, PostgreSQL
+- **Frontend**: React 18 + Vite, TailwindCSS, Framer Motion, Lucide icons
+- **Auth**: JWT access token (memory) + HttpOnly refresh cookie
+- **File uploads**: Local storage at `{cwd}/../uploads/`, served at `/api/uploads/*`
+- **Email**: Nodemailer (MailService, configurable via SMTP env vars)
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+## Project Structure
+```
+novadent/
+  src/                    # Frontend React source
+    pages/admin/          # Admin pages (Dashboard, Users, Clinics, Labs, Articles, NotificationCMS)
+    pages/super/          # SuperAdmin pages (SystemSettings, AuditLogs, QAQuestions, MfgTemplates, MenuManager)
+    pages/member/         # Member pages (QAWizard, Recommendations, CaseTracking, Settings)
+    pages/clinic/         # Clinic pages (CaseList, CreateCase, CaseDetail with assign-lab)
+    pages/lab/            # Lab pages (CaseList, CaseDetail with step updates)
+    pages/shared/         # Shared pages (Notifications, AccountMgmt)
+    services/authService.ts  # API client (apiFetch with /api prefix)
+    components/auth/      # Login, ForgotPassword, ResetPassword, ForceChangePassword
+  dist/                   # Built frontend (served by NestJS ServeStaticModule)
+  backend/
+    src/
+      auth/               # JWT auth module (login, refresh, change-password, forgot-password)
+      users/              # User CRUD + toggle-status + reset-password
+      clinics/            # Clinic module (public, user, admin controllers)
+      labs/               # Lab module (user, admin controllers)
+      cases/              # Case management with MFG steps
+      consultations/      # QA consultation module
+      notifications/      # Notifications module
+      articles/           # Articles module (public + admin)
+      admin/              # Admin dashboard stats, partner links, menu config, broadcast
+      system-settings/    # V1.3: SuperAdmin system settings CRUD
+      mail/               # V1.3: Nodemailer mail service
+      upload/             # File upload with multer
+      qa-questions/       # QA question templates
+      mfg-step-templates/ # Manufacturing step templates
+      database/schema.ts  # Drizzle schema (all tables)
+    dist/                 # Built backend
+```
 
 ## Key Commands
+```bash
+# Frontend build
+cd novadent && npm run build
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+# Backend build (must use NODE_ENV=development for devDeps)
+cd novadent/backend && NODE_ENV=development ./node_modules/.bin/nest build
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+# Backend install (legacy peer deps required)
+cd novadent/backend && NODE_ENV=development npm install --legacy-peer-deps
+
+# DB schema push
+cd novadent/backend && npx drizzle-kit push
+
+# Run (production)
+cd novadent/backend && NODE_ENV=production node dist/src/main.js
+```
+
+## API Conventions
+- All controllers use `@Controller('api/...')` prefix — no global prefix in main.ts
+- Frontend `apiFetch()` automatically prepends `/api` — use paths like `/auth/me`, `/admin/clinics`
+- CORS: Allowlist based (REPLIT_DEV_DOMAIN, REPLIT_DOMAINS, CORS_ORIGINS env var)
+
+## Test Accounts
+| Email | Password | Role |
+|---|---|---|
+| superadmin@novadent.com | SuperAdmin123! | SUPER_ADMIN (force change pw) |
+| admin@novadent.com | Admin@2026 | ADMIN |
+| taipei-clinic@novadent.com | Clinic@2026 | CLINIC |
+| seiko-lab@novadent.com | Lab@2026 | LAB |
+| member@novadent.com | Member@2026 | MEMBER |
+
+## V1.3 Features (Implemented)
+- **SystemSettings module**: CRUD at GET/PUT `/api/admin/system-settings` (SUPER_ADMIN only)
+- **MailService**: Nodemailer-based, wired to forgot-password flow
+- **Broadcast notifications**: POST `/api/admin/notifications/broadcast` with target role selection
+- **Admin UI improvements**: User edit modal, clinic/lab disable/enable toggle, article delete + tags
+- **Clinic assign-lab UI**: Built into ClinicCaseDetail page
+- **MemberSettings**: Password change form
+- **INSURER framework**: Basic sidebar + customer management placeholder
+- **SuperSystemSettings**: Admin page for managing platform settings
+
+## Environment Variables
+- `DATABASE_URL` — PostgreSQL connection string
+- `JWT_SECRET` — JWT signing secret
+- `SESSION_SECRET` — Session secret
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — Mail config (optional)
+- `CORS_ORIGINS` — Comma-separated allowed origins (optional)

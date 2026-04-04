@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw, Check } from 'lucide-react';
+import { Plus, Search, RefreshCw, Check, XCircle, CheckCircle2 } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface Clinic {
@@ -21,12 +21,13 @@ export function AdminClinics() {
   const [editTarget, setEditTarget] = useState<Clinic | null>(null);
   const [form, setForm] = useState({ name: '', leadDoctorName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.append('search', search);
-    apiFetch(`/clinics?${params}&limit=100`)
+    apiFetch(`/admin/clinics?${params}&limit=100`)
       .then(r => r.json())
       .then(data => { setClinics(Array.isArray(data) ? data : data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -40,20 +41,24 @@ export function AdminClinics() {
   const handleSubmit = async () => {
     if (!form.name || !form.phone || !form.email || !form.city) return alert('請填入必要欄位');
     setSubmitting(true);
-    const url = editTarget ? `/clinics/${editTarget.id}` : '/clinics';
-    const method = editTarget ? 'PUT' : 'POST';
+    const url = editTarget ? `/admin/clinics/${editTarget.id}` : '/admin/clinics';
+    const method = editTarget ? 'PATCH' : 'POST';
     const res = await apiFetch(url, { method, body: JSON.stringify(form) });
     setSubmitting(false);
     if (res.ok) { setShowModal(false); load(); }
     else { const err = await res.json(); alert(err.message || '操作失敗'); }
   };
 
-  const handleApprove = async (id: string) => {
-    await apiFetch(`/clinics/${id}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ status: 'ACTIVE' }),
-    });
-    load();
+  const handleToggleStatus = async (c: Clinic, newStatus: string) => {
+    setToggling(c.id);
+    try {
+      await apiFetch(`/admin/clinics/${c.id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      load();
+    } catch { alert('操作失敗'); }
+    finally { setToggling(null); }
   };
 
   const STATUS_COLORS: Record<string, string> = {
@@ -109,11 +114,26 @@ export function AdminClinics() {
                   <td className="px-4 py-3 text-slate-600 text-sm">{c.city}</td>
                   <td className="px-4 py-3"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${STATUS_COLORS[c.status] || 'bg-slate-50 text-slate-600'}`}>{STATUS_LABELS[c.status] || c.status}</span></td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      {c.status === 'PENDING' && (
-                        <button onClick={() => handleApprove(c.id)} className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1"><Check size={12} />審核通過</button>
-                      )}
+                    <div className="flex gap-2 flex-wrap">
                       <button onClick={() => openEdit(c)} className="text-xs font-bold text-slate-500 hover:text-blue-800 transition-colors">編輯</button>
+                      {c.status === 'PENDING' && (
+                        <button onClick={() => handleToggleStatus(c, 'ACTIVE')} disabled={toggling === c.id}
+                          className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          <CheckCircle2 size={12} />審核通過
+                        </button>
+                      )}
+                      {c.status === 'ACTIVE' && (
+                        <button onClick={() => handleToggleStatus(c, 'DISABLED')} disabled={toggling === c.id}
+                          className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          <XCircle size={12} />停用
+                        </button>
+                      )}
+                      {c.status === 'DISABLED' && (
+                        <button onClick={() => handleToggleStatus(c, 'ACTIVE')} disabled={toggling === c.id}
+                          className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          <CheckCircle2 size={12} />啟用
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

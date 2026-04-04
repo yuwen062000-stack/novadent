@@ -19,22 +19,24 @@ async function main() {
   // ── 1. 使用者帳號 ──────────────────────────────────────────
   console.log('1️⃣  建立使用者帳號...');
 
+  const superPw  = await hash('SuperAdmin123!');
   const adminPw  = await hash('Admin@2026');
   const clinicPw = await hash('Clinic@2026');
   const labPw    = await hash('Lab@2026');
   const memberPw = await hash('Member@2026');
 
-  const insertUser = async (email: string, pw: string, role: string, name: string, phone: string) => {
+  const insertUser = async (email: string, pw: string, role: string, name: string, phone: string, forceChange = false) => {
     const rows = await q(
       `INSERT INTO users (email, password_hash, role, name, phone, status, force_change_password)
-       VALUES ($1,$2,$3,$4,$5,'ACTIVE',false)
+       VALUES ($1,$2,$3,$4,$5,'ACTIVE',$6)
        ON CONFLICT (email) DO UPDATE SET name=EXCLUDED.name
        RETURNING id`,
-      [email, pw, role, name, phone]
+      [email, pw, role, name, phone, forceChange]
     );
     return rows[0]?.id as string;
   };
 
+  const superId   = await insertUser('superadmin@novadent.com',       superPw,  'SUPER_ADMIN', '超級管理員', '02-00000000', true);
   const adminId   = await insertUser('admin@novadent.com',            adminPw,  'ADMIN',  '諾星管理員',   '02-12345678');
   const c1UserId  = await insertUser('taipei-clinic@novadent.com',    clinicPw, 'CLINIC', '台北微笑牙醫', '02-27001234');
   const c2UserId  = await insertUser('taichung-clinic@novadent.com',  clinicPw, 'CLINIC', '台中美齒牙醫', '04-23001234');

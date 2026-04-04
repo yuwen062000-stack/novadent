@@ -18,7 +18,7 @@ export function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false);
 
   useEffect(() => {
-    apiFetch('/api/notifications')
+    apiFetch('/notifications')
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : data.data ?? data.notifications ?? [];
@@ -33,13 +33,13 @@ export function NotificationsPage() {
 
   async function markRead(id: string) {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-    await apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {});
+    await apiFetch(`/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {});
   }
 
   async function markAllRead() {
     setMarkingAll(true);
     try {
-      await apiFetch('/api/notifications/read-all', { method: 'POST' });
+      await apiFetch('/notifications/read-all', { method: 'POST' });
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     } catch { /* silent */ }
     setMarkingAll(false);

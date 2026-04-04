@@ -34,7 +34,7 @@ export function ClinicCreateCase({ setView }: Props) {
   });
 
   useEffect(() => {
-    apiFetch('/api/labs?status=ACTIVE')
+    apiFetch('/labs?status=ACTIVE')
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : data.data ?? [];
@@ -61,7 +61,7 @@ export function ClinicCreateCase({ setView }: Props) {
       };
       if (form.labId) payload.labId = form.labId;
 
-      const res = await apiFetch('/api/cases', {
+      const res = await apiFetch('/cases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

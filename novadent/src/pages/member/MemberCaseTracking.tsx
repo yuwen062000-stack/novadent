@@ -47,7 +47,7 @@ export function MemberCaseTracking({ setView }: Props) {
   const [selected, setSelected] = useState<CaseItem | null>(null);
 
   useEffect(() => {
-    apiFetch('/api/cases')
+    apiFetch('/cases')
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : data.data ?? [];
