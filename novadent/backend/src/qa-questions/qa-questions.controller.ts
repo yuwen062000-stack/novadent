@@ -1,10 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { QaQuestionsService } from './qa-questions.service';
 import { CreateQaQuestionDto, UpdateQaQuestionDto, ReorderQaQuestionsDto } from './dto/qa-question.dto';
 
 @Controller('api/qa-questions')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class QaQuestionsController {
   constructor(private readonly svc: QaQuestionsService) {}
 

@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
-import { Public } from '../common/decorators/public.decorator';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { MfgStepTemplatesService } from './mfg-step-templates.service';
 import { CreateMfgStepTemplateDto, UpdateMfgStepTemplateDto, ReorderTemplatesDto } from './dto/mfg-step-template.dto';
 
 @Controller('api/mfg-step-templates')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class MfgStepTemplatesController {
   constructor(private readonly svc: MfgStepTemplatesService) {}
 
