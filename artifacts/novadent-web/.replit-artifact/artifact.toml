@@ -1,13 +1,18 @@
 kind = "web"
 previewPath = "/"
-title = "Novadent"
+title = "Novadent 諾星牙科平台"
 version = "1.0.0"
-id = "3B4_FFSkEVBkAeYMFRJ2e"
+id = "artifacts/novadent-web"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
 
 [[services]]
+name = "web"
+paths = [ "/" ]
 localPort = 3001
-name = "API Server"
-paths = ["/"]
 
 [services.development]
 run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
@@ -26,3 +31,6 @@ args = ["node", "novadent/backend/dist/src/main.js"]
 [services.production.run.env]
 PORT = "3001"
 NODE_ENV = "production"
+
+[services.env]
+PORT = "3001"
