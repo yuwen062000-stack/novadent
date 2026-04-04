@@ -1,0 +1,46 @@
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Public } from '../common/decorators/public.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { QaQuestionsService } from './qa-questions.service';
+import { CreateQaQuestionDto, UpdateQaQuestionDto, ReorderQaQuestionsDto } from './dto/qa-question.dto';
+
+@Controller('api/qa-questions')
+export class QaQuestionsController {
+  constructor(private readonly svc: QaQuestionsService) {}
+
+  @Public()
+  @Get()
+  findActive() {
+    return this.svc.findActive();
+  }
+
+  @Roles('SUPER_ADMIN')
+  @Get('all')
+  findAll() {
+    return this.svc.findAll();
+  }
+
+  @Roles('SUPER_ADMIN')
+  @Post()
+  create(@Body() dto: CreateQaQuestionDto) {
+    return this.svc.create(dto);
+  }
+
+  @Roles('SUPER_ADMIN')
+  @Put('reorder')
+  reorder(@Body() dto: ReorderQaQuestionsDto) {
+    return this.svc.reorder(dto.ids);
+  }
+
+  @Roles('SUPER_ADMIN')
+  @Put(':id')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateQaQuestionDto) {
+    return this.svc.update(id, dto);
+  }
+
+  @Roles('SUPER_ADMIN')
+  @Delete(':id')
+  deactivate(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.deactivate(id);
+  }
+}
