@@ -5,10 +5,33 @@ const SALT = 12;
 
 async function hash(pw: string) { return bcrypt.hash(pw, SALT); }
 
+async function ensureDefaultPasswords(pool: Pool) {
+  const defaults: [string, string][] = [
+    ['superadmin@novadent.com', 'SuperAdmin123!'],
+    ['admin@novadent.com', 'Admin@2026'],
+    ['taipei-clinic@novadent.com', 'Clinic@2026'],
+    ['taichung-clinic@novadent.com', 'Clinic@2026'],
+    ['kaohsiung-clinic@novadent.com', 'Clinic@2026'],
+    ['precision-lab@novadent.com', 'Lab@2026'],
+    ['artisan-lab@novadent.com', 'Lab@2026'],
+    ['member1@test.com', 'Member@2026'],
+  ];
+  for (const [email, pw] of defaults) {
+    const h = await hash(pw);
+    await pool.query(
+      `UPDATE users SET password_hash = $1, force_change_password = false WHERE email = $2`,
+      [h, email]
+    );
+  }
+  console.log('[AutoSeed] Default passwords ensured for seed accounts');
+}
+
 export async function autoSeed() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
+    await ensureDefaultPasswords(pool);
+
     const { rows } = await pool.query('SELECT count(*)::int as cnt FROM users WHERE role != $1', ['MEMBER']);
     if (rows[0].cnt >= 5) {
       console.log('[AutoSeed] Seed data already exists, skipping');
