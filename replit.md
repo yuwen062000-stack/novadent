@@ -104,6 +104,14 @@ cd novadent/backend && NODE_ENV=production node dist/src/main.js
 - **XSS protection**: DOMPurify sanitizes CMS richtext content before rendering
 - **Auto-seed defaults**: `page_contents` and `site_images` tables seed default rows on first boot
 
+## V1.5 Changes (Mock Data Removal)
+- **All MOCK_* constants removed** from App.tsx (~200 lines of hardcoded data deleted)
+- **Every page now fetches from real APIs**: KnowledgeCenter→`/api/articles`, Recommendations→`/api/clinics`, Dashboard→`/api/cases`, CaseCreation→`/api/labs`, Overview→`/api/clinics+labs+cases`
+- **Hero banner**: Falls back to static image `/S__14336065_0_0.jpg` when no CMS HERO image is uploaded; fetches from `/api/site-images` on mount
+- **Paginated API responses handled**: All fetch handlers parse `res.data || res` to handle both paginated `{data, total}` and array responses
+- **Null-safe currentCase**: Guards added for `currentCase` (now `Case | null`) in sidebar badge count and LAB overview
+- **State cleanup**: Removed unused top-level `clinics`, `labs`, `members`, `articles`, `allCases` state; each component manages its own data
+
 ## Deployment
 - **Artifact**: `novadent-app` (kind=web, previewPath=`/`)
 - **Artifact TOML**: `artifacts/novadent-app/.replit-artifact/artifact.toml`

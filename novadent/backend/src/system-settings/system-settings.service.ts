@@ -50,6 +50,7 @@ export class SystemSettingsService {
 
   /** 批次 upsert 多筆設定 */
   async bulkUpsert(items: { key: string; value: string; description?: string }[], updatedBy?: string) {
+    if (!items || !Array.isArray(items)) return [];
     const results = [];
     for (const item of items) {
       const result = await this.upsert(item.key, item.value, item.description, updatedBy);

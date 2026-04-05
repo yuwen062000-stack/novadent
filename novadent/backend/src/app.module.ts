@@ -27,7 +27,7 @@ import { PageContentsModule } from './page-contents/page-contents.module';
     ConfigModule.forRoot({ isGlobal: true }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', '..', 'dist'),
-      exclude: ['/api/(.*)'],
+      exclude: ['/api/{*path}'],
       serveStaticOptions: { fallthrough: true },
     }),
     DatabaseModule,

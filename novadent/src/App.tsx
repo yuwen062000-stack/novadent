@@ -52,213 +52,6 @@ import { MemberSettings } from './pages/member/MemberSettings';
 import { NotificationsPage } from './pages/shared/NotificationsPage';
 import { AccountMgmtPage } from './pages/shared/AccountMgmtPage';
 
-// Mock Data
-const MOCK_ARTICLES: Article[] = [
-  {
-    id: '1',
-    slug: 'all-ceramic-crowns-guide',
-    title: '全瓷冠假牙全攻略：優點、價格與壽命一次看',
-    category: '假牙百科',
-    tags: ['全瓷冠', '美學牙科'],
-    summary: '全瓷冠是目前最受歡迎的假牙材質，不僅外觀自然，且不含金屬成分，是現代牙科修復的首選...',
-    content: '這裡是很長的衛教文章內容...',
-    author: 'Novadent 編輯部',
-    publishedAt: '2026-02-25',
-    coverUrl: 'https://picsum.photos/seed/dental1/800/400'
-  },
-  {
-    id: '2',
-    slug: 'how-to-clean-dentures',
-    title: '假牙清潔不NG！專業牙醫教你正確清潔步驟',
-    category: '口腔護理',
-    tags: ['假牙清潔', '居家護理'],
-    summary: '正確的假牙清潔能延長假牙壽命，並預防口腔發炎與異味，本文教您專業的清潔技巧...',
-    content: '這裡是很長的衛教文章內容...',
-    author: 'Novadent 編輯部',
-    publishedAt: '2026-02-20',
-    coverUrl: 'https://picsum.photos/seed/dental2/800/400'
-  }
-];
-
-
-const MOCK_CLINICS: Clinic[] = [
-  { 
-    id: 'c1', 
-    name: '維新牙醫診所', 
-    leadDoctorName: '陳大文',
-    phone: '02-1234-5678',
-    email: 'contact@weixin-dental.com',
-    city: '台北市',
-    detailedAddress: '台北市大安區信義路四段 100 號',
-    area: '台北市大安區', 
-    rating: 4.8,
-    description: '深耕大安區二十年，提供最專業的假牙修復與美學牙科服務。',
-    services: ['全瓷冠', '植牙', '隱形矯正'],
-    doctorTeam: ['陳大文', '林小明'],
-    coverPhoto: 'https://picsum.photos/seed/clinic1/800/600',
-    status: PartnerStatus.ACTIVE,
-    internalNotes: '大安區指標診所'
-  },
-  { 
-    id: 'c2', 
-    name: '博愛牙醫', 
-    leadDoctorName: '張院長',
-    phone: '02-8765-4321',
-    email: 'service@boai-dental.com',
-    city: '台北市',
-    detailedAddress: '台北市信義區忠孝東路五段 200 號',
-    area: '台北市信義區', 
-    rating: 4.9,
-    description: '信義區頂級牙科中心，引進最新數位化口掃與 3D 列印技術。',
-    services: ['數位假牙', '全口重建', '牙周治療'],
-    doctorTeam: ['張院長', '王醫師'],
-    coverPhoto: 'https://picsum.photos/seed/clinic2/800/600',
-    status: PartnerStatus.ACTIVE,
-    internalNotes: '數位化程度高'
-  },
-  { 
-    id: 'c3', 
-    name: '誠美齒科', 
-    leadDoctorName: '李醫師',
-    phone: '02-2222-3333',
-    email: 'info@chengmei-dental.com',
-    city: '新北市',
-    detailedAddress: '新北市板橋區文化路一段 300 號',
-    area: '新北市板橋區', 
-    rating: 4.7,
-    description: '板橋在地推薦，親切專業的服務，讓您看牙不再恐懼。',
-    services: ['活動假牙', '一般牙科', '兒童牙科'],
-    doctorTeam: ['李醫師', '黃醫師'],
-    coverPhoto: 'https://picsum.photos/seed/clinic3/800/600',
-    status: PartnerStatus.PENDING,
-    internalNotes: '待審核中'
-  },
-];
-
-const MOCK_LABS: Lab[] = [
-  { 
-    id: 'l1', 
-    name: '精工牙技所', 
-    leadTechnicianName: '王技師',
-    phone: '02-8765-4321',
-    email: 'contact@seiko-lab.com',
-    city: '台北市',
-    detailedAddress: '台北市中山區民生東路二段 50 號',
-    specialties: ['全瓷冠', '氧化鋯', '數位假牙'],
-    partnerClinics: ['c1', 'c2'],
-    coverPhoto: 'https://picsum.photos/seed/lab1/800/600',
-    status: PartnerStatus.ACTIVE,
-    internalNotes: '全瓷冠專家',
-    specialty: '全瓷冠', 
-    isPartner: true 
-  },
-  { 
-    id: 'l2', 
-    name: '卓越齒研', 
-    leadTechnicianName: '李技師',
-    phone: '02-1111-2222',
-    email: 'service@excellent-lab.com',
-    city: '新北市',
-    detailedAddress: '新北市中和區景平路 100 號',
-    specialties: ['活動假牙', '金屬烤瓷'],
-    partnerClinics: [],
-    coverPhoto: 'https://picsum.photos/seed/lab2/800/600',
-    status: PartnerStatus.ACTIVE,
-    internalNotes: '傳統假牙強項',
-    specialty: '活動假牙', 
-    isPartner: false 
-  },
-  { 
-    id: 'l3', 
-    name: '數位美學中心', 
-    leadTechnicianName: '張技師',
-    phone: '02-3333-4444',
-    email: 'digital@aesthetic-lab.com',
-    city: '台北市',
-    detailedAddress: '台北市內湖區瑞光路 300 號',
-    specialties: ['數位假牙', '3D 列印'],
-    partnerClinics: [],
-    coverPhoto: 'https://picsum.photos/seed/lab3/800/600',
-    status: PartnerStatus.PENDING,
-    internalNotes: '新成立數位中心',
-    specialty: '3D 列印/全瓷', 
-    isPartner: false 
-  },
-];
-
-const MOCK_MEMBERS: Member[] = [
-  { id: 'm1', name: '陳小明', email: 'ming@example.com', status: 'ACTIVE', createdAt: '2026-01-10' },
-  { id: 'm2', name: '王大同', email: 'tong@example.com', status: 'ACTIVE', createdAt: '2026-02-15' },
-  { id: 'm3', name: '李美美', email: 'mei@example.com', status: 'DISABLED', createdAt: '2026-02-20' },
-];
-
-const INITIAL_HOME_CONFIG: HomeConfig = {
-  heroBannerUrl: '/S__14336065_0_0.jpg'
-};
-
-const MOCK_MFG_STEPS: MfgStep[] = [
-  { id: 's1', name: '資料取得', status: 'COMPLETED', updatedAt: '2026-02-28 10:00', note: '已收到數位口掃檔與比色照片', photoUrl: 'https://picsum.photos/seed/scan/800/600' },
-  { id: 's2', name: '模型建立', status: 'COMPLETED', updatedAt: '2026-03-01 14:30', note: '3D 列印樹脂模型完成', photoUrl: 'https://picsum.photos/seed/model/800/600' },
-  { id: 's3', name: '設計階段', status: 'IN_PROGRESS', updatedAt: '2026-03-02 09:00', note: 'CAD 牙冠外型設計中' },
-  { id: 's4', name: '結構製作', status: 'PENDING' },
-  { id: 's5', name: '美學與調整', status: 'PENDING' },
-  { id: 's6', name: '試戴與修正', status: 'PENDING' },
-  { id: 's7', name: '完成與交付', status: 'PENDING' },
-];
-
-const INITIAL_CASE: Case = {
-  id: 'CASE-2026-001',
-  patientName: '陳*明',
-  clinicName: '維新牙醫診所',
-  labName: '精工牙技所',
-  status: CaseStatus.IN_PROGRESS,
-  type: 'FIXED',
-  createdAt: '2026-02-28 10:00',
-  updatedAt: '2026-03-02 09:00',
-  description: '左上第一大臼齒全瓷冠製作',
-  progress: 28, // 2 out of 7 completed
-  currentStage: '設計階段',
-  mfgSteps: MOCK_MFG_STEPS,
-  steps: [
-    { status: CaseStatus.CREATED, label: '診所建立案件', timestamp: '2026-02-28 10:00', completed: true },
-    { status: CaseStatus.ASSIGNED, label: '指派精工牙技所', timestamp: '2026-02-28 10:15', completed: true },
-    { status: CaseStatus.ACCEPTED, label: '牙技所確認接單', timestamp: '2026-02-28 11:30', completed: true },
-    { status: CaseStatus.IN_PROGRESS, label: '假牙製作中', timestamp: '2026-03-01 14:30', completed: true, note: '目前已進入製程' },
-    { status: CaseStatus.COMPLETED, label: '診所確認結案', timestamp: '-', completed: false },
-  ]
-};
-
-const MOCK_CONSULTATIONS: Consultation[] = [
-  { id: 'QA-2026-002', createdAt: '2026-03-02', summary: '右下後方咬東西會痛，想評估植牙', status: 'RECOMMENDED' },
-  { id: 'QA-2026-001', createdAt: '2026-02-25', summary: '左上第一大臼齒全瓷冠製作', status: 'CASE_CREATED' }
-];
-
-const MOCK_HISTORICAL_CASES: Case[] = [
-  {
-    id: 'CASE-2025-112',
-    patientName: '陳*明',
-    clinicName: '維新牙醫診所',
-    labName: '精工牙技所',
-    status: CaseStatus.COMPLETED,
-    type: 'FIXED',
-    createdAt: '2025-11-15 10:00',
-    updatedAt: '2025-12-10 14:30',
-    description: '右下第一大臼齒全瓷冠',
-    progress: 100,
-    currentStage: '完成與交付',
-    mfgSteps: [
-      { id: 's1', name: '資料取得', status: 'COMPLETED', updatedAt: '2025-11-16 10:00', note: '已收到數位口掃檔' },
-      { id: 's2', name: '模型建立', status: 'COMPLETED', updatedAt: '2025-11-18 14:30' },
-      { id: 's3', name: '設計階段', status: 'COMPLETED', updatedAt: '2025-11-20 09:00' },
-      { id: 's4', name: '結構製作', status: 'COMPLETED', updatedAt: '2025-11-25 11:00' },
-      { id: 's5', name: '美學與調整', status: 'COMPLETED', updatedAt: '2025-11-28 16:00' },
-      { id: 's6', name: '品管與出貨', status: 'COMPLETED', updatedAt: '2025-12-05 10:00' },
-      { id: 's7', name: '完成與交付', status: 'COMPLETED', updatedAt: '2025-12-10 14:30' }
-    ],
-    steps: []
-  }
-];
-
 export default function App() {
   return (
     <BrowserRouter>
@@ -305,33 +98,20 @@ function AppContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
-  const [currentCase, setCurrentCase] = useState<Case>(INITIAL_CASE);
+  const [currentCase, setCurrentCase] = useState<Case | null>(null);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [caseFilter, setCaseFilter] = useState<string>('ALL');
   const [qaCompleted, setQaCompleted] = useState(false);
-  const [hasActiveCase, setHasActiveCase] = useState(true);
-  const [subAccounts, setSubAccounts] = useState<SubAccount[]>([
-    { id: 's1', name: '林醫師', role: '牙醫師', email: 'lin@clinic.com' },
-    { id: 's2', name: '王護理師', role: '行政助理', email: 'wang@clinic.com' }
-  ]);
-  const [homeConfig, setHomeConfig] = useState<HomeConfig>(INITIAL_HOME_CONFIG);
-  const [clinics, setClinics] = useState<Clinic[]>(MOCK_CLINICS);
-  const [labs, setLabs] = useState<Lab[]>(MOCK_LABS);
-  const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS);
-  const [articles, setArticles] = useState<Article[]>(MOCK_ARTICLES);
-  const [allCases, setAllCases] = useState<Case[]>([
-    INITIAL_CASE,
-    ...MOCK_HISTORICAL_CASES,
-    {
-      ...INITIAL_CASE,
-      id: 'CASE-2026-005',
-      status: CaseStatus.ASSIGNED,
-      patientName: '王*小',
-      clinicName: '博愛牙醫',
-      updatedAt: '2026-03-03 09:00',
-      type: 'IMPLANT'
-    }
-  ]);
+  const [hasActiveCase, setHasActiveCase] = useState(false);
+  const [subAccounts, setSubAccounts] = useState<SubAccount[]>([]);
+  const [homeConfig, setHomeConfig] = useState<HomeConfig>({ heroBannerUrl: '/S__14336065_0_0.jpg' });
+
+  useEffect(() => {
+    fetch('/api/site-images').then(r => r.ok ? r.json() : []).then((imgs: any[]) => {
+      const hero = imgs.find((i: any) => i.position === 'HERO');
+      if (hero?.imageUrl) setHomeConfig(prev => ({ ...prev, heroBannerUrl: hero.imageUrl }));
+    }).catch(() => {});
+  }, []);
 
   const VIEW_PATH_MAP: Record<string, string> = {
     HOME: '/',
@@ -1139,7 +919,7 @@ function AppContent() {
   );
 
   const Sidebar = () => {
-    const pendingCasesCount = role === 'LAB' ? [currentCase].filter(c => c.status === CaseStatus.ASSIGNED).length : 0;
+    const pendingCasesCount = role === 'LAB' && currentCase ? [currentCase].filter(c => c.status === CaseStatus.ASSIGNED).length : 0;
 
     return (
       <>
@@ -1491,7 +1271,7 @@ function AppContent() {
             {view === 'PRIVACY' && <PrivacyPage />}
             {view === 'QA' && <QAPage setQaCompleted={setQaCompleted} setView={handleSetView} />}
             {view === 'RECOMMENDATIONS' && <Recommendations setView={handleSetView} setSelectedClinic={setSelectedClinic} />}
-            {view === 'OVERVIEW' && <Overview role={role} setView={handleSetView} currentCase={currentCase} setCaseFilter={setCaseFilter} members={members} clinics={clinics} labs={labs} allCases={allCases} />}
+            {view === 'OVERVIEW' && <Overview role={role} setView={handleSetView} currentCase={currentCase} setCaseFilter={setCaseFilter} />}
             {view === 'CASE_MANAGEMENT' && <Dashboard role={role} setView={handleSetView} currentCase={currentCase} qaCompleted={qaCompleted} setSelectedClinic={setSelectedClinic} hasActiveCase={hasActiveCase} setSelectedCase={setSelectedCase} caseFilter={caseFilter} setCaseFilter={setCaseFilter} />}
             {view === 'CREATE' && <CaseCreation setView={handleSetView} setHasActiveCase={setHasActiveCase} />}
             {view === 'DETAIL' && <CaseDetail role={role} setView={handleSetView} currentCase={selectedCase || currentCase} setCurrentCase={selectedCase ? setSelectedCase : setCurrentCase} />}
@@ -1684,11 +1464,16 @@ function InsurerCustomerMgmt() {
 // --- Sub-components ---
 function KnowledgeCenter({ setView, setSelectedArticle }: any) {
   const [activeCategory, setActiveCategory] = useState('全部');
+  const [articles, setArticles] = useState<Article[]>([]);
   const categories = ['全部', ...ARTICLE_CATEGORIES];
+
+  useEffect(() => {
+    fetch('/api/articles').then(r => r.ok ? r.json() : { data: [] }).then(res => setArticles(res.data || res)).catch(() => {});
+  }, []);
   
   const filteredArticles = activeCategory === '全部' 
-    ? MOCK_ARTICLES 
-    : MOCK_ARTICLES.filter(a => a.category === activeCategory);
+    ? articles 
+    : articles.filter(a => a.category === activeCategory);
 
   return (
     <div className="bg-white py-8 md:py-16 lg:py-20">
@@ -1878,6 +1663,12 @@ function LoginPage({ setRole, setView }: any) {
 }
 
 function Recommendations({ setView, setSelectedClinic }: any) {
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+
+  useEffect(() => {
+    fetch('/api/clinics').then(r => r.ok ? r.json() : { data: [] }).then(res => setClinics(res.data || res)).catch(() => {});
+  }, []);
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto">
       <button onClick={() => setView('CASE_MANAGEMENT')} className="text-slate-500 hover:text-blue-800 flex items-center gap-2 mb-6 md:mb-8 font-medium transition-colors text-sm md:text-base"><ArrowRight size={18} className="rotate-180" /> 返回案件管理</button>
@@ -1887,11 +1678,11 @@ function Recommendations({ setView, setSelectedClinic }: any) {
           <h1 className="text-2xl md:text-3xl font-black text-slate-900">為您推薦的專業診所</h1>
           <span className="w-fit px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] md:text-xs font-bold tracking-wider">RECOMMENDED</span>
         </div>
-        <p className="text-slate-500 text-base md:text-lg">根據您的諮詢結果（右下後方咬東西會痛，想評估植牙），為您篩選出以下符合需求的診所。</p>
+        <p className="text-slate-500 text-base md:text-lg">根據您的諮詢結果，為您篩選出以下符合需求的診所。</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {MOCK_CLINICS.map(clinic => (
+        {clinics.map(clinic => (
           <div key={clinic.id} className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all flex flex-col h-full">
             <div className="w-12 md:w-14 h-12 md:h-14 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 mb-4 md:mb-6"><Building2 size={24} /></div>
             <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">{clinic.name}</h3>
@@ -1913,6 +1704,13 @@ function Recommendations({ setView, setSelectedClinic }: any) {
 
 function MemberCaseManagement({ setView, currentCase, hasActiveCase, qaCompleted, setSelectedClinic, setSelectedCase }: any) {
   const [showConsultations, setShowConsultations] = useState(true);
+  const [historicalCases, setHistoricalCases] = useState<Case[]>([]);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+
+  useEffect(() => {
+    fetch('/api/cases?status=COMPLETED').then(r => r.ok ? r.json() : { data: [] }).then(res => setHistoricalCases(res.data || res)).catch(() => {});
+    fetch('/api/consultations').then(r => r.ok ? r.json() : { data: [] }).then(res => setConsultations(res.data || res)).catch(() => {});
+  }, []);
 
   if (!qaCompleted) {
     return (
@@ -2002,10 +1800,10 @@ function MemberCaseManagement({ setView, currentCase, hasActiveCase, qaCompleted
       {/* ② 歷史案件 (Completed / History) */}
       <section className="mb-8 md:mb-12">
         <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-4 md:mb-6 flex items-center gap-2">
-          <CheckCircle2 size={20} className="text-slate-400" /> 歷史案件 ({MOCK_HISTORICAL_CASES.length})
+          <CheckCircle2 size={20} className="text-slate-400" /> 歷史案件 ({historicalCases.length})
         </h2>
         <div className="space-y-3 md:space-y-4">
-          {MOCK_HISTORICAL_CASES.map(hCase => (
+          {historicalCases.map(hCase => (
             <div key={hCase.id} className="bg-white p-4 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 opacity-80 hover:opacity-100 transition-opacity">
               <div className="flex items-center gap-3 md:gap-4">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-100 rounded-lg md:rounded-xl flex items-center justify-center text-slate-400 shrink-0">
@@ -2039,7 +1837,7 @@ function MemberCaseManagement({ setView, currentCase, hasActiveCase, qaCompleted
           onClick={() => setShowConsultations(!showConsultations)}
         >
           <h2 className="text-base md:text-lg font-bold text-slate-700 flex items-center gap-2">
-            <FileText size={18} className="text-blue-500" /> 諮詢紀錄 ({MOCK_CONSULTATIONS.length})
+            <FileText size={18} className="text-blue-500" /> 諮詢紀錄 ({consultations.length})
           </h2>
           <div className="flex items-center gap-2 md:gap-4">
             <button onClick={(e) => { e.stopPropagation(); setView('QA'); }} className="text-blue-800 font-bold text-[10px] md:text-sm flex items-center gap-1 hover:text-blue-900 transition-colors bg-blue-50 px-2 py-1 md:px-3 md:py-1.5 rounded-lg">
@@ -2051,7 +1849,7 @@ function MemberCaseManagement({ setView, currentCase, hasActiveCase, qaCompleted
         
         {showConsultations && (
           <div className="mt-4 space-y-3 pl-2 border-l-2 border-slate-100">
-            {MOCK_CONSULTATIONS.map(consult => (
+            {consultations.map(consult => (
               <div key={consult.id} className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-1">
@@ -2071,13 +1869,37 @@ function MemberCaseManagement({ setView, currentCase, hasActiveCase, qaCompleted
   );
 }
 
-function Overview({ role, setView, currentCase, setCaseFilter, members, clinics, labs, allCases }: any) {
+function Overview({ role, setView, currentCase, setCaseFilter }: any) {
+  const [stats, setStats] = useState({ members: 0, clinics: 0, labs: 0, cases: 0 });
+  const [recentCases, setRecentCases] = useState<any[]>([]);
+  const [pendingPartners, setPendingPartners] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (role === 'ADMIN') {
+      Promise.all([
+        fetch('/api/clinics').then(r => r.ok ? r.json() : { data: [] }),
+        fetch('/api/labs').then(r => r.ok ? r.json() : { data: [] }),
+        fetch('/api/cases').then(r => r.ok ? r.json() : { data: [] }),
+      ]).then(([clinicsRes, labsRes, casesRes]) => {
+        const clinicsData = clinicsRes.data || clinicsRes;
+        const labsData = labsRes.data || labsRes;
+        const casesData = casesRes.data || casesRes;
+        setStats({ members: 0, clinics: clinicsData.length, labs: labsData.length, cases: casesData.length });
+        setRecentCases(casesData.slice(0, 5));
+        setPendingPartners([
+          ...clinicsData.filter((c: any) => c.status === PartnerStatus.PENDING),
+          ...labsData.filter((l: any) => l.status === PartnerStatus.PENDING),
+        ]);
+      }).catch(() => {});
+    }
+  }, [role]);
+
   if (role === 'ADMIN') {
-    const stats = [
-      { label: '總會員數', value: members?.length || 0, icon: <Users size={24} />, color: 'bg-blue-50 text-blue-600' },
-      { label: '診所數', value: clinics?.length || 0, icon: <Building2 size={24} />, color: 'bg-blue-100 text-blue-800' },
-      { label: '牙技所數', value: labs?.length || 0, icon: <Microscope size={24} />, color: 'bg-indigo-50 text-indigo-600' },
-      { label: '本月新增案件', value: allCases?.length || 0, icon: <ClipboardList size={24} />, color: 'bg-amber-50 text-amber-600' },
+    const statCards = [
+      { label: '總會員數', value: stats.members, icon: <Users size={24} />, color: 'bg-blue-50 text-blue-600' },
+      { label: '診所數', value: stats.clinics, icon: <Building2 size={24} />, color: 'bg-blue-100 text-blue-800' },
+      { label: '牙技所數', value: stats.labs, icon: <Microscope size={24} />, color: 'bg-indigo-50 text-indigo-600' },
+      { label: '本月新增案件', value: stats.cases, icon: <ClipboardList size={24} />, color: 'bg-amber-50 text-amber-600' },
     ];
 
     return (
@@ -2087,7 +1909,7 @@ function Overview({ role, setView, currentCase, setCaseFilter, members, clinics,
           <p className="text-slate-500 mt-1 text-sm md:text-base">歡迎回來，系統管理員</p>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
-          {stats.map((stat, i) => (
+          {statCards.map((stat, i) => (
             <motion.div 
               key={i}
               initial={{ opacity: 0, y: 20 }}
@@ -2108,7 +1930,7 @@ function Overview({ role, setView, currentCase, setCaseFilter, members, clinics,
           <div className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[2rem] border border-slate-200 shadow-sm">
             <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-4 md:mb-6">最近新增案件</h3>
             <div className="space-y-3 md:space-y-4">
-              {allCases?.slice(0, 5).map((c: any) => (
+              {recentCases.map((c: any) => (
                 <div key={c.id} className="flex items-center justify-between p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100">
                   <div className="min-w-0">
                     <p className="font-bold text-slate-900 text-xs md:text-sm truncate">{c.id}</p>
@@ -2124,7 +1946,7 @@ function Overview({ role, setView, currentCase, setCaseFilter, members, clinics,
           <div className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[2rem] border border-slate-200 shadow-sm">
             <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-4 md:mb-6">待審核帳號</h3>
             <div className="space-y-3 md:space-y-4">
-              {[...clinics, ...labs].filter(p => p.status === PartnerStatus.PENDING).map((p: any) => (
+              {pendingPartners.map((p: any) => (
                 <div key={p.id} className="flex items-center justify-between p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100">
                   <div className="flex items-center gap-2 md:gap-3 min-w-0">
                     <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-lg md:rounded-xl flex items-center justify-center border border-slate-200 text-slate-400 shrink-0">
@@ -2140,7 +1962,7 @@ function Overview({ role, setView, currentCase, setCaseFilter, members, clinics,
                   </button>
                 </div>
               ))}
-              {[...clinics, ...labs].filter(p => p.status === PartnerStatus.PENDING).length === 0 && (
+              {pendingPartners.length === 0 && (
                 <p className="text-center text-slate-400 py-6 md:py-8 text-xs md:text-sm">目前沒有待審核的帳號</p>
               )}
             </div>
@@ -2224,7 +2046,7 @@ function Overview({ role, setView, currentCase, setCaseFilter, members, clinics,
   }
 
   if (role === 'LAB') {
-    const cases = [currentCase]; // In real app this would be all cases
+    const cases = currentCase ? [currentCase] : [];
     const pendingCount = cases.filter(c => c.status === CaseStatus.ASSIGNED).length;
     const inProgressCount = cases.filter(c => c.status === CaseStatus.ACCEPTED || c.status === CaseStatus.IN_PROGRESS).length;
     const completedCount = cases.filter(c => c.status === CaseStatus.COMPLETED).length;
@@ -2315,25 +2137,15 @@ function Overview({ role, setView, currentCase, setCaseFilter, members, clinics,
 
 function Dashboard({ role, setView, currentCase, qaCompleted, setSelectedClinic, hasActiveCase, setSelectedCase, caseFilter, setCaseFilter }: any) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [allCases, setAllCases] = useState<Case[]>([]);
+
+  useEffect(() => {
+    fetch('/api/cases').then(r => r.ok ? r.json() : { data: [] }).then(res => setAllCases(res.data || res)).catch(() => {});
+  }, []);
 
   if (role === 'MEMBER') {
     return <MemberCaseManagement setView={setView} currentCase={currentCase} qaCompleted={qaCompleted} setSelectedClinic={setSelectedClinic} hasActiveCase={hasActiveCase} setSelectedCase={setSelectedCase} />;
   }
-
-  // Mock a list of cases for LAB/CLINIC to show filtering
-  const allCases = hasActiveCase ? [
-    currentCase,
-    {
-      ...currentCase,
-      id: 'CASE-2026-005',
-      status: CaseStatus.ASSIGNED,
-      patientName: '王*小',
-      clinicName: '博愛牙醫',
-      updatedAt: '2026-03-03 09:00',
-      type: 'IMPLANT'
-    },
-    ...MOCK_HISTORICAL_CASES
-  ] : MOCK_HISTORICAL_CASES;
 
   const filteredCases = allCases.filter(c => {
     // Search filter
@@ -2451,6 +2263,12 @@ function Dashboard({ role, setView, currentCase, qaCompleted, setSelectedClinic,
 }
 
 function CaseCreation({ setView, setHasActiveCase }: any) {
+  const [labsList, setLabsList] = useState<Lab[]>([]);
+
+  useEffect(() => {
+    fetch('/api/labs').then(r => r.ok ? r.json() : { data: [] }).then(res => setLabsList(res.data || res)).catch(() => {});
+  }, []);
+
   return (
     <div className="p-4 sm:p-8 max-w-2xl mx-auto">
       <button onClick={() => setView('CASE_MANAGEMENT')} className="text-slate-500 hover:text-blue-800 flex items-center gap-2 mb-6 font-medium transition-colors"><ArrowRight size={18} className="rotate-180" /> 返回列表</button>
@@ -2471,7 +2289,7 @@ function CaseCreation({ setView, setHasActiveCase }: any) {
             <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">合作牙技所</label>
             <select className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none appearance-none bg-white focus:ring-2 focus:ring-blue-800 text-sm sm:text-base">
               <option value="">請選擇合作牙技所</option>
-              {MOCK_LABS.map(lab => <option key={lab.id} value={lab.id}>{lab.name}</option>)}
+              {labsList.map(lab => <option key={lab.id} value={lab.id}>{lab.name}</option>)}
             </select>
           </div>
           <button onClick={() => { setHasActiveCase(true); setView('CASE_MANAGEMENT'); }} className="w-full bg-navy-700 text-white py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg shadow-lg shadow-blue-900/20 hover:bg-blue-950 transition-all mt-2">確認建立並指派</button>
