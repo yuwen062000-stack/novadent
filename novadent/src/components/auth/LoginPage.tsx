@@ -148,10 +148,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             測試帳號（開發用）
           </summary>
           <div className="mt-2 space-y-1 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-            <p>會員：member@demo.com / Member123</p>
-            <p>診所：clinic@demo.com / Clinic123</p>
-            <p>牙技所：lab@demo.com / Lab12345</p>
-            <p>管理員：admin@demo.com / Admin123</p>
+            <p>會員：member1@test.com / Member@2026</p>
+            <p>診所：taipei-clinic@novadent.com / Clinic@2026</p>
+            <p>牙技所：precision-lab@novadent.com / Lab@2026</p>
+            <p>管理員：admin@novadent.com / Admin@2026</p>
           </div>
         </details>
       </div>
