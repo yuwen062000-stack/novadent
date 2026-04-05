@@ -7,7 +7,7 @@ id = "3B4_FFSkEVBkAeYMFRJ2e"
 [[services]]
 localPort = 3001
 name = "API Server"
-paths = ["/api-backend/"]
+paths = ["/api-backend/", "/"]
 
 [services.development]
 run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
@@ -24,5 +24,4 @@ NODE_ENV = "production"
 args = ["node", "novadent/backend/dist/src/main.js"]
 
 [services.production.run.env]
-PORT = "3001"
 NODE_ENV = "production"
