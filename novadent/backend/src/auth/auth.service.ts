@@ -12,7 +12,7 @@ import { DB_TOKEN } from '../database/database.module';
 import {
   users, passwordResetTokens, refreshTokens, auditLogs
 } from '../database/schema';
-import { LoginDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from './dto/auth.dto';
+import { LoginDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto, RegisterDto } from './dto/auth.dto';
 import { MailService } from '../mail/mail.service';
 
 const SALT_ROUNDS = 12;
@@ -214,6 +214,41 @@ export class AuthService {
       targetId,
       detail: detail ?? null,
     } as any).catch(() => {}); // audit log 失敗不影響主流程
+  }
+
+  // ── 會員自助註冊（公開）────────────────────────────────
+  async register(dto: RegisterDto, ip?: string) {
+    const email = dto.email.toLowerCase().trim();
+
+    const [existing] = await this.db.select().from(users)
+      .where(eq(users.email, email)).limit(1);
+    if (existing) {
+      throw new BadRequestException('此 Email 已被註冊');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+    const id = uuidv4();
+
+    await this.db.insert(users).values({
+      id,
+      email,
+      passwordHash,
+      name: dto.name,
+      phone: dto.phone || null,
+      role: 'MEMBER',
+      status: 'ACTIVE',
+    } as any);
+
+    const { accessToken, refreshToken } = await this.generateTokens(id, email, 'MEMBER', dto.name);
+    await this.writeAuditLog(id, 'REGISTER', 'user', id, { ip });
+
+    await this.mailService.sendWelcomeEmail(email, dto.name).catch(() => {});
+
+    return {
+      accessToken,
+      refreshToken,
+      user: { id, email, name: dto.name, role: 'MEMBER', forceChangePassword: false },
+    };
   }
 
   // ── 初始化 SuperAdmin（系統第一次啟動用）─────────────────

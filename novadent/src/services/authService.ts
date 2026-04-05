@@ -72,6 +72,39 @@ export async function login(email: string, password: string): Promise<LoginResul
 }
 
 /**
+ * 會員自助註冊
+ */
+export async function register(name: string, email: string, password: string, phone: string): Promise<LoginResult> {
+  try {
+    const res = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password, phone }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.message || '註冊失敗' };
+    }
+
+    const data = await res.json();
+    setToken(data.accessToken);
+
+    const user: AuthUser = {
+      id:                  data.user.id,
+      email:               data.user.email,
+      name:                data.user.name,
+      role:                data.user.role,
+      forceChangePassword: data.user.forceChangePassword,
+    };
+
+    sessionStorage.setItem('novadent_user', JSON.stringify(user));
+    return { success: true, user };
+  } catch {
+    return { success: false, error: '無法連線至伺服器，請稍後再試' };
+  }
+}
+
+/**
  * 登出 → 清除 Refresh Cookie
  */
 export async function logout(): Promise<void> {

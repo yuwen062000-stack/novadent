@@ -35,3 +35,22 @@ export class ChangePasswordDto {
   })
   newPassword: string;
 }
+
+export class RegisterDto {
+  @IsString({ message: '請輸入姓名' })
+  @MinLength(1, { message: '請輸入姓名' })
+  name: string;
+
+  @IsEmail({}, { message: 'Email 格式不正確' })
+  email: string;
+
+  @IsString()
+  @MinLength(8, { message: '密碼至少 8 個字元' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
+    message: '密碼需含大小寫英文字母與數字',
+  })
+  password: string;
+
+  @IsString()
+  phone: string;
+}

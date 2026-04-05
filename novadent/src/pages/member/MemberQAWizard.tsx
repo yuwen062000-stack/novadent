@@ -2,17 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle2, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
+interface QAOptionRaw {
+  label: string;
+  value: string;
+  score?: number;
+}
+
 interface QAQuestion {
   id: number;
   questionText: string;
-  questionType: 'SINGLE' | 'MULTIPLE' | 'TEXT';
-  options: string[] | null;
+  questionType: string;
+  options: string[] | QAOptionRaw[] | null;
   orderIndex: number;
   category: string;
 }
 
 interface Props {
   setView: (v: string) => void;
+}
+
+function normalizeType(t: string): string {
+  const map: Record<string, string> = {
+    single_choice: 'SINGLE', SINGLE: 'SINGLE',
+    multiple_choice: 'MULTIPLE', MULTIPLE: 'MULTIPLE',
+    text_input: 'TEXT', TEXT: 'TEXT',
+  };
+  return map[t] || t;
+}
+
+function normalizeOptions(opts: any): string[] | null {
+  if (!opts || !Array.isArray(opts) || opts.length === 0) return null;
+  if (typeof opts[0] === 'string') return opts;
+  if (typeof opts[0] === 'object' && opts[0].label) return opts.map((o: any) => o.label);
+  return opts;
 }
 
 export function MemberQAWizard({ setView }: Props) {
@@ -30,7 +52,6 @@ export function MemberQAWizard({ setView }: Props) {
       .then(r => r.json())
       .then((data: QAQuestion[]) => {
         if (data.length === 0) {
-          // Fallback hardcoded questions if none configured
           setQuestions([
             { id: 1, questionText: '您目前需要哪種假牙？', questionType: 'SINGLE', options: ['固定式假牙（牙冠/牙橋）', '活動式假牙（局部/全口）', '植牙牙冠'], orderIndex: 1, category: '需求' },
             { id: 2, questionText: '您的狀況描述', questionType: 'SINGLE', options: ['缺牙需要補', '舊假牙需要更換', '牙齒損壞需要修復', '預防性保護'], orderIndex: 2, category: '需求' },
@@ -39,7 +60,12 @@ export function MemberQAWizard({ setView }: Props) {
             { id: 5, questionText: '您希望診所有哪些特點？（可複選）', questionType: 'MULTIPLE', options: ['提供分期付款', '有充足停車位', '周末有診', '提供數位掃描', '有長期合作牙技所'], orderIndex: 5, category: '偏好' },
           ]);
         } else {
-          setQuestions(data);
+          const normalized = data.map(q => ({
+            ...q,
+            questionType: normalizeType(q.questionType),
+            options: normalizeOptions(q.options),
+          }));
+          setQuestions(normalized);
         }
         setLoading(false);
       })
