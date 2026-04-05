@@ -3,6 +3,8 @@ import 'dotenv/config';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import { join } from 'path';
+import { existsSync } from 'fs';
 import { AppModule } from './app.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
@@ -36,6 +38,22 @@ async function bootstrap() {
     origin: allowedOrigins,
     credentials: true,
   });
+
+  const indexPath = join(__dirname, '..', '..', '..', 'dist', 'index.html');
+  if (existsSync(indexPath)) {
+    const expressApp = app.getHttpAdapter().getInstance();
+    expressApp.use((req: any, res: any, next: any) => {
+      if (
+        req.method === 'GET' &&
+        !req.path.startsWith('/api') &&
+        !req.path.includes('.')
+      ) {
+        return res.sendFile(indexPath);
+      }
+      next();
+    });
+    console.log('SPA fallback enabled');
+  }
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');

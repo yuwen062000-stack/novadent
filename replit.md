@@ -72,8 +72,8 @@ cd novadent/backend && NODE_ENV=production node dist/src/main.js
 | superadmin@novadent.com | SuperAdmin123! | SUPER_ADMIN (force change pw) |
 | admin@novadent.com | Admin@2026 | ADMIN |
 | taipei-clinic@novadent.com | Clinic@2026 | CLINIC |
-| seiko-lab@novadent.com | Lab@2026 | LAB |
-| member@novadent.com | Member@2026 | MEMBER |
+| precision-lab@novadent.com | Lab@2026 | LAB |
+| member1@test.com | Member@2026 | MEMBER |
 
 ## V1.3 Features (Implemented)
 - **SystemSettings module**: CRUD at GET/PUT `/api/admin/system-settings` (SUPER_ADMIN only)
@@ -96,6 +96,8 @@ cd novadent/backend && NODE_ENV=production node dist/src/main.js
 - **Dev workflow**: `artifacts/novadent-app: web` runs NestJS backend on port 24505
 - **Production build**: Builds frontend (`novadent/`) + backend (`novadent/backend/`), then runs NestJS
 - NestJS `ServeStaticModule` serves the built frontend from `novadent/dist/`
+- SPA fallback: Express middleware in `main.ts` serves `index.html` for all non-API, non-static GET requests
+- Client-side routing: `VIEW_PATH_MAP`/`PATH_VIEW_MAP` in `App.tsx` maps all views to URL paths bidirectionally
 
 ## Environment Variables
 - `DATABASE_URL` — PostgreSQL connection string

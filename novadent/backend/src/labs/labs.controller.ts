@@ -64,7 +64,31 @@ export class LabsUserController {
 export class LabsAdminController {
   constructor(private readonly labsService: LabsService) {}
 
-  // PATCH /api/admin/labs/:id — Admin 更新牙技所資料（含 internalNotes）
+  @Get()
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  findAll(
+    @Query('status')   status?: string,
+    @Query('city')     city?: string,
+    @Query('search')   search?: string,
+    @Query('page')     page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.labsService.findAll({
+      status,
+      city,
+      search,
+      page:     page     ? Number(page)     : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
+  }
+
+  @Get(':id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  findById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.labsService.findById(id, true);
+  }
+
+
   @Patch(':id')
   @Roles('ADMIN', 'SUPER_ADMIN')
   update(

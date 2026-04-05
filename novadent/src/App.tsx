@@ -339,38 +339,69 @@ function AppContent() {
     }
   ]);
 
-  // Sync view with URL
+  const VIEW_PATH_MAP: Record<string, string> = {
+    HOME: '/',
+    SERVICE: '/about',
+    KNOWLEDGE: '/education',
+    VIDEOS: '/videos',
+    LOGIN: '/login',
+    REGISTER: '/register',
+    TERMS: '/terms',
+    PRIVACY: '/privacy',
+    FORGOT_PASSWORD: '/forgot-password',
+    RESET_PASSWORD: '/reset-password',
+    FORCE_CHANGE_PASSWORD: '/force-change-password',
+    OVERVIEW: '/overview',
+    CASE_MANAGEMENT: '/cases',
+    CREATE: '/cases/new',
+    DETAIL: '/cases/detail',
+    SETTINGS: '/settings',
+    ACCOUNT_MGMT: '/account',
+    NOTIFICATIONS: '/notifications',
+    MEMBER_QA: '/member/qa',
+    MEMBER_RECOMMENDATIONS: '/member/recommendations',
+    MEMBER_CASES: '/member/cases',
+    CLINIC_CASES: '/clinic/cases',
+    CLINIC_CREATE_CASE: '/clinic/cases/new',
+    CLINIC_CASE_DETAIL: '/clinic/cases/detail',
+    CLINIC_DETAIL: '/clinic/detail',
+    LAB_CASES: '/lab/cases',
+    LAB_CASE_DETAIL: '/lab/cases/detail',
+    LAB_SETTINGS: '/lab/settings',
+    INSURER_CUSTOMER_MGMT: '/insurer/customers',
+    ADMIN_DASHBOARD: '/admin/dashboard',
+    ADMIN_USERS: '/admin/users',
+    ADMIN_CLINICS: '/admin/clinics',
+    ADMIN_LABS: '/admin/labs',
+    ADMIN_PARTNER_LINKS: '/admin/partners',
+    ADMIN_ARTICLES: '/admin/articles',
+    ADMIN_NOTIFICATION_CMS: '/admin/notifications',
+    SUPER_SYSTEM_SETTINGS: '/super/settings',
+    SUPER_MENU: '/super/menu',
+    SUPER_AUDIT_LOGS: '/super/audit',
+    SUPER_QA_QUESTIONS: '/super/qa',
+    SUPER_MFG_TEMPLATES: '/super/mfg',
+    QA: '/qa',
+    RECOMMENDATIONS: '/recommendations',
+  };
+
+  const PATH_VIEW_MAP: Record<string, string> = {};
+  for (const [view, path] of Object.entries(VIEW_PATH_MAP)) {
+    PATH_VIEW_MAP[path] = view;
+  }
+
   useEffect(() => {
     const path = location.pathname;
-    if (path === '/') setView('HOME');
-    else if (path === '/about') setView('SERVICE');
-    else if (path === '/education') setView('KNOWLEDGE');
-    else if (path === '/videos') setView('VIDEOS');
-    else if (path === '/login') setView('LOGIN');
-    else if (path === '/register') setView('REGISTER');
-    else if (path === '/terms') setView('TERMS');
-    else if (path === '/privacy') setView('PRIVACY');
-    // M-01 新增路由
-    else if (path === '/forgot-password') setView('FORGOT_PASSWORD');
-    else if (path === '/reset-password') setView('RESET_PASSWORD');
-    else if (path === '/force-change-password') setView('FORCE_CHANGE_PASSWORD');
+    const matchedView = PATH_VIEW_MAP[path];
+    if (matchedView) {
+      setView(matchedView);
+    }
   }, [location]);
 
-  // Handle view changes to update URL
   const handleSetView = (newView: string) => {
     setView(newView);
-    if (newView === 'HOME') navigate('/');
-    else if (newView === 'SERVICE') navigate('/about');
-    else if (newView === 'KNOWLEDGE') navigate('/education');
-    else if (newView === 'VIDEOS') navigate('/videos');
-    else if (newView === 'LOGIN') navigate('/login');
-    else if (newView === 'REGISTER') navigate('/register');
-    else if (newView === 'TERMS') navigate('/terms');
-    else if (newView === 'PRIVACY') navigate('/privacy');
-    // M-01 新增路由
-    else if (newView === 'FORGOT_PASSWORD') navigate('/forgot-password');
-    else if (newView === 'RESET_PASSWORD') navigate('/reset-password');
-    else if (newView === 'FORCE_CHANGE_PASSWORD') navigate('/force-change-password');
+    const path = VIEW_PATH_MAP[newView];
+    if (path) navigate(path);
   };
 
   // --- Public Website Components ---
@@ -1233,7 +1264,16 @@ function AppContent() {
         {(['GUEST', 'MEMBER', 'CLINIC', 'LAB', 'ADMIN', 'SUPER_ADMIN', 'INSURER'] as UserRole[]).map(r => (
           <button 
             key={r} 
-            onClick={() => { setRole(r); handleSetView(r === 'GUEST' ? 'HOME' : (r === 'MEMBER' ? 'CASE_MANAGEMENT' : 'OVERVIEW')); }} 
+            onClick={() => { 
+              setRole(r); 
+              if (r === 'GUEST') handleSetView('HOME');
+              else if (r === 'MEMBER') handleSetView('MEMBER_QA');
+              else if (r === 'CLINIC') handleSetView('CLINIC_CASES');
+              else if (r === 'LAB') handleSetView('LAB_CASES');
+              else if (r === 'ADMIN' || r === 'SUPER_ADMIN') handleSetView('ADMIN_DASHBOARD');
+              else if (r === 'INSURER') handleSetView('OVERVIEW');
+              else handleSetView('OVERVIEW');
+            }} 
             className={`px-2.5 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all shrink-0 ${role === r ? 'bg-navy-700 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
           >
             {r}
@@ -1423,8 +1463,8 @@ function AppContent() {
             {view === 'OVERVIEW' && <Overview role={role} setView={handleSetView} currentCase={currentCase} setCaseFilter={setCaseFilter} members={members} clinics={clinics} labs={labs} allCases={allCases} />}
             {view === 'CASE_MANAGEMENT' && <Dashboard role={role} setView={handleSetView} currentCase={currentCase} qaCompleted={qaCompleted} setSelectedClinic={setSelectedClinic} hasActiveCase={hasActiveCase} setSelectedCase={setSelectedCase} caseFilter={caseFilter} setCaseFilter={setCaseFilter} />}
             {view === 'CREATE' && <CaseCreation setView={handleSetView} setHasActiveCase={setHasActiveCase} />}
-            {view === 'DETAIL' && <CaseDetail role={role} setView={setView} currentCase={selectedCase || currentCase} setCurrentCase={selectedCase ? setSelectedCase : setCurrentCase} />}
-            {view === 'CLINIC_DETAIL' && <ClinicDetail setView={setView} selectedClinic={selectedClinic} />}
+            {view === 'DETAIL' && <CaseDetail role={role} setView={handleSetView} currentCase={selectedCase || currentCase} setCurrentCase={selectedCase ? setSelectedCase : setCurrentCase} />}
+            {view === 'CLINIC_DETAIL' && <ClinicDetail setView={handleSetView} selectedClinic={selectedClinic} />}
             {view === 'SETTINGS' && <MemberSettings />}
             {view === 'ACCOUNT_MGMT' && <AccountMgmtPage userRole={role} />}
             {view === 'LAB_SETTINGS' && <AccountMgmtPage userRole={role} />}
@@ -1444,16 +1484,16 @@ function AppContent() {
             {view === 'SUPER_QA_QUESTIONS' && <SuperQAQuestions />}
             {view === 'SUPER_MFG_TEMPLATES' && <SuperMfgTemplates />}
             {/* ── Member Pages ─────────────────────────────── */}
-            {view === 'MEMBER_QA' && <MemberQAWizard setView={setView} onConsultationCreated={setConsultationId} />}
-            {view === 'MEMBER_RECOMMENDATIONS' && <MemberRecommendations setView={setView} consultationId={consultationId} />}
-            {view === 'MEMBER_CASES' && <MemberCaseTracking setView={setView} />}
+            {view === 'MEMBER_QA' && <MemberQAWizard setView={handleSetView} onConsultationCreated={setConsultationId} />}
+            {view === 'MEMBER_RECOMMENDATIONS' && <MemberRecommendations setView={handleSetView} consultationId={consultationId} />}
+            {view === 'MEMBER_CASES' && <MemberCaseTracking setView={handleSetView} />}
             {/* ── Clinic Pages ─────────────────────────────── */}
-            {view === 'CLINIC_CASES' && <ClinicCaseList setView={setView} setSelectedCaseId={setSelectedCaseId} />}
-            {view === 'CLINIC_CREATE_CASE' && <ClinicCreateCase setView={setView} />}
-            {view === 'CLINIC_CASE_DETAIL' && <ClinicCaseDetail caseId={selectedCaseId} setView={setView} />}
+            {view === 'CLINIC_CASES' && <ClinicCaseList setView={handleSetView} setSelectedCaseId={setSelectedCaseId} />}
+            {view === 'CLINIC_CREATE_CASE' && <ClinicCreateCase setView={handleSetView} />}
+            {view === 'CLINIC_CASE_DETAIL' && <ClinicCaseDetail caseId={selectedCaseId} setView={handleSetView} />}
             {/* ── Lab Pages ────────────────────────────────── */}
-            {view === 'LAB_CASES' && <LabCaseList setView={setView} setSelectedCaseId={setSelectedCaseId} />}
-            {view === 'LAB_CASE_DETAIL' && <LabCaseDetail caseId={selectedCaseId} setView={setView} />}
+            {view === 'LAB_CASES' && <LabCaseList setView={handleSetView} setSelectedCaseId={setSelectedCaseId} />}
+            {view === 'LAB_CASE_DETAIL' && <LabCaseDetail caseId={selectedCaseId} setView={handleSetView} />}
             {/* ── Shared Pages ──────────────────────────────── */}
             {view === 'NOTIFICATIONS' && <NotificationsPage />}
           </motion.div>

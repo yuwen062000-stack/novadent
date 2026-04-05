@@ -55,7 +55,7 @@ export class NotificationsService {
     if (!row) throw new NotFoundException('通知不存在');
 
     await this.db.update(notifications)
-      .set({ read: true } as any)
+      .set({ [notifications.read.name]: true } as any)
       .where(eq(notifications.id, notificationId));
     return { success: true };
   }
@@ -63,7 +63,7 @@ export class NotificationsService {
   // 全部已讀
   async markAllRead(userId: string) {
     await this.db.update(notifications)
-      .set({ read: true } as any)
+      .set({ [notifications.read.name]: true } as any)
       .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
     return { success: true };
   }

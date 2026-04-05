@@ -1,5 +1,5 @@
 // Auth 相關 DTO（Data Transfer Object）
-import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
+import { IsEmail, IsString, IsOptional, MinLength, Matches } from 'class-validator';
 
 export class LoginDto {
   @IsEmail({}, { message: 'Email 格式不正確' })
@@ -51,6 +51,7 @@ export class RegisterDto {
   })
   password: string;
 
-  @IsString()
-  phone: string;
+  @IsOptional()
+  @IsString({ message: '電話格式不正確' })
+  phone?: string;
 }

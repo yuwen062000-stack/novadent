@@ -14,7 +14,11 @@ import { CreateUserDto, UpdateUserDto, CreateSubAccountDto } from './dto/user.dt
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // ── GET /api/users — Admin 取全部用戶列表（分頁）─────────
+  @Get('me')
+  getMe(@CurrentUser() user: any) {
+    return this.usersService.findById(user.id);
+  }
+
   @Get()
   @Roles('ADMIN', 'SUPER_ADMIN')
   findAll(
