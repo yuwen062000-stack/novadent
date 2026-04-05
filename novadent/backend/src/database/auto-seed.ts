@@ -26,11 +26,72 @@ async function ensureDefaultPasswords(pool: Pool) {
   console.log('[AutoSeed] Default passwords ensured for seed accounts');
 }
 
+async function deduplicateAndSeedMenu(pool: Pool) {
+  await pool.query(`
+    DELETE FROM mfg_step_templates
+    WHERE id NOT IN (
+      SELECT DISTINCT ON (name) id FROM mfg_step_templates ORDER BY name, is_active DESC, id
+    )
+  `);
+  console.log('[AutoSeed] Deduplicated mfg_step_templates');
+
+  await pool.query(`
+    DELETE FROM qa_questions
+    WHERE question_text LIKE '%CRUD%' OR question_text = 'updated'
+  `);
+  await pool.query(`
+    DELETE FROM qa_questions
+    WHERE id NOT IN (
+      SELECT DISTINCT ON (question_text) id FROM qa_questions ORDER BY question_text, is_active DESC, id
+    )
+  `);
+  await pool.query(`UPDATE qa_questions SET is_active = true`);
+  console.log('[AutoSeed] Deduplicated qa_questions');
+
+  const { rows: menuRows } = await pool.query('SELECT count(*)::int as cnt FROM menu_config');
+  if (menuRows[0].cnt === 0) {
+    const menuItems: [string, string, string[], number][] = [
+      ['首頁',       '/',              ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 0],
+      ['關於我們',    '/about',         ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 1],
+      ['衛教中心',    '/knowledge',     ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 2],
+      ['影音專區',    '/videos',        ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 3],
+      ['合作診所',    '/clinics',       ['GUEST','MEMBER'], 4],
+      ['合作牙技所',  '/labs',          ['GUEST','MEMBER'], 5],
+      ['假牙問診',    '/member/qa',     ['MEMBER'], 6],
+      ['推薦診所',    '/member/recs',   ['MEMBER'], 7],
+      ['案件追蹤',    '/member/cases',  ['MEMBER'], 8],
+      ['案件管理',    '/clinic/cases',  ['CLINIC'], 9],
+      ['案件管理',    '/lab/cases',     ['LAB'], 10],
+      ['總覽儀表板',  '/admin',         ['ADMIN','SUPER_ADMIN'], 11],
+      ['帳號管理',    '/admin/users',   ['ADMIN','SUPER_ADMIN'], 12],
+      ['診所管理',    '/admin/clinics', ['ADMIN','SUPER_ADMIN'], 13],
+      ['牙技所管理',  '/admin/labs',    ['ADMIN','SUPER_ADMIN'], 14],
+      ['文章管理',    '/admin/articles',['ADMIN','SUPER_ADMIN'], 15],
+      ['圖片管理',    '/admin/site-images', ['ADMIN','SUPER_ADMIN'], 16],
+      ['影音管理',    '/admin/videos',  ['ADMIN','SUPER_ADMIN'], 17],
+      ['通知廣播',    '/admin/notifications', ['ADMIN','SUPER_ADMIN'], 18],
+      ['系統設定',    '/super/settings',['SUPER_ADMIN'], 19],
+      ['選單管理',    '/super/menu',    ['SUPER_ADMIN'], 20],
+      ['QA問卷管理',  '/super/qa',      ['SUPER_ADMIN'], 21],
+      ['製程模板',    '/super/mfg',     ['SUPER_ADMIN'], 22],
+      ['稽核日誌',    '/super/audit',   ['SUPER_ADMIN'], 23],
+    ];
+    for (const [label, path, roles, order] of menuItems) {
+      await pool.query(
+        `INSERT INTO menu_config (label, path, roles, "order", visible) VALUES ($1, $2, $3, $4, true) ON CONFLICT DO NOTHING`,
+        [label, path, roles, order]
+      );
+    }
+    console.log('[AutoSeed] Menu config seeded with default items');
+  }
+}
+
 export async function autoSeed() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
     await ensureDefaultPasswords(pool);
+    await deduplicateAndSeedMenu(pool);
 
     const { rows } = await pool.query('SELECT count(*)::int as cnt FROM users WHERE role != $1', ['MEMBER']);
     if (rows[0].cnt >= 5) {
