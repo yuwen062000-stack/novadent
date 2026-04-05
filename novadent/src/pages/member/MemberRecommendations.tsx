@@ -7,37 +7,50 @@ interface RecommendedClinic {
   name: string;
   leadDoctorName: string;
   city: string;
+  district: string;
   detailedAddress: string;
   phone: string;
   rating: number;
   description: string;
   services: string[];
-  coverPhoto: string;
+  coverPhotoUrl: string;
+  districtMatch?: number;
 }
 
 interface Props {
   setView: (v: string) => void;
+  consultationId?: string | null;
 }
 
-export function MemberRecommendations({ setView }: Props) {
+export function MemberRecommendations({ setView, consultationId }: Props) {
   const [clinics, setClinics] = useState<RecommendedClinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cityLabel, setCityLabel] = useState('');
 
   useEffect(() => {
-    apiFetch('/clinics?status=ACTIVE&limit=10')
-      .then(r => r.json())
-      .then(data => {
-        // data may be array or {data: [...]}
-        const list = Array.isArray(data) ? data : data.data ?? [];
-        setClinics(list);
-        setLoading(false);
-      })
-      .catch(() => {
+    async function load() {
+      try {
+        if (consultationId) {
+          const res = await apiFetch(`/consultations/${consultationId}/recommendations`);
+          if (!res.ok) throw new Error('fetch failed');
+          const data = await res.json();
+          setClinics(data.recommendations || []);
+          setCityLabel(data.city || '');
+        } else {
+          const res = await apiFetch('/clinics?status=ACTIVE&limit=10');
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : data.data ?? [];
+          setClinics(list);
+        }
+      } catch {
         setError('無法載入推薦診所，請稍後再試');
+      } finally {
         setLoading(false);
-      });
-  }, []);
+      }
+    }
+    load();
+  }, [consultationId]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -55,7 +68,11 @@ export function MemberRecommendations({ setView }: Props) {
           <ArrowLeft size={16} /> 返回問卷
         </button>
         <h1 className="text-2xl font-bold text-slate-900">為您推薦的診所</h1>
-        <p className="text-slate-500 text-sm mt-1">根據您的需求，以下診所最適合您</p>
+        <p className="text-slate-500 text-sm mt-1">
+          {cityLabel
+            ? `根據您的需求，以下是${cityLabel}地區最適合的診所`
+            : '根據您的需求，以下診所最適合您'}
+        </p>
       </header>
 
       {error && (
@@ -64,18 +81,18 @@ export function MemberRecommendations({ setView }: Props) {
 
       {clinics.length === 0 && !error && (
         <div className="text-center py-12 text-slate-400">
-          <p>目前尚無推薦診所資料</p>
+          <p className="mb-2">目前該地區尚無推薦診所</p>
+          <p className="text-sm">您可以返回問卷選擇其他地區</p>
         </div>
       )}
 
       <div className="space-y-4">
         {clinics.map((clinic, idx) => (
           <div key={clinic.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            {/* Cover */}
-            {clinic.coverPhoto && (
+            {clinic.coverPhotoUrl && (
               <div className="h-40 bg-slate-100 overflow-hidden">
                 <img
-                  src={clinic.coverPhoto}
+                  src={clinic.coverPhotoUrl}
                   alt={clinic.name}
                   className="w-full h-full object-cover"
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -89,21 +106,28 @@ export function MemberRecommendations({ setView }: Props) {
                     <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
                       #{idx + 1} 推薦
                     </span>
+                    {clinic.districtMatch === 1 && (
+                      <span className="text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                        同區域
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-lg font-bold text-slate-900">{clinic.name}</h3>
-                  <p className="text-sm text-slate-500">{clinic.leadDoctorName} 醫師</p>
+                  {clinic.leadDoctorName && (
+                    <p className="text-sm text-slate-500">{clinic.leadDoctorName} 醫師</p>
+                  )}
                 </div>
-                {clinic.rating > 0 && (
+                {clinic.rating && clinic.rating > 0 && (
                   <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-xl">
                     <Star size={14} className="fill-amber-400 stroke-amber-400" />
-                    <span className="text-sm font-bold text-amber-700">{clinic.rating.toFixed(1)}</span>
+                    <span className="text-sm font-bold text-amber-700">{Number(clinic.rating).toFixed(1)}</span>
                   </div>
                 )}
               </div>
 
               <div className="flex items-center gap-2 text-slate-500 text-sm mb-3">
                 <MapPin size={14} className="shrink-0" />
-                <span>{clinic.city} {clinic.detailedAddress}</span>
+                <span>{clinic.city} {clinic.district} {clinic.detailedAddress || ''}</span>
               </div>
 
               {clinic.phone && (
@@ -126,12 +150,14 @@ export function MemberRecommendations({ setView }: Props) {
               )}
 
               <div className="flex gap-3">
-                <a
-                  href={`tel:${clinic.phone}`}
-                  className="flex-1 py-2.5 border border-slate-200 rounded-xl text-center text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                  致電診所
-                </a>
+                {clinic.phone && (
+                  <a
+                    href={`tel:${clinic.phone}`}
+                    className="flex-1 py-2.5 border border-slate-200 rounded-xl text-center text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    致電診所
+                  </a>
+                )}
                 <button
                   onClick={() => setView('MEMBER_CASES')}
                   className="flex-1 py-2.5 bg-blue-950 text-white rounded-xl text-center text-sm font-medium hover:bg-blue-900 transition-colors flex items-center justify-center gap-1"

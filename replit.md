@@ -80,10 +80,15 @@ cd novadent/backend && NODE_ENV=production node dist/src/main.js
 - **MailService**: Nodemailer-based, wired to forgot-password flow
 - **Broadcast notifications**: POST `/api/admin/notifications/broadcast` with target role selection
 - **Admin UI improvements**: User edit modal, clinic/lab disable/enable toggle, article delete + tags
-- **Clinic assign-lab UI**: Built into ClinicCaseDetail page
+- **Clinic assign-lab UI**: Built into ClinicCaseDetail page with SearchableSelect
 - **MemberSettings**: Password change form
 - **INSURER framework**: Basic sidebar + customer management placeholder
 - **SuperSystemSettings**: Admin page for managing platform settings
+- **User registration**: POST `/api/auth/register` — creates MEMBER account, auto-login
+- **QA questionnaire fix**: Options store both label+value; submit maps Q1→q1Answer, Q4→q2City
+- **City-based recommendations**: MemberRecommendations uses `/consultations/:id/recommendations` API (filters by city)
+- **Admin clinic city dropdown**: City field uses dropdown matching questionnaire cities (台北市~高雄市 + all counties)
+- **SearchableSelect component**: Reusable searchable dropdown (`components/ui/SearchableSelect.tsx`), used in AdminPartnerLinks and ClinicCaseDetail
 
 ## Environment Variables
 - `DATABASE_URL` — PostgreSQL connection string

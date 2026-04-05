@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, RefreshCw, Check, XCircle, CheckCircle2 } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
+const CITY_OPTIONS = [
+  '台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市',
+  '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣',
+  '雲林縣', '嘉義市', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣',
+  '台東縣', '澎湖縣', '金門縣', '連江縣',
+];
+
 interface Clinic {
   id: string;
   name: string;
@@ -148,21 +155,47 @@ export function AdminClinics() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold text-slate-900 mb-4">{editTarget ? '編輯診所' : '新增診所'}</h2>
             <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: '診所名稱 *', key: 'name', col: 2 },
-                { label: '負責醫師 *', key: 'leadDoctorName', col: 1 },
-                { label: '城市 *', key: 'city', col: 1 },
-                { label: '電話 *', key: 'phone', col: 1 },
-                { label: 'Email *', key: 'email', col: 1 },
-                { label: '詳細地址', key: 'detailedAddress', col: 2 },
-                { label: '封面照片 URL', key: 'coverPhotoUrl', col: 2 },
-              ].map(f => (
-                <div key={f.key} className={f.col === 2 ? 'col-span-2' : ''}>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{f.label}</label>
-                  <input value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
-                </div>
-              ))}
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-500 mb-1">診所名稱 *</label>
+                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">負責醫師 *</label>
+                <input value={form.leadDoctorName} onChange={e => setForm(p => ({ ...p, leadDoctorName: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">城市 *</label>
+                <select
+                  value={form.city}
+                  onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 bg-white"
+                >
+                  <option value="">請選擇城市</option>
+                  {CITY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">電話 *</label>
+                <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Email *</label>
+                <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-500 mb-1">詳細地址</label>
+                <input value={form.detailedAddress} onChange={e => setForm(p => ({ ...p, detailedAddress: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-500 mb-1">封面照片 URL</label>
+                <input value={form.coverPhotoUrl} onChange={e => setForm(p => ({ ...p, coverPhotoUrl: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">取消</button>

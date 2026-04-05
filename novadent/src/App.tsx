@@ -307,6 +307,7 @@ function AppContent() {
   };
   const [view, setView] = useState<string>('HOME');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('');
+  const [consultationId, setConsultationId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
@@ -1443,8 +1444,8 @@ function AppContent() {
             {view === 'SUPER_QA_QUESTIONS' && <SuperQAQuestions />}
             {view === 'SUPER_MFG_TEMPLATES' && <SuperMfgTemplates />}
             {/* ── Member Pages ─────────────────────────────── */}
-            {view === 'MEMBER_QA' && <MemberQAWizard setView={setView} />}
-            {view === 'MEMBER_RECOMMENDATIONS' && <MemberRecommendations setView={setView} />}
+            {view === 'MEMBER_QA' && <MemberQAWizard setView={setView} onConsultationCreated={setConsultationId} />}
+            {view === 'MEMBER_RECOMMENDATIONS' && <MemberRecommendations setView={setView} consultationId={consultationId} />}
             {view === 'MEMBER_CASES' && <MemberCaseTracking setView={setView} />}
             {/* ── Clinic Pages ─────────────────────────────── */}
             {view === 'CLINIC_CASES' && <ClinicCaseList setView={setView} setSelectedCaseId={setSelectedCaseId} />}

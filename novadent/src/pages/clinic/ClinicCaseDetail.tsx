@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Loader2, CheckCircle2, ChevronDown } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { CaseStatus, STATUS_LABELS, STATUS_COLORS, CASE_TYPE_LABELS } from '../../types';
 
 interface MfgStep {
@@ -203,18 +204,13 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-5">
           <h3 className="font-semibold text-slate-900 mb-4">指派牙技所</h3>
           <div className="flex gap-3">
-            <select
+            <SearchableSelect
+              options={labs.map(lab => ({ value: lab.id, label: `${lab.name} — ${lab.city}` }))}
               value={selectedLabId}
-              onChange={e => setSelectedLabId(e.target.value)}
-              className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 focus:border-blue-800 bg-white"
-            >
-              <option value="">選擇牙技所</option>
-              {labs.map(lab => (
-                <option key={lab.id} value={lab.id}>
-                  {lab.name} — {lab.city}
-                </option>
-              ))}
-            </select>
+              onChange={v => setSelectedLabId(v)}
+              placeholder="搜尋並選擇牙技所"
+              className="flex-1"
+            />
             <button
               onClick={handleAssignLab}
               disabled={!selectedLabId || assigningLab}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 
 interface PartnerLink { id: string; clinicId: string; labId: string; clinicName?: string; labName?: string; createdAt: string; }
 interface ClinicOption { id: string; name: string; }
@@ -48,6 +49,9 @@ export function AdminPartnerLinks() {
   const getClinicName = (id: string) => clinics.find(c => c.id === id)?.name || id;
   const getLabName = (id: string) => labs.find(l => l.id === id)?.name || id;
 
+  const clinicSelectOptions = clinics.map(c => ({ value: c.id, label: c.name }));
+  const labSelectOptions = labs.map(l => ({ value: l.id, label: l.name }));
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
@@ -89,19 +93,21 @@ export function AdminPartnerLinks() {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">診所</label>
-                <select value={form.clinicId} onChange={e => setForm(p => ({ ...p, clinicId: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800">
-                  <option value="">選擇診所</option>
-                  {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <SearchableSelect
+                  options={clinicSelectOptions}
+                  value={form.clinicId}
+                  onChange={v => setForm(p => ({ ...p, clinicId: v }))}
+                  placeholder="搜尋並選擇診所"
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">牙技所</label>
-                <select value={form.labId} onChange={e => setForm(p => ({ ...p, labId: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800">
-                  <option value="">選擇牙技所</option>
-                  {labs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                </select>
+                <SearchableSelect
+                  options={labSelectOptions}
+                  value={form.labId}
+                  onChange={v => setForm(p => ({ ...p, labId: v }))}
+                  placeholder="搜尋並選擇牙技所"
+                />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
