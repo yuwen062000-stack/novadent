@@ -11,6 +11,7 @@ export class CreateArticleDto {
   @IsOptional() @IsString() coverUrl?: string;
   @IsOptional() @IsString() metaTitle?: string;
   @IsOptional() @IsString() metaDesc?: string;
+  @IsOptional() @IsBoolean() published?: boolean;
 }
 
 export class UpdateArticleDto {

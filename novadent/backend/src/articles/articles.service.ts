@@ -70,7 +70,7 @@ export class ArticlesService {
 
     const [row] = await this.db.insert(articles).values({
       ...dto,
-      published: false,
+      published: dto.published ?? false,
       createdBy: adminUserId,
     } as any).returning();
     return row;

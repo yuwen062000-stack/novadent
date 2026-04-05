@@ -259,14 +259,18 @@ export const systemSettings = pgTable('system_settings', {
 
 // ── site_images（網站圖片管理）────────────────────────────
 export const siteImages = pgTable('site_images', {
-  id:        uuid('id').primaryKey().defaultRandom(),
-  page:      varchar('page', { length: 50 }).notNull(),
-  position:  varchar('position', { length: 50 }).notNull(),
-  imageUrl:  text('image_url'),
-  altText:   varchar('alt_text', { length: 200 }),
-  sortOrder: integer('sort_order').notNull().default(0),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  updatedBy: uuid('updated_by').references(() => users.id),
+  id:          uuid('id').primaryKey().defaultRandom(),
+  page:        varchar('page', { length: 50 }).notNull(),
+  position:    varchar('position', { length: 50 }).notNull(),
+  imageUrl:    text('image_url'),
+  altText:     varchar('alt_text', { length: 200 }),
+  title:       varchar('title', { length: 200 }),
+  textContent: text('text_content'),
+  blockType:   varchar('block_type', { length: 20 }).notNull().default('image'),
+  visible:     boolean('visible').notNull().default(true),
+  sortOrder:   integer('sort_order').notNull().default(0),
+  updatedAt:   timestamp('updated_at').notNull().defaultNow(),
+  updatedBy:   uuid('updated_by').references(() => users.id),
 });
 
 // ── videos（影音管理）─────────────────────────────────────

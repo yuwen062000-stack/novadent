@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image, Upload, RefreshCw } from 'lucide-react';
+import { Image, Upload, RefreshCw, Plus, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, Type, FileText } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface SiteImage {
@@ -8,28 +8,19 @@ interface SiteImage {
   position: string;
   imageUrl: string | null;
   altText: string | null;
+  title: string | null;
+  textContent: string | null;
+  blockType: string;
+  visible: boolean;
   sortOrder: number;
 }
-
-const POSITION_LABELS: Record<string, string> = {
-  HERO: '主視覺 Banner',
-  CHALLENGE: '挑戰區塊',
-  ABOUT_1: '關於我們 1',
-  ABOUT_2: '關於我們 2',
-  ABOUT_3: '關於我們 3',
-  ABOUT_4: '關於我們 4',
-  ABOUT_5: '關於我們 5',
-  ABOUT_6: '關於我們 6',
-  ABOUT_7: '關於我們 7',
-  ABOUT_8: '關於我們 8',
-};
 
 export function AdminSiteImages() {
   const [images, setImages] = useState<SiteImage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'HOME' | 'ABOUT'>('HOME');
+  const [tab, setTab] = useState<'BANNER' | 'BOTTOM' | 'ABOUT'>('BANNER');
   const [uploading, setUploading] = useState<string | null>(null);
-  const [editAlt, setEditAlt] = useState<{ id: string; value: string } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -40,20 +31,23 @@ export function AdminSiteImages() {
   };
   useEffect(() => { load(); }, []);
 
-  const filtered = images.filter(i => i.page === tab);
+  const banners = images.filter(i => i.page === 'HOME' && i.position.startsWith('BANNER')).sort((a, b) => a.sortOrder - b.sortOrder);
+  const heroLegacy = images.find(i => i.page === 'HOME' && i.position === 'HERO');
+  const allBanners = [...(heroLegacy ? [heroLegacy] : []), ...banners];
+  const bottomImage = images.find(i => i.page === 'HOME' && i.position === 'CHALLENGE');
+  const aboutBlocks = images.filter(i => i.page === 'ABOUT').sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const handleUpload = async (img: SiteImage, file: File) => {
-    if (file.size > 2 * 1024 * 1024) return alert('檔案大小不可超過 2MB');
+  const handleUpload = async (imgId: string, file: File) => {
+    if (file.size > 5 * 1024 * 1024) return alert('檔案大小不可超過 5MB');
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return alert('僅支援 JPG / PNG / WebP 格式');
-
-    setUploading(img.id);
+    setUploading(imgId);
     const formData = new FormData();
     formData.append('file', file);
     try {
       const uploadRes = await apiFetch('/upload', { method: 'POST', body: formData });
       if (!uploadRes.ok) { alert('上傳失敗'); return; }
       const { url } = await uploadRes.json();
-      await apiFetch(`/admin/site-images/${img.id}`, {
+      await apiFetch(`/admin/site-images/${imgId}`, {
         method: 'PUT',
         body: JSON.stringify({ imageUrl: url }),
       });
@@ -62,85 +56,258 @@ export function AdminSiteImages() {
     finally { setUploading(null); }
   };
 
-  const handleSaveAlt = async () => {
-    if (!editAlt) return;
-    await apiFetch(`/admin/site-images/${editAlt.id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ altText: editAlt.value }),
+  const handleAddBanner = async () => {
+    setSaving(true);
+    await apiFetch('/admin/site-images', {
+      method: 'POST',
+      body: JSON.stringify({ page: 'HOME', position: `BANNER_${Date.now()}`, blockType: 'image' }),
     });
-    setEditAlt(null);
+    setSaving(false);
     load();
   };
 
+  const handleAddAboutBlock = async (blockType: 'image' | 'text') => {
+    setSaving(true);
+    await apiFetch('/admin/site-images', {
+      method: 'POST',
+      body: JSON.stringify({ page: 'ABOUT', position: `ABOUT_${Date.now()}`, blockType, title: '' }),
+    });
+    setSaving(false);
+    load();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('確定要刪除嗎？')) return;
+    await apiFetch(`/admin/site-images/${id}`, { method: 'DELETE' });
+    load();
+  };
+
+  const handleToggleVisible = async (img: SiteImage) => {
+    await apiFetch(`/admin/site-images/${img.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ visible: !img.visible }),
+    });
+    load();
+  };
+
+  const handleUpdateField = async (id: string, field: string, value: string) => {
+    await apiFetch(`/admin/site-images/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ [field]: value }),
+    });
+    load();
+  };
+
+  const handleMove = async (list: SiteImage[], index: number, direction: 'up' | 'down') => {
+    const swapIdx = direction === 'up' ? index - 1 : index + 1;
+    if (swapIdx < 0 || swapIdx >= list.length) return;
+    const items = list.map((item, i) => ({
+      id: item.id,
+      sortOrder: i === index ? list[swapIdx].sortOrder : i === swapIdx ? list[index].sortOrder : item.sortOrder,
+    }));
+    await apiFetch('/admin/site-images/reorder/batch', {
+      method: 'PUT',
+      body: JSON.stringify({ items }),
+    });
+    load();
+  };
+
+  const ensureBottom = async () => {
+    if (bottomImage) return;
+    await apiFetch('/admin/site-images', {
+      method: 'POST',
+      body: JSON.stringify({ page: 'HOME', position: 'CHALLENGE', blockType: 'image', altText: '首頁下方圖片' }),
+    });
+    load();
+  };
+  useEffect(() => { if (!loading && !bottomImage) ensureBottom(); }, [loading]);
+
+  const ImageCard = ({ img, showControls, list, index }: { img: SiteImage; showControls?: boolean; list?: SiteImage[]; index?: number }) => (
+    <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${!img.visible ? 'opacity-60' : ''}`}>
+      <div className="aspect-video bg-slate-100 flex items-center justify-center relative">
+        {img.imageUrl ? (
+          <img src={img.imageUrl} alt={img.altText || ''} className="w-full h-full object-cover" />
+        ) : (
+          <div className="text-slate-400 text-center">
+            <Image className="w-10 h-10 mx-auto mb-1" />
+            <p className="text-xs">尚未上傳</p>
+          </div>
+        )}
+        {uploading === img.id && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <RefreshCw className="w-6 h-6 text-white animate-spin" />
+          </div>
+        )}
+      </div>
+      <div className="p-3 space-y-2">
+        {img.altText !== undefined && (
+          <input
+            defaultValue={img.altText || ''}
+            placeholder="替代文字 (alt)"
+            className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500"
+            onBlur={e => { if (e.target.value !== (img.altText || '')) handleUpdateField(img.id, 'altText', e.target.value); }}
+          />
+        )}
+        <div className="flex gap-1.5 flex-wrap">
+          <label className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-100 text-xs font-medium">
+            <Upload className="w-3.5 h-3.5" />
+            {img.imageUrl ? '更換' : '上傳'}
+            <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
+              onChange={e => { if (e.target.files?.[0]) handleUpload(img.id, e.target.files[0]); e.target.value = ''; }} />
+          </label>
+          {showControls && (
+            <>
+              <button onClick={() => handleToggleVisible(img)}
+                className={`px-2 py-1.5 rounded-lg text-xs font-medium ${img.visible ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                {img.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+              {list && index !== undefined && (
+                <>
+                  <button onClick={() => handleMove(list, index, 'up')} disabled={index === 0}
+                    className="px-1.5 py-1.5 bg-slate-100 rounded-lg text-xs disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleMove(list, index, 'down')} disabled={index === list.length - 1}
+                    className="px-1.5 py-1.5 bg-slate-100 rounded-lg text-xs disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
+                </>
+              )}
+              <button onClick={() => handleDelete(img.id)}
+                className="px-2 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const TextBlockCard = ({ img, list, index }: { img: SiteImage; list: SiteImage[]; index: number }) => (
+    <div className={`bg-white rounded-xl border shadow-sm p-4 ${!img.visible ? 'opacity-60' : ''}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Type className="w-4 h-4 text-blue-600" />
+        <span className="text-xs font-bold text-slate-500">文字區塊</span>
+        <div className="flex-1" />
+        <button onClick={() => handleToggleVisible(img)}
+          className={`px-2 py-1 rounded text-xs ${img.visible ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+          {img.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+        </button>
+        <button onClick={() => handleMove(list, index, 'up')} disabled={index === 0}
+          className="px-1 py-1 bg-slate-100 rounded text-xs disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
+        <button onClick={() => handleMove(list, index, 'down')} disabled={index === list.length - 1}
+          className="px-1 py-1 bg-slate-100 rounded text-xs disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
+        <button onClick={() => handleDelete(img.id)}
+          className="px-1 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100"><Trash2 className="w-3 h-3" /></button>
+      </div>
+      <input
+        defaultValue={img.title || ''}
+        placeholder="標題"
+        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 mb-2 font-medium"
+        onBlur={e => { if (e.target.value !== (img.title || '')) handleUpdateField(img.id, 'title', e.target.value); }}
+      />
+      <textarea
+        defaultValue={img.textContent || ''}
+        placeholder="內容文字..."
+        rows={4}
+        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 resize-y"
+        onBlur={e => { if (e.target.value !== (img.textContent || '')) handleUpdateField(img.id, 'textContent', e.target.value); }}
+      />
+    </div>
+  );
+
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Image className="w-6 h-6 text-blue-600" /> 圖片管理
-        </h1>
-        <button onClick={load} className="flex items-center gap-1 px-3 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">圖片管理</h1>
+          <p className="text-slate-500 mt-1 text-sm">管理首頁 Banner、底部圖片與關於我們內容</p>
+        </div>
+        <button onClick={load} className="flex items-center gap-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm hover:bg-slate-50">
           <RefreshCw className="w-4 h-4" /> 重整
         </button>
       </div>
 
       <div className="flex gap-2 mb-6">
-        {(['HOME', 'ABOUT'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-            {t === 'HOME' ? '首頁' : '關於我們'}
+        {[
+          { key: 'BANNER' as const, label: 'Banner 輪播圖' },
+          { key: 'BOTTOM' as const, label: '首頁下方圖' },
+          { key: 'ABOUT' as const, label: '關於我們' },
+        ].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${tab === t.key ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            {t.label}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">載入中...</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(img => (
-            <div key={img.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
-              <div className="aspect-video bg-gray-100 flex items-center justify-center relative">
-                {img.imageUrl ? (
-                  <img src={img.imageUrl} alt={img.altText || ''} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-gray-400 text-center">
-                    <Image className="w-12 h-12 mx-auto mb-2" />
-                    <p className="text-sm">尚未上傳圖片</p>
-                  </div>
-                )}
-                {uploading === img.id && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <RefreshCw className="w-8 h-8 text-white animate-spin" />
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">{POSITION_LABELS[img.position] || img.position}</span>
-                  <span className="text-xs text-gray-400">{img.position}</span>
-                </div>
-                {editAlt?.id === img.id ? (
-                  <div className="flex gap-2 mb-3">
-                    <input value={editAlt.value} onChange={e => setEditAlt({ ...editAlt, value: e.target.value })}
-                      className="flex-1 px-2 py-1 text-sm border rounded" placeholder="替代文字" />
-                    <button onClick={handleSaveAlt} className="text-xs px-2 py-1 bg-blue-600 text-white rounded">儲存</button>
-                    <button onClick={() => setEditAlt(null)} className="text-xs px-2 py-1 bg-gray-200 rounded">取消</button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-500 mb-3 cursor-pointer hover:text-blue-600"
-                    onClick={() => setEditAlt({ id: img.id, value: img.altText || '' })}>
-                    Alt: {img.altText || '（點擊編輯）'}
-                  </p>
-                )}
-                <label className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors text-sm">
-                  <Upload className="w-4 h-4" />
-                  {img.imageUrl ? '更換圖片' : '上傳圖片'}
-                  <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
-                    onChange={e => { if (e.target.files?.[0]) handleUpload(img, e.target.files[0]); e.target.value = ''; }} />
-                </label>
-                <p className="text-xs text-gray-400 mt-2 text-center">建議 JPG/PNG，最大 2MB</p>
-              </div>
+        <div className="flex items-center justify-center h-40">
+          <div className="w-8 h-8 border-4 border-blue-800 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : tab === 'BANNER' ? (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-slate-500">首頁輪播 Banner，可新增多筆並排序</p>
+            <button onClick={handleAddBanner} disabled={saving}
+              className="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1.5 hover:bg-blue-900 disabled:opacity-50">
+              <Plus className="w-4 h-4" /> 新增 Banner
+            </button>
+          </div>
+          {allBanners.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">尚無 Banner，點擊「新增 Banner」開始</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allBanners.map((img, i) => (
+                <ImageCard key={img.id} img={img} showControls list={allBanners} index={i} />
+              ))}
             </div>
-          ))}
+          )}
+        </div>
+      ) : tab === 'BOTTOM' ? (
+        <div>
+          <p className="text-sm text-slate-500 mb-4">首頁下方區塊圖片（單張）</p>
+          {bottomImage && (
+            <div className="max-w-md">
+              <ImageCard img={bottomImage} />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-slate-500">管理「關於我們」頁面內容，可新增圖片或文字區塊，自由排序</p>
+            <div className="flex gap-2">
+              <button onClick={() => handleAddAboutBlock('image')} disabled={saving}
+                className="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1.5 hover:bg-blue-900 disabled:opacity-50">
+                <Image className="w-4 h-4" /> 新增圖片
+              </button>
+              <button onClick={() => handleAddAboutBlock('text')} disabled={saving}
+                className="bg-slate-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1.5 hover:bg-slate-800 disabled:opacity-50">
+                <FileText className="w-4 h-4" /> 新增文字
+              </button>
+            </div>
+          </div>
+          {aboutBlocks.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">尚無內容，點擊「新增圖片」或「新增文字」開始</div>
+          ) : (
+            <div className="space-y-4">
+              {aboutBlocks.map((img, i) => (
+                img.blockType === 'text' ? (
+                  <TextBlockCard key={img.id} img={img} list={aboutBlocks} index={i} />
+                ) : (
+                  <div key={img.id} className="flex gap-4 items-start">
+                    <div className="flex-1">
+                      <input
+                        defaultValue={img.title || ''}
+                        placeholder="標題（選填）"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 mb-2 font-medium"
+                        onBlur={e => { if (e.target.value !== (img.title || '')) handleUpdateField(img.id, 'title', e.target.value); }}
+                      />
+                      <ImageCard img={img} showControls list={aboutBlocks} index={i} />
+                    </div>
+                  </div>
+                )
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

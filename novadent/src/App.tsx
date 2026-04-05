@@ -5,7 +5,7 @@ import {
   ChevronRight, Camera, MapPin, Search, ArrowRight, ShieldCheck, FileText, Users,
   LayoutDashboard, BookOpen, Info, Phone, LogIn, Calendar, User, ArrowUpRight,
   Stethoscope, HeartPulse, UserPlus, Lock, Mail, MapPinned, Star, Check, X, Menu,
-  Gift, Bell, BriefcaseMedical, ChevronDown, Image, Video as VideoIcon
+  Gift, Bell, BriefcaseMedical, ChevronDown, Image, Video as VideoIcon, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
@@ -105,13 +105,29 @@ function AppContent() {
   const [hasActiveCase, setHasActiveCase] = useState(false);
   const [subAccounts, setSubAccounts] = useState<SubAccount[]>([]);
   const [homeConfig, setHomeConfig] = useState<HomeConfig>({ heroBannerUrl: '/S__14336065_0_0.jpg' });
+  const [homeBanners, setHomeBanners] = useState<any[]>([]);
+  const [homeBottomImage, setHomeBottomImage] = useState<any>(null);
+  const [aboutBlocks, setAboutBlocks] = useState<any[]>([]);
+  const [heroBannerIndex, setHeroBannerIndex] = useState(0);
 
   useEffect(() => {
     fetch('/api/site-images').then(r => r.ok ? r.json() : []).then((imgs: any[]) => {
       const hero = imgs.find((i: any) => i.position === 'HERO');
       if (hero?.imageUrl) setHomeConfig(prev => ({ ...prev, heroBannerUrl: hero.imageUrl }));
+      const banners = imgs.filter((i: any) => i.page === 'HOME' && (i.position === 'HERO' || i.position.startsWith('BANNER')) && i.visible && i.imageUrl).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
+      if (banners.length > 0) setHomeBanners(banners);
+      const bottom = imgs.find((i: any) => i.page === 'HOME' && i.position === 'CHALLENGE');
+      if (bottom) setHomeBottomImage(bottom);
+      const about = imgs.filter((i: any) => i.page === 'ABOUT' && i.visible).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
+      setAboutBlocks(about);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (homeBanners.length <= 1) return;
+    const timer = setInterval(() => setHeroBannerIndex(prev => (prev + 1) % homeBanners.length), 5000);
+    return () => clearInterval(timer);
+  }, [homeBanners.length]);
 
   const VIEW_PATH_MAP: Record<string, string> = {
     HOME: '/',
@@ -319,8 +335,23 @@ function AppContent() {
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative">
-            <div className="bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden">
-              <img src={homeConfig.heroBannerUrl} alt="Dental Tech" className="rounded-[1rem] sm:rounded-[1.5rem] w-full h-auto object-cover aspect-[4/3]" referrerPolicy="no-referrer" />
+            <div className="bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden relative">
+              {homeBanners.length > 0 ? (
+                <>
+                  {homeBanners.map((b, i) => (
+                    <img key={b.id} src={b.imageUrl} alt={b.altText || 'Banner'} className={`rounded-[1rem] sm:rounded-[1.5rem] w-full h-auto object-cover aspect-[4/3] transition-opacity duration-700 ${i === heroBannerIndex ? 'opacity-100' : 'opacity-0 absolute inset-0 p-3 sm:p-4'}`} referrerPolicy="no-referrer" />
+                  ))}
+                  {homeBanners.length > 1 && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                      {homeBanners.map((_, i) => (
+                        <button key={i} onClick={() => setHeroBannerIndex(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${i === heroBannerIndex ? 'bg-blue-800 scale-125' : 'bg-white/70'}`} />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <img src={homeConfig.heroBannerUrl} alt="Dental Tech" className="rounded-[1rem] sm:rounded-[1.5rem] w-full h-auto object-cover aspect-[4/3]" referrerPolicy="no-referrer" />
+              )}
             </div>
           </motion.div>
         </div>
@@ -383,20 +414,21 @@ function AppContent() {
             </div>
           </div>
 
-          {/* New Section: Challenges */}
-          <div className="mt-20 pt-20 border-t border-slate-200">
-            <div className="text-center max-w-3xl mx-auto mb-12">
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 sm:mb-6">臺灣牙科產業的現狀挑戰</h2>
+          {homeBottomImage?.imageUrl && (
+            <div className="mt-20 pt-20 border-t border-slate-200">
+              <div className="text-center max-w-3xl mx-auto mb-12">
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 sm:mb-6">臺灣牙科產業的現狀挑戰</h2>
+              </div>
+              <div className="flex justify-center">
+                <img 
+                  src={homeBottomImage.imageUrl} 
+                  alt={homeBottomImage.altText || '臺灣牙科產業的現狀挑戰'} 
+                  className="w-full rounded-2xl shadow-lg"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             </div>
-            <div className="flex justify-center">
-              <img 
-                src="/S__14336040_0_0.jpg" 
-                alt="臺灣牙科產業的現狀挑戰" 
-                className="w-full rounded-2xl shadow-lg"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-          </div>
+          )}
         </div>
       </section>
     </div>
@@ -407,6 +439,35 @@ function AppContent() {
       <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-8">{icon}</div>
       <h3 className="text-2xl font-bold text-slate-900 mb-4">{title}</h3>
       <p className="text-slate-500 leading-relaxed">{desc}</p>
+    </div>
+  );
+
+  const AboutPage = () => (
+    <div className="py-24 max-w-5xl mx-auto px-6">
+      <div className="space-y-20">
+        {aboutBlocks.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">載入中...</div>
+        ) : (
+          aboutBlocks.map((block: any) => (
+            <section key={block.id} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+              {block.title && (
+                <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">{block.title}</h2>
+              )}
+              {block.blockType === 'text' ? (
+                <div className="space-y-6 text-slate-600 leading-relaxed max-w-3xl mx-auto">
+                  {(block.textContent || '').split('\n').filter((p: string) => p.trim()).map((p: string, i: number) => (
+                    <p key={i}>{p}</p>
+                  ))}
+                </div>
+              ) : block.imageUrl ? (
+                <div className="flex justify-center">
+                  <img src={block.imageUrl} alt={block.altText || block.title || ''} className="w-[85%] rounded-2xl shadow-md" referrerPolicy="no-referrer" />
+                </div>
+              ) : null}
+            </section>
+          ))
+        )}
+      </div>
     </div>
   );
 
@@ -1023,14 +1084,17 @@ function AppContent() {
             <NavItem icon={<Bell size={20} />} label="通知中心" active={view === 'NOTIFICATIONS'} onClick={() => { setView('NOTIFICATIONS'); setIsMobileMenuOpen(false); }} />
           )}
         </nav>
-        <div className="p-4 border-t border-blue-900">
+        <div className="p-4 border-t border-blue-900 space-y-2">
           <div className="flex items-center gap-3 p-2 bg-blue-900/50 rounded-xl">
             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-900 font-bold shrink-0">{role[0]}</div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{role} User</p>
-              <p className="text-xs text-slate-500 truncate">Novadent MVP</p>
+              <p className="text-sm font-medium text-white truncate">{currentUser?.name || role}</p>
+              <p className="text-xs text-slate-500 truncate">{currentUser?.email || 'Novadent'}</p>
             </div>
           </div>
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-xl transition-colors text-sm font-medium">
+            <LogOut size={16} /> 登出
+          </button>
         </div>
       </div>
       </>
@@ -1110,163 +1174,7 @@ function AppContent() {
             {/* M-01：強制修改密碼（admin 代重設後首次登入） */}
             {view === 'FORCE_CHANGE_PASSWORD' && <ForceChangePasswordPage />}
             {view === 'REGISTER' && <RegisterPage setRole={setRole} setView={handleSetView} />}
-            {view === 'SERVICE' && (
-              <div className="py-24 max-w-5xl mx-auto px-6">
-                <div className="space-y-20">
-                  {/* Block 1: About Novostar */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <div className="text-center mb-10">
-                      <h2 className="text-3xl font-black text-slate-900 mb-2">關於諾星事業股份有限公司</h2>
-                      <p className="text-blue-800 font-bold tracking-widest text-sm uppercase">Novostar Holdings Co., Ltd.</p>
-                    </div>
-                    <div className="space-y-6 text-slate-600 leading-relaxed max-w-3xl mx-auto">
-                      <p>
-                        諾星事業股份有限公司致力於推動牙科產業的數位轉型與整合服務，
-                        透過旗下 Novadent 牙科整合平台，建立一個連結牙醫診所、牙體技術所、
-                        保險服務與牙科供應鏈的智慧牙科生態系。
-                      </p>
-                      <p>
-                        公司由具備多年牙科產業經驗的專業團隊創立，深刻理解牙醫臨床與牙技
-                        製作流程中的溝通與管理痛點，並以科技與平台化思維，開發數位化工具
-                        與服務，提升牙科醫療服務的效率與品質。
-                      </p>
-                      <p>
-                        Novadent 平台整合 AI 病例管理、數位工單系統、生產排程管理及保險服務
-                        串接，協助牙醫診所與牙技所建立更高效率的協作流程，同時串聯牙科耗材
-                        供應與相關服務資源，打造完整的牙科產業服務網絡。
-                      </p>
-                    </div>
-                  </section>
-
-                  {/* Block 2: New Image 1 */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">重新定義牙科產業的未來</h2>
-                    <div className="flex justify-center">
-                      <img 
-                        src="/S__14549039_0.jpg" 
-                        alt="重新定義牙科產業的未來" 
-                        className="w-[85%] rounded-2xl shadow-md"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  </section>
-
-                  {/* Block 3: Existing Image 1 */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">Novadent 平台生態</h2>
-                    <div className="flex justify-center">
-                      <img 
-                        src="/S__14336066_0_0.jpg" 
-                        alt="Novadent 平台生態" 
-                        className="w-[80%] rounded-2xl shadow-md"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  </section>
-
-                  {/* Block 4: New Image 2 */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">平台核心引擎</h2>
-                    <div className="flex justify-center">
-                      <img 
-                        src="/S__14549043_0.jpg" 
-                        alt="平台核心引擎" 
-                        className="w-[90%] rounded-2xl shadow-md"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  </section>
-
-                  {/* Block 5: Existing Image 2 */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">平台運作方式</h2>
-                    <div className="flex justify-center">
-                      <img 
-                        src="/S__14295053_0.jpg" 
-                        alt="平台運作方式" 
-                        className="w-[80%] rounded-2xl shadow-md"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  </section>
-
-                  {/* Block 6: New Image 3 */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">跨業整合醫療創新平台</h2>
-                    <div className="flex justify-center">
-                      <img 
-                        src="/S__14549042_0.jpg" 
-                        alt="跨業整合醫療創新平台" 
-                        className="w-[85%] rounded-2xl shadow-md"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  </section>
-
-                  {/* Block 7: Existing Image 3 */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">臺灣牙科體系的結構性斷層</h2>
-                    <div className="flex justify-center">
-                      <img 
-                        src="/S__14336078_0_0.jpg" 
-                        alt="臺灣牙科體系的結構性斷層" 
-                        className="w-[80%] rounded-2xl shadow-md"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  </section>
-
-                  {/* Block 8: New Image 4 */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">台灣首創「牙科 × 金融 × 長照」整合生態系</h2>
-                    <div className="flex justify-center">
-                      <img 
-                        src="/S__14549041_0.jpg" 
-                        alt="台灣首創「牙科 × 金融 × 長照」整合生態系" 
-                        className="w-[90%] rounded-2xl shadow-md"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  </section>
-
-                  {/* Block 9: About Founder */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <div className="text-center mb-10">
-                      <h2 className="text-3xl font-black text-slate-900 mb-2">關於創辦人</h2>
-                    </div>
-                    <div className="space-y-6 text-slate-600 leading-relaxed max-w-3xl mx-auto">
-                      <p>
-                        創辦人具備牙技師專業背景，長期深耕牙科產業，累積多年臨床技術製作
-                        與產業實務經驗，對牙醫診療流程與牙技製作端之間的協作模式具有深刻理解。
-                      </p>
-                      <p>
-                        在實務經驗中，觀察到診所與牙技所之間普遍存在資訊斷裂、工單管理效率
-                        低落與溝通成本高等問題，進而促成創立諾星事業股份有限公司，致力於以
-                        數位平台解決牙科產業長期痛點。
-                      </p>
-                      <p>
-                        創辦人曾參與跨國牙科工作與國際交流，具備國際視野，並持續關注牙科
-                        數位化、AI 應用與醫療服務整合的發展趨勢，期望透過科技導入，推動
-                        牙科產業升級轉型。
-                      </p>
-                    </div>
-                  </section>
-
-                  {/* Block 10: New Image 5 */}
-                  <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">未來藍圖：立足台灣，佈局亞洲</h2>
-                    <div className="flex justify-center">
-                      <img 
-                        src="/S__14549040_0.jpg" 
-                        alt="未來藍圖：立足台灣，佈局亞洲" 
-                        className="w-[85%] rounded-2xl shadow-md"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  </section>
-                </div>
-              </div>
-            )}
+            {view === 'SERVICE' && <AboutPage />}
             {view === 'TERMS' && <TermsPage />}
             {view === 'PRIVACY' && <PrivacyPage />}
             {view === 'QA' && <QAPage setQaCompleted={setQaCompleted} setView={handleSetView} />}

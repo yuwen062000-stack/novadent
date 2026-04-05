@@ -35,7 +35,7 @@ novadent/
       articles/           # Articles module (public + admin)
       admin/              # Admin dashboard stats, partner links, menu config, broadcast
       system-settings/    # V1.3: SuperAdmin system settings CRUD
-      site-images/        # V1.4: Site image management (HERO, ABOUT, etc.)
+      site-images/        # V1.6: Site image management — full CRUD (banners, homepage bottom, About Us flexible blocks with image/text types, visibility, reorder)
       videos/             # V1.4: YouTube video management (CRUD, publish, featured)
       page-contents/      # V1.4: CMS page contents (terms, privacy, contacts, social)
       mail/               # V1.3: Nodemailer mail service
