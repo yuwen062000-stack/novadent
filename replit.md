@@ -90,6 +90,13 @@ cd novadent/backend && NODE_ENV=production node dist/src/main.js
 - **Admin clinic city dropdown**: City field uses dropdown matching questionnaire cities (台北市~高雄市 + all counties)
 - **SearchableSelect component**: Reusable searchable dropdown (`components/ui/SearchableSelect.tsx`), used in AdminPartnerLinks and ClinicCaseDetail
 
+## Deployment
+- **Artifact**: `novadent-app` (kind=web, previewPath=`/`)
+- **Artifact TOML**: `artifacts/novadent-app/.replit-artifact/artifact.toml`
+- **Dev workflow**: `artifacts/novadent-app: web` runs NestJS backend on port 24505
+- **Production build**: Builds frontend (`novadent/`) + backend (`novadent/backend/`), then runs NestJS
+- NestJS `ServeStaticModule` serves the built frontend from `novadent/dist/`
+
 ## Environment Variables
 - `DATABASE_URL` — PostgreSQL connection string
 - `JWT_SECRET` — JWT signing secret

@@ -1,0 +1,25 @@
+kind = "web"
+previewPath = "/"
+title = "Novadent 諾星牙科平台"
+version = "1.0.0"
+id = "artifacts/novadent-app"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = ["/"]
+localPort = 24505
+
+[services.development]
+run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
+
+[services.production]
+build = ["bash", "-c", "cd /home/runner/workspace/novadent && npm run build && cd /home/runner/workspace/novadent/backend && NODE_ENV=development ./node_modules/.bin/nest build"]
+run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
+
+[services.env]
+PORT = "24505"
