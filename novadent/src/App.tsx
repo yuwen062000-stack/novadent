@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Activity, Plus, ClipboardList, CheckCircle2, Clock, Building2, Microscope, Settings,
   ChevronRight, Camera, MapPin, Search, ArrowRight, ShieldCheck, FileText, Users,
   LayoutDashboard, BookOpen, Info, Phone, LogIn, Calendar, User, ArrowUpRight,
   Stethoscope, HeartPulse, UserPlus, Lock, Mail, MapPinned, Star, Check, X, Menu,
-  Gift, Bell, BriefcaseMedical
+  Gift, Bell, BriefcaseMedical, ChevronDown, Image, Video as VideoIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { CaseStatus, UserRole, Case, STATUS_LABELS, STATUS_COLORS, Article, ARTICLE_CATEGORIES, Clinic, Lab, SubAccount, MfgStep, CaseType, Consultation, CASE_TYPE_LABELS, PartnerStatus, Member, HomeConfig, Video, VIDEO_CATEGORIES, AuthUser } from './types';
+import { CaseStatus, UserRole, Case, STATUS_LABELS, STATUS_COLORS, Article, ARTICLE_CATEGORIES, Clinic, Lab, SubAccount, MfgStep, CaseType, Consultation, CASE_TYPE_LABELS, PartnerStatus, Member, HomeConfig, AuthUser } from './types';
 
 // ── M-01 Auth 模組 ─────────────────────────────────────────
 import { ToastContainer } from './components/shared';
@@ -27,6 +28,8 @@ import { AdminLabs } from './pages/admin/AdminLabs';
 import { AdminPartnerLinks } from './pages/admin/AdminPartnerLinks';
 import { AdminArticles } from './pages/admin/AdminArticles';
 import { AdminNotificationCMS } from './pages/admin/AdminNotificationCMS';
+import { AdminSiteImages } from './pages/admin/AdminSiteImages';
+import { AdminVideos } from './pages/admin/AdminVideos';
 // ── SuperAdmin Pages ───────────────────────────────────────
 import { SuperAuditLogs } from './pages/super/SuperAuditLogs';
 import { SuperSystemSettings } from './pages/super/SuperSystemSettings';
@@ -77,15 +80,6 @@ const MOCK_ARTICLES: Article[] = [
   }
 ];
 
-const MOCK_VIDEOS: Video[] = [
-  {
-    id: 'v1',
-    youtubeId: 'VHqpMdA7fik',
-    title: 'Novadent 平台介紹',
-    category: '平台介紹',
-    publishedAt: '2026-03-17'
-  }
-];
 
 const MOCK_CLINICS: Clinic[] = [
   { 
@@ -376,6 +370,8 @@ function AppContent() {
     ADMIN_PARTNER_LINKS: '/admin/partners',
     ADMIN_ARTICLES: '/admin/articles',
     ADMIN_NOTIFICATION_CMS: '/admin/notifications',
+    ADMIN_SITE_IMAGES: '/admin/site-images',
+    ADMIN_VIDEOS: '/admin/videos',
     SUPER_SYSTEM_SETTINGS: '/super/settings',
     SUPER_MENU: '/super/menu',
     SUPER_AUDIT_LOGS: '/super/audit',
@@ -465,6 +461,16 @@ function AppContent() {
     );
   };
 
+  const [footerContacts, setFooterContacts] = useState<Record<string, string>>({});
+  useEffect(() => {
+    fetch('/api/page-contents').then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => {
+        const map: Record<string, string> = {};
+        rows.forEach((r: any) => { if (r.key && r.value) map[r.key] = r.value; });
+        setFooterContacts(map);
+      }).catch(() => {});
+  }, []);
+
   const PublicFooter = () => (
     <footer className="bg-blue-950 text-slate-400 py-16">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -493,8 +499,12 @@ function AppContent() {
         <div>
           <h4 className="text-white font-bold mb-6">聯絡我們</h4>
           <ul className="space-y-4 text-sm">
-            <li className="flex items-center gap-2"><Phone size={16} /> 02-2345-6789</li>
-            <li className="flex items-center gap-2"><MapPin size={16} /> 台北市信義區信義路五段</li>
+            {(footerContacts.CONTACT_PHONE || '02-2345-6789') && (
+              <li className="flex items-center gap-2"><Phone size={16} /> {footerContacts.CONTACT_PHONE || '02-2345-6789'}</li>
+            )}
+            {(footerContacts.CONTACT_ADDRESS || '台北市信義區信義路五段') && (
+              <li className="flex items-center gap-2"><MapPin size={16} /> {footerContacts.CONTACT_ADDRESS || '台北市信義區信義路五段'}</li>
+            )}
           </ul>
         </div>
       </div>
@@ -1210,8 +1220,13 @@ function AppContent() {
               <NavItem icon={<Building2 size={20} />} label="診所管理" active={view === 'ADMIN_CLINICS'} onClick={() => { setView('ADMIN_CLINICS'); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<Microscope size={20} />} label="牙技所管理" active={view === 'ADMIN_LABS'} onClick={() => { setView('ADMIN_LABS'); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<Activity size={20} />} label="合作連結" active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => { setView('ADMIN_PARTNER_LINKS'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<FileText size={20} />} label="文章管理" active={view === 'ADMIN_ARTICLES'} onClick={() => { setView('ADMIN_ARTICLES'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Bell size={20} />} label="通知廣播" active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => { setView('ADMIN_NOTIFICATION_CMS'); setIsMobileMenuOpen(false); }} />
+              <NavGroup icon={<FileText size={20} />} label="內容管理"
+                active={['ADMIN_ARTICLES','ADMIN_NOTIFICATION_CMS','ADMIN_SITE_IMAGES','ADMIN_VIDEOS'].includes(view)}>
+                <NavItem icon={<FileText size={18} />} label="文章管理" active={view === 'ADMIN_ARTICLES'} onClick={() => { setView('ADMIN_ARTICLES'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<Bell size={18} />} label="通知廣播" active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => { setView('ADMIN_NOTIFICATION_CMS'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<Image size={18} />} label="圖片管理" active={view === 'ADMIN_SITE_IMAGES'} onClick={() => { setView('ADMIN_SITE_IMAGES'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<VideoIcon size={18} />} label="影音管理" active={view === 'ADMIN_VIDEOS'} onClick={() => { setView('ADMIN_VIDEOS'); setIsMobileMenuOpen(false); }} />
+              </NavGroup>
             </>
           )}
           {role === 'SUPER_ADMIN' && (
@@ -1254,6 +1269,22 @@ function AppContent() {
       {badge && <div className="absolute right-4 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />}
     </button>
   );
+
+  const NavGroup = ({ icon, label, active, children }: { icon: React.ReactNode; label: string; active: boolean; children: React.ReactNode }) => {
+    const [open, setOpen] = useState(active);
+    useEffect(() => { if (active) setOpen(true); }, [active]);
+    return (
+      <div>
+        <button onClick={() => setOpen(!open)}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active ? 'text-white' : 'hover:bg-blue-900 hover:text-white'}`}>
+          {icon}
+          <span className="font-medium flex-1 text-left">{label}</span>
+          <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        {open && <div className="ml-4 pl-2 border-l border-blue-800/50 space-y-0.5 mt-0.5">{children}</div>}
+      </div>
+    );
+  };
 
   // M-01：新增 Auth 相關頁面也屬於公開視圖（不顯示側選單）
   const isPublicView = ['HOME', 'SERVICE', 'KNOWLEDGE', 'VIDEOS', 'ARTICLE', 'LOGIN', 'REGISTER', 'TERMS', 'PRIVACY', 'FORGOT_PASSWORD', 'RESET_PASSWORD', 'FORCE_CHANGE_PASSWORD'].includes(view);
@@ -1477,6 +1508,8 @@ function AppContent() {
             {view === 'ADMIN_PARTNER_LINKS' && <AdminPartnerLinks />}
             {view === 'ADMIN_ARTICLES' && <AdminArticles />}
             {view === 'ADMIN_NOTIFICATION_CMS' && <AdminNotificationCMS />}
+            {view === 'ADMIN_SITE_IMAGES' && <AdminSiteImages />}
+            {view === 'ADMIN_VIDEOS' && <AdminVideos />}
             {/* ── V1.2 SuperAdmin Pages ────────────────────── */}
             {view === 'SUPER_SYSTEM_SETTINGS' && <SuperSystemSettings />}
             {view === 'SUPER_MENU' && <SuperMenuManager />}
@@ -1704,12 +1737,21 @@ function KnowledgeCenter({ setView, setSelectedArticle }: any) {
 }
 
 function TermsPage() {
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch('/api/page-contents/TERMS').then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.value) setContent(data.value); })
+      .catch(() => {}).finally(() => setLoading(false));
+  }, []);
   return (
     <div className="bg-white py-16 md:py-24">
       <div className="max-w-3xl mx-auto px-6">
         <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-8">服務條款</h1>
         <div className="prose prose-slate max-w-none">
-          <p className="text-lg text-slate-600 leading-relaxed">內容建置中，敬請期待。</p>
+          {loading ? <p className="text-slate-400">載入中...</p>
+            : content ? <div className="text-slate-700 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
+            : <p className="text-lg text-slate-600 leading-relaxed">內容建置中，敬請期待。</p>}
         </div>
       </div>
     </div>
@@ -1717,12 +1759,21 @@ function TermsPage() {
 }
 
 function PrivacyPage() {
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch('/api/page-contents/PRIVACY').then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.value) setContent(data.value); })
+      .catch(() => {}).finally(() => setLoading(false));
+  }, []);
   return (
     <div className="bg-white py-16 md:py-24">
       <div className="max-w-3xl mx-auto px-6">
         <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-8">隱私權政策</h1>
         <div className="prose prose-slate max-w-none">
-          <p className="text-lg text-slate-600 leading-relaxed">內容建置中，敬請期待。</p>
+          {loading ? <p className="text-slate-400">載入中...</p>
+            : content ? <div className="text-slate-700 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
+            : <p className="text-lg text-slate-600 leading-relaxed">內容建置中，敬請期待。</p>}
         </div>
       </div>
     </div>
@@ -1730,62 +1781,62 @@ function PrivacyPage() {
 }
 
 function VideosPage() {
-  const [activeCategory, setActiveCategory] = useState('全部');
-  const categories = ['全部', ...VIDEO_CATEGORIES];
-  
-  const filteredVideos = activeCategory === '全部' 
-    ? MOCK_VIDEOS 
-    : MOCK_VIDEOS.filter(v => v.category === activeCategory);
+  const [videos, setVideos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/videos').then(r => r.json()).then(data => {
+      setVideos(Array.isArray(data) ? data : []);
+    }).catch(() => setVideos([])).finally(() => setLoading(false));
+  }, []);
+
+  const extractYoutubeId = (url: string) => {
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
+    return m ? m[1] : '';
+  };
 
   return (
     <div className="bg-white py-8 md:py-16 lg:py-20">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-6">
-          <div>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 mb-3 md:mb-4">看懂牙科，從這裡開始</h2>
-            <p className="text-sm md:text-base text-slate-500">專業知識影音，讓你輕鬆了解牙科</p>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-            {categories.map(cat => (
-              <button 
-                key={cat} 
-                onClick={() => setActiveCategory(cat)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full border text-xs md:text-sm font-bold transition-colors ${
-                  activeCategory === cat 
-                    ? 'bg-blue-800 border-blue-800 text-white' 
-                    : 'border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+        <div className="mb-8 md:mb-12">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 mb-3 md:mb-4">看懂牙科，從這裡開始</h2>
+          <p className="text-sm md:text-base text-slate-500">專業知識影音，讓你輕鬆了解牙科</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {filteredVideos.map(video => (
-            <div key={video.id} className="bg-white rounded-2xl md:rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all">
-              <div className="aspect-video relative overflow-hidden">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={`https://www.youtube.com/embed/${video.youtubeId}`}
-                  title={video.title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="absolute inset-0"
-                ></iframe>
-              </div>
-              <div className="p-5 md:p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="bg-blue-50 text-blue-800 text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg">{video.category}</span>
-                  <span className="text-slate-400 text-[10px] md:text-xs font-medium">{video.publishedAt}</span>
+        {loading ? (
+          <div className="text-center py-20 text-slate-400">載入中...</div>
+        ) : videos.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">尚無影片</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {videos.map(video => {
+              const ytId = extractYoutubeId(video.videoUrl || '');
+              return (
+                <div key={video.id} className="bg-white rounded-2xl md:rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all">
+                  <div className="aspect-video relative overflow-hidden">
+                    {ytId ? (
+                      <iframe width="100%" height="100%"
+                        src={`https://www.youtube.com/embed/${ytId}`}
+                        title={video.title} frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen className="absolute inset-0" />
+                    ) : (
+                      <div className="absolute inset-0 bg-slate-100 flex items-center justify-center text-slate-400">無法載入影片</div>
+                    )}
+                  </div>
+                  <div className="p-5 md:p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-slate-400 text-[10px] md:text-xs font-medium">
+                        {video.createdAt ? new Date(video.createdAt).toLocaleDateString('zh-TW') : ''}
+                      </span>
+                    </div>
+                    <h3 className="text-lg md:text-xl font-bold text-slate-900 line-clamp-2">{video.title}</h3>
+                    {video.description && <p className="text-sm text-slate-500 mt-2 line-clamp-2">{video.description}</p>}
+                  </div>
                 </div>
-                <h3 className="text-lg md:text-xl font-bold text-slate-900 line-clamp-2">{video.title}</h3>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

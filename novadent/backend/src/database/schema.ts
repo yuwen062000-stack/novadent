@@ -257,6 +257,43 @@ export const systemSettings = pgTable('system_settings', {
   updatedBy:   uuid('updated_by').references(() => users.id),
 });
 
+// ── site_images（網站圖片管理）────────────────────────────
+export const siteImages = pgTable('site_images', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  page:      varchar('page', { length: 50 }).notNull(),
+  position:  varchar('position', { length: 50 }).notNull(),
+  imageUrl:  text('image_url'),
+  altText:   varchar('alt_text', { length: 200 }),
+  sortOrder: integer('sort_order').notNull().default(0),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  updatedBy: uuid('updated_by').references(() => users.id),
+});
+
+// ── videos（影音管理）─────────────────────────────────────
+export const videos = pgTable('videos', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  title:          varchar('title', { length: 200 }).notNull(),
+  description:    text('description'),
+  videoUrl:       text('video_url').notNull(),
+  thumbnailUrl:   text('thumbnail_url'),
+  featuredOnHome: boolean('featured_on_home').notNull().default(false),
+  isPublished:    boolean('is_published').notNull().default(true),
+  sortOrder:      integer('sort_order').notNull().default(0),
+  createdAt:      timestamp('created_at').notNull().defaultNow(),
+  updatedAt:      timestamp('updated_at').notNull().defaultNow(),
+  createdBy:      uuid('created_by').references(() => users.id),
+});
+
+// ── page_contents（頁面內容管理）──────────────────────────
+export const pageContents = pgTable('page_contents', {
+  id:          uuid('id').primaryKey().defaultRandom(),
+  key:         varchar('key', { length: 100 }).notNull().unique(),
+  contentType: varchar('content_type', { length: 20 }).notNull().default('TEXT'),
+  value:       text('value'),
+  updatedAt:   timestamp('updated_at').notNull().defaultNow(),
+  updatedBy:   uuid('updated_by').references(() => users.id),
+});
+
 // ── mfg_step_templates（製程節點模板 — SuperAdmin 管理）────
 export const mfgStepTemplates = pgTable('mfg_step_templates', {
   id:          integer('id').primaryKey().generatedAlwaysAsIdentity(),

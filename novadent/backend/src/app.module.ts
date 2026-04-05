@@ -18,6 +18,9 @@ import { MfgStepTemplatesModule } from './mfg-step-templates/mfg-step-templates.
 import { UploadModule } from './upload/upload.module';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { MailModule } from './mail/mail.module';
+import { SiteImagesModule } from './site-images/site-images.module';
+import { VideosModule } from './videos/videos.module';
+import { PageContentsModule } from './page-contents/page-contents.module';
 
 @Module({
   imports: [
@@ -42,6 +45,9 @@ import { MailModule } from './mail/mail.module';
     MfgStepTemplatesModule,
     UploadModule,
     SystemSettingsModule,
+    SiteImagesModule,
+    VideosModule,
+    PageContentsModule,
   ],
 })
 export class AppModule {}

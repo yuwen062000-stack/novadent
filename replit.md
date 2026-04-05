@@ -35,6 +35,9 @@ novadent/
       articles/           # Articles module (public + admin)
       admin/              # Admin dashboard stats, partner links, menu config, broadcast
       system-settings/    # V1.3: SuperAdmin system settings CRUD
+      site-images/        # V1.4: Site image management (HERO, ABOUT, etc.)
+      videos/             # V1.4: YouTube video management (CRUD, publish, featured)
+      page-contents/      # V1.4: CMS page contents (terms, privacy, contacts, social)
       mail/               # V1.3: Nodemailer mail service
       upload/             # File upload with multer
       qa-questions/       # QA question templates
@@ -89,6 +92,17 @@ cd novadent/backend && NODE_ENV=production node dist/src/main.js
 - **City-based recommendations**: MemberRecommendations uses `/consultations/:id/recommendations` API (filters by city)
 - **Admin clinic city dropdown**: City field uses dropdown matching questionnaire cities (台北市~高雄市 + all counties)
 - **SearchableSelect component**: Reusable searchable dropdown (`components/ui/SearchableSelect.tsx`), used in AdminPartnerLinks and ClinicCaseDetail
+
+## V1.4 Features (Implemented)
+- **CMS Module**: 3 new tables (`site_images`, `videos`, `page_contents`) — 21 total tables
+- **Site Images**: Admin card-based image manager with HOME/ABOUT tabs, upload support (`/api/site-images`, `/api/admin/site-images/:id`)
+- **Videos**: YouTube embed CRUD with publish/featured toggles (`/api/videos`, `/api/admin/videos`)
+- **Page Contents**: CMS for terms, privacy, contact info, social links (`/api/page-contents`, `/api/admin/page-contents/:key`)
+- **SuperSystemSettings extended**: Sections C (contact info), D (social links), E (legal richtext editor)
+- **Collapsible sidebar**: "內容管理" NavGroup groups 文章管理, 通知廣播, 圖片管理, 影音管理
+- **Public pages updated**: Videos, Terms, Privacy pages now fetch from CMS APIs; Footer uses CMS contact data
+- **XSS protection**: DOMPurify sanitizes CMS richtext content before rendering
+- **Auto-seed defaults**: `page_contents` and `site_images` tables seed default rows on first boot
 
 ## Deployment
 - **Artifact**: `novadent-app` (kind=web, previewPath=`/`)
