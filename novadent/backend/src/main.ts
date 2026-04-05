@@ -8,6 +8,7 @@ import { existsSync } from 'fs';
 import { AppModule } from './app.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
+import { autoSeed } from './database/auto-seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -58,6 +59,8 @@ async function bootstrap() {
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
   console.log(`Novadent API running on port ${port}`);
+
+  autoSeed().catch(err => console.error('Auto-seed error:', err.message));
 }
 
 bootstrap();
