@@ -1,3 +1,6 @@
+// ── V1.3 郵件服務 ───────────────────────────────────────────
+// 透過 nodemailer 發送系統信件
+// SMTP 設定優先從 system_settings 資料表讀取，若無則使用環境變數
 import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
@@ -15,6 +18,7 @@ export class MailService {
     @Inject(DB_TOKEN) private db: Db,
   ) {}
 
+  /** 從 system_settings 資料表讀取 SMTP 設定，回退至環境變數 */
   private async getSmtpConfig() {
     const rows = await this.db.select().from(systemSettings);
     const settings: Record<string, string> = {};
@@ -31,6 +35,7 @@ export class MailService {
     };
   }
 
+  /** 建立 nodemailer transporter（SMTP 未設定時回傳 null，跳過寄信） */
   private async getTransporter(): Promise<nodemailer.Transporter | null> {
     const smtp = await this.getSmtpConfig();
     if (!smtp.host || !smtp.user) {
@@ -45,6 +50,7 @@ export class MailService {
     });
   }
 
+  /** 寄送自訂 HTML 信件 */
   async sendMail(to: string, subject: string, html: string): Promise<boolean> {
     try {
       const transporter = await this.getTransporter();
@@ -65,6 +71,7 @@ export class MailService {
     }
   }
 
+  /** 寄送密碼重設信（含重設連結，10 分鐘後失效） */
   async sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -80,6 +87,7 @@ export class MailService {
     return this.sendMail(to, 'Novadent 密碼重設', html);
   }
 
+  /** 寄送歡迎信（新帳號建立時，可包含臨時密碼） */
   async sendWelcomeEmail(to: string, name: string, tempPassword?: string): Promise<boolean> {
     const passwordInfo = tempPassword
       ? `<p>您的臨時密碼為：<strong>${tempPassword}</strong></p><p>請登入後立即修改密碼。</p>`

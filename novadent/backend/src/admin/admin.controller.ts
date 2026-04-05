@@ -1,4 +1,6 @@
-// M-08 Admin Controller
+// ── M-08 後台管理 Controller ────────────────────────────────
+// ADMIN/SUPER_ADMIN：儀表板統計、選單設定、合作連結、廣播通知
+// SUPER_ADMIN 專屬：稽核日誌
 import {
   Controller, Get, Post, Delete, Put,
   Param, Query, Body, UseGuards, HttpCode, HttpStatus,
@@ -11,7 +13,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { IsString, IsArray, IsBoolean, IsNumber, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
-// DTO
+// ── DTO 定義 ────────────────────────────────────────────────
 class CreatePartnerLinkDto {
   @IsString() clinicId: string;
   @IsString() labId: string;

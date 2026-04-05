@@ -1,3 +1,6 @@
+// ── 檔案上傳 Service ────────────────────────────────────────
+// 使用本地檔案系統儲存（Replit 環境），存放於 {cwd}/../uploads/
+// 支援格式：JPG/PNG/GIF/WEBP/PDF，單檔上限 10MB
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
@@ -9,12 +12,14 @@ export class UploadService {
   private uploadDir: string;
 
   constructor(private config: ConfigService) {
+    // 上傳目錄位於專案根目錄的上一層，避免被前端 build 覆蓋
     this.uploadDir = path.join(process.cwd(), '..', 'uploads');
     if (!fs.existsSync(this.uploadDir)) {
       fs.mkdirSync(this.uploadDir, { recursive: true });
     }
   }
 
+  /** 處理單檔上傳：驗證格式與大小，產生 UUID 檔名存入本地 */
   async uploadFile(file: Express.Multer.File, folder = 'novadent'): Promise<{ url: string; publicId: string }> {
     if (!file) throw new BadRequestException('未選擇檔案');
     const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];

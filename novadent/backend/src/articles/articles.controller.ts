@@ -1,4 +1,6 @@
-// M-07 Articles Controller
+// ── M-07 文章管理 Controller ────────────────────────────────
+// 公開 API：前台文章列表與詳情（無需登入）
+// 管理 API：ADMIN/SUPER_ADMIN 可 CRUD、發布/下架文章
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { CreateArticleDto, UpdateArticleDto } from './dto/article.dto';
@@ -8,7 +10,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
-// ── 公開 API ────────────────────────────────────────────────
+// ── 公開 API（前台文章列表/詳情）────────────────────────────
 @Controller('api/articles')
 export class ArticlesPublicController {
   constructor(private articlesService: ArticlesService) {}
@@ -26,7 +28,7 @@ export class ArticlesPublicController {
   }
 }
 
-// ── Admin API ────────────────────────────────────────────────
+// ── 管理 API（ADMIN/SUPER_ADMIN 可 CRUD、發布/下架）─────────
 @Controller('api/admin/articles')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')
