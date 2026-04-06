@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Image, Upload, RefreshCw, Plus, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, Type, FileText, X, AlertTriangle, Save, Check } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
@@ -16,6 +16,166 @@ interface SiteImage {
 }
 
 type DirtyFields = Record<string, Record<string, string>>;
+
+interface SaveButtonProps {
+  id: string;
+  savingIds: Set<string>;
+  savedIds: Set<string>;
+  dirty: DirtyFields;
+  onSave: (id: string) => void;
+}
+
+function SaveButton({ id, savingIds, savedIds, dirty, onSave }: SaveButtonProps) {
+  const isSaving = savingIds.has(id);
+  const isSaved = savedIds.has(id);
+  const isDirty = dirty[id] && Object.keys(dirty[id]).length > 0;
+  if (isSaved) {
+    return (
+      <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg">
+        <Check className="w-3.5 h-3.5" /> 已儲存
+      </span>
+    );
+  }
+  if (!isDirty) return null;
+  return (
+    <button onClick={() => onSave(id)} disabled={isSaving}
+      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+      {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+      {isSaving ? '儲存中...' : '儲存'}
+    </button>
+  );
+}
+
+interface ImageCardProps {
+  img: SiteImage;
+  showControls?: boolean;
+  list?: SiteImage[];
+  index?: number;
+  dirty: DirtyFields;
+  savingIds: Set<string>;
+  savedIds: Set<string>;
+  uploading: string | null;
+  onMarkDirty: (id: string, field: string, value: string) => void;
+  onSave: (id: string) => void;
+  onUpload: (id: string, file: File) => void;
+  onToggleVisible: (img: SiteImage) => void;
+  onMove: (list: SiteImage[], index: number, direction: 'up' | 'down') => void;
+  onDelete: (id: string) => void;
+}
+
+function ImageCard({ img, showControls, list, index, dirty, savingIds, savedIds, uploading, onMarkDirty, onSave, onUpload, onToggleVisible, onMove, onDelete }: ImageCardProps) {
+  const altValue = (dirty[img.id] && 'altText' in dirty[img.id]) ? dirty[img.id].altText : (img.altText || '');
+  return (
+    <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${!img.visible ? 'opacity-60' : ''}`}>
+      <div className="aspect-video bg-slate-100 flex items-center justify-center relative">
+        {img.imageUrl ? (
+          <img src={img.imageUrl} alt={altValue} className="w-full h-full object-contain" />
+        ) : (
+          <div className="text-slate-400 text-center">
+            <Image className="w-10 h-10 mx-auto mb-1" />
+            <p className="text-xs">尚未上傳</p>
+          </div>
+        )}
+        {uploading === img.id && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <RefreshCw className="w-6 h-6 text-white animate-spin" />
+          </div>
+        )}
+      </div>
+      <div className="p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <input
+            value={altValue}
+            onChange={e => onMarkDirty(img.id, 'altText', e.target.value)}
+            placeholder="替代文字 (alt)"
+            className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+          />
+          <SaveButton id={img.id} savingIds={savingIds} savedIds={savedIds} dirty={dirty} onSave={onSave} />
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          <label className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-100 text-xs font-medium">
+            <Upload className="w-3.5 h-3.5" />
+            {img.imageUrl ? '更換' : '上傳'}
+            <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
+              onChange={e => { if (e.target.files?.[0]) onUpload(img.id, e.target.files[0]); e.target.value = ''; }} />
+          </label>
+          {showControls && (
+            <>
+              <button onClick={() => onToggleVisible(img)}
+                className={`px-2 py-1.5 rounded-lg text-xs font-medium ${img.visible ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                {img.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+              {list && index !== undefined && (
+                <>
+                  <button onClick={() => onMove(list, index, 'up')} disabled={index === 0}
+                    className="px-1.5 py-1.5 bg-slate-100 rounded-lg text-xs disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => onMove(list, index, 'down')} disabled={index === list.length - 1}
+                    className="px-1.5 py-1.5 bg-slate-100 rounded-lg text-xs disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
+                </>
+              )}
+              <button onClick={() => onDelete(img.id)}
+                className="px-2 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface TextBlockCardProps {
+  img: SiteImage;
+  list: SiteImage[];
+  index: number;
+  dirty: DirtyFields;
+  savingIds: Set<string>;
+  savedIds: Set<string>;
+  onMarkDirty: (id: string, field: string, value: string) => void;
+  onSave: (id: string) => void;
+  onToggleVisible: (img: SiteImage) => void;
+  onMove: (list: SiteImage[], index: number, direction: 'up' | 'down') => void;
+  onDelete: (id: string) => void;
+}
+
+function TextBlockCard({ img, list, index, dirty, savingIds, savedIds, onMarkDirty, onSave, onToggleVisible, onMove, onDelete }: TextBlockCardProps) {
+  const titleValue = (dirty[img.id] && 'title' in dirty[img.id]) ? dirty[img.id].title : (img.title || '');
+  const textValue = (dirty[img.id] && 'textContent' in dirty[img.id]) ? dirty[img.id].textContent : (img.textContent || '');
+  return (
+    <div className={`bg-white rounded-xl border shadow-sm p-4 ${!img.visible ? 'opacity-60' : ''}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Type className="w-4 h-4 text-blue-600" />
+        <span className="text-xs font-bold text-slate-500">文字區塊</span>
+        <div className="flex-1" />
+        <SaveButton id={img.id} savingIds={savingIds} savedIds={savedIds} dirty={dirty} onSave={onSave} />
+        <button onClick={() => onToggleVisible(img)}
+          className={`px-2 py-1 rounded text-xs ${img.visible ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+          {img.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+        </button>
+        <button onClick={() => onMove(list, index, 'up')} disabled={index === 0}
+          className="px-1 py-1 bg-slate-100 rounded text-xs disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
+        <button onClick={() => onMove(list, index, 'down')} disabled={index === list.length - 1}
+          className="px-1 py-1 bg-slate-100 rounded text-xs disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
+        <button onClick={() => onDelete(img.id)}
+          className="px-1 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100"><Trash2 className="w-3 h-3" /></button>
+      </div>
+      <input
+        value={titleValue}
+        onChange={e => onMarkDirty(img.id, 'title', e.target.value)}
+        placeholder="標題"
+        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 mb-2 font-medium"
+      />
+      <textarea
+        value={textValue}
+        onChange={e => onMarkDirty(img.id, 'textContent', e.target.value)}
+        placeholder="內容文字..."
+        rows={4}
+        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 resize-y"
+      />
+    </div>
+  );
+}
 
 export function AdminSiteImages() {
   const [images, setImages] = useState<SiteImage[]>([]);
@@ -50,46 +210,44 @@ export function AdminSiteImages() {
   const bottomImage = images.find(i => i.page === 'HOME' && i.position === 'CHALLENGE');
   const aboutBlocks = images.filter(i => i.page === 'ABOUT').sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const markDirty = (id: string, field: string, value: string) => {
+  const markDirty = useCallback((id: string, field: string, value: string) => {
     setDirty(prev => ({
       ...prev,
       [id]: { ...(prev[id] || {}), [field]: value },
     }));
     setSavedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-  };
+  }, []);
 
-  const getDirtyValue = (img: SiteImage, field: keyof SiteImage): string => {
-    if (dirty[img.id] && field in dirty[img.id]) return dirty[img.id][field];
-    return (img[field] as string) || '';
-  };
+  const handleSaveFields = useCallback(async (id: string) => {
+    setDirty(prev => {
+      const fields = prev[id];
+      if (!fields || Object.keys(fields).length === 0) return prev;
+      setSavingIds(s => new Set(s).add(id));
+      (async () => {
+        try {
+          const res = await apiFetch(`/admin/site-images/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(fields),
+          });
+          if (!res.ok) {
+            showToast('error', `儲存失敗 (HTTP ${res.status})`);
+            return;
+          }
+          setImages(imgs => imgs.map(img => img.id === id ? { ...img, ...fields } as SiteImage : img));
+          setDirty(d => { const n = { ...d }; delete n[id]; return n; });
+          setSavedIds(s => new Set(s).add(id));
+          setTimeout(() => setSavedIds(s => { const n = new Set(s); n.delete(id); return n; }), 2000);
+        } catch {
+          showToast('error', '儲存失敗');
+        } finally {
+          setSavingIds(s => { const n = new Set(s); n.delete(id); return n; });
+        }
+      })();
+      return prev;
+    });
+  }, [showToast]);
 
-  const hasDirtyFields = (id: string) => dirty[id] && Object.keys(dirty[id]).length > 0;
-
-  const handleSaveFields = async (id: string) => {
-    const fields = dirty[id];
-    if (!fields || Object.keys(fields).length === 0) return;
-    setSavingIds(prev => new Set(prev).add(id));
-    try {
-      const res = await apiFetch(`/admin/site-images/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(fields),
-      });
-      if (!res.ok) {
-        showToast('error', `儲存失敗 (HTTP ${res.status})`);
-        return;
-      }
-      setImages(prev => prev.map(img => img.id === id ? { ...img, ...fields } as SiteImage : img));
-      setDirty(prev => { const n = { ...prev }; delete n[id]; return n; });
-      setSavedIds(prev => new Set(prev).add(id));
-      setTimeout(() => setSavedIds(prev => { const n = new Set(prev); n.delete(id); return n; }), 2000);
-    } catch {
-      showToast('error', '儲存失敗');
-    } finally {
-      setSavingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-    }
-  };
-
-  const handleUpload = async (imgId: string, file: File) => {
+  const handleUpload = useCallback(async (imgId: string, file: File) => {
     const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
     console.log(`[SiteImages] 開始上傳: ${file.name} (${fileSizeMB}MB, ${file.type}) → 目標ID: ${imgId}`);
     if (file.size > 10 * 1024 * 1024) { showToast('error', `檔案 ${file.name} 太大 (${fileSizeMB}MB)，上限 10MB`); return; }
@@ -98,28 +256,22 @@ export function AdminSiteImages() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      console.log('[SiteImages] Step 1: POST /api/upload ...');
       const uploadRes = await apiFetch('/upload', { method: 'POST', body: formData });
       if (!uploadRes.ok) {
         const errText = await uploadRes.text().catch(() => '');
-        console.error(`[SiteImages] Step 1 失敗: HTTP ${uploadRes.status}`, errText);
-        showToast('error', `上傳失敗 (HTTP ${uploadRes.status})，檔案: ${file.name}`);
+        console.error(`[SiteImages] 上傳失敗: HTTP ${uploadRes.status}`, errText);
+        showToast('error', `上傳失敗 (HTTP ${uploadRes.status})`);
         return;
       }
       const { url } = await uploadRes.json();
-      console.log(`[SiteImages] Step 1 成功: 檔案已上傳 → ${url}`);
-      console.log(`[SiteImages] Step 2: PUT /api/admin/site-images/${imgId} ...`);
       const updateRes = await apiFetch(`/admin/site-images/${imgId}`, {
         method: 'PUT',
         body: JSON.stringify({ imageUrl: url }),
       });
       if (!updateRes.ok) {
-        const errText = await updateRes.text().catch(() => '');
-        console.error(`[SiteImages] Step 2 失敗: HTTP ${updateRes.status}`, errText);
-        showToast('error', `儲存失敗 (HTTP ${updateRes.status})，圖片已上傳但未套用`);
+        showToast('error', `儲存失敗 (HTTP ${updateRes.status})`);
         return;
       }
-      console.log(`[SiteImages] Step 2 成功: 圖片已套用到 ${imgId}`);
       setImages(prev => prev.map(img => img.id === imgId ? { ...img, imageUrl: url } : img));
       showToast('success', `上傳成功 — ${file.name}`);
     } catch (err) {
@@ -128,7 +280,33 @@ export function AdminSiteImages() {
     } finally {
       setUploading(null);
     }
-  };
+  }, [showToast]);
+
+  const handleToggleVisible = useCallback(async (img: SiteImage) => {
+    try {
+      await apiFetch(`/admin/site-images/${img.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ visible: !img.visible }),
+      });
+      setImages(prev => prev.map(i => i.id === img.id ? { ...i, visible: !i.visible } : i));
+    } catch { showToast('error', '操作失敗'); }
+  }, [showToast]);
+
+  const handleMove = useCallback(async (list: SiteImage[], index: number, direction: 'up' | 'down') => {
+    const swapIdx = direction === 'up' ? index - 1 : index + 1;
+    if (swapIdx < 0 || swapIdx >= list.length) return;
+    const items = list.map((item, i) => ({
+      id: item.id,
+      sortOrder: i === index ? list[swapIdx].sortOrder : i === swapIdx ? list[index].sortOrder : item.sortOrder,
+    }));
+    try {
+      await apiFetch('/admin/site-images/reorder/batch', {
+        method: 'PUT',
+        body: JSON.stringify({ items }),
+      });
+      load();
+    } catch { showToast('error', '排序失敗'); }
+  }, [load, showToast]);
 
   const handleAddBanner = async () => {
     setSaving(true);
@@ -171,32 +349,6 @@ export function AdminSiteImages() {
     }
   };
 
-  const handleToggleVisible = async (img: SiteImage) => {
-    try {
-      await apiFetch(`/admin/site-images/${img.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ visible: !img.visible }),
-      });
-      setImages(prev => prev.map(i => i.id === img.id ? { ...i, visible: !i.visible } : i));
-    } catch { showToast('error', '操作失敗'); }
-  };
-
-  const handleMove = async (list: SiteImage[], index: number, direction: 'up' | 'down') => {
-    const swapIdx = direction === 'up' ? index - 1 : index + 1;
-    if (swapIdx < 0 || swapIdx >= list.length) return;
-    const items = list.map((item, i) => ({
-      id: item.id,
-      sortOrder: i === index ? list[swapIdx].sortOrder : i === swapIdx ? list[index].sortOrder : item.sortOrder,
-    }));
-    try {
-      await apiFetch('/admin/site-images/reorder/batch', {
-        method: 'PUT',
-        body: JSON.stringify({ items }),
-      });
-      load();
-    } catch { showToast('error', '排序失敗'); }
-  };
-
   const handleAddBottom = async () => {
     if (bottomImage) return;
     setSaving(true);
@@ -210,119 +362,7 @@ export function AdminSiteImages() {
     finally { setSaving(false); }
   };
 
-  const SaveButton = ({ id }: { id: string }) => {
-    const isSaving = savingIds.has(id);
-    const isSaved = savedIds.has(id);
-    const isDirty = hasDirtyFields(id);
-    if (isSaved) {
-      return (
-        <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg">
-          <Check className="w-3.5 h-3.5" /> 已儲存
-        </span>
-      );
-    }
-    if (!isDirty) return null;
-    return (
-      <button onClick={() => handleSaveFields(id)} disabled={isSaving}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
-        {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-        {isSaving ? '儲存中...' : '儲存'}
-      </button>
-    );
-  };
-
-  const ImageCard = ({ img, showControls, list, index }: { img: SiteImage; showControls?: boolean; list?: SiteImage[]; index?: number }) => (
-    <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${!img.visible ? 'opacity-60' : ''}`}>
-      <div className="aspect-video bg-slate-100 flex items-center justify-center relative">
-        {img.imageUrl ? (
-          <img src={img.imageUrl} alt={getDirtyValue(img, 'altText')} className="w-full h-full object-contain" />
-        ) : (
-          <div className="text-slate-400 text-center">
-            <Image className="w-10 h-10 mx-auto mb-1" />
-            <p className="text-xs">尚未上傳</p>
-          </div>
-        )}
-        {uploading === img.id && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <RefreshCw className="w-6 h-6 text-white animate-spin" />
-          </div>
-        )}
-      </div>
-      <div className="p-3 space-y-2">
-        <div className="flex items-center gap-2">
-          <input
-            value={getDirtyValue(img, 'altText')}
-            onChange={e => markDirty(img.id, 'altText', e.target.value)}
-            placeholder="替代文字 (alt)"
-            className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
-          />
-          <SaveButton id={img.id} />
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          <label className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-100 text-xs font-medium">
-            <Upload className="w-3.5 h-3.5" />
-            {img.imageUrl ? '更換' : '上傳'}
-            <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
-              onChange={e => { if (e.target.files?.[0]) handleUpload(img.id, e.target.files[0]); e.target.value = ''; }} />
-          </label>
-          {showControls && (
-            <>
-              <button onClick={() => handleToggleVisible(img)}
-                className={`px-2 py-1.5 rounded-lg text-xs font-medium ${img.visible ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                {img.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-              </button>
-              {list && index !== undefined && (
-                <>
-                  <button onClick={() => handleMove(list, index, 'up')} disabled={index === 0}
-                    className="px-1.5 py-1.5 bg-slate-100 rounded-lg text-xs disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => handleMove(list, index, 'down')} disabled={index === list.length - 1}
-                    className="px-1.5 py-1.5 bg-slate-100 rounded-lg text-xs disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
-                </>
-              )}
-              <button onClick={() => setDeleteTarget(img.id)}
-                className="px-2 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  const TextBlockCard = ({ img, list, index }: { img: SiteImage; list: SiteImage[]; index: number }) => (
-    <div className={`bg-white rounded-xl border shadow-sm p-4 ${!img.visible ? 'opacity-60' : ''}`}>
-      <div className="flex items-center gap-2 mb-3">
-        <Type className="w-4 h-4 text-blue-600" />
-        <span className="text-xs font-bold text-slate-500">文字區塊</span>
-        <div className="flex-1" />
-        <SaveButton id={img.id} />
-        <button onClick={() => handleToggleVisible(img)}
-          className={`px-2 py-1 rounded text-xs ${img.visible ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-          {img.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-        </button>
-        <button onClick={() => handleMove(list, index, 'up')} disabled={index === 0}
-          className="px-1 py-1 bg-slate-100 rounded text-xs disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
-        <button onClick={() => handleMove(list, index, 'down')} disabled={index === list.length - 1}
-          className="px-1 py-1 bg-slate-100 rounded text-xs disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
-        <button onClick={() => setDeleteTarget(img.id)}
-          className="px-1 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100"><Trash2 className="w-3 h-3" /></button>
-      </div>
-      <input
-        value={getDirtyValue(img, 'title')}
-        onChange={e => markDirty(img.id, 'title', e.target.value)}
-        placeholder="標題"
-        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 mb-2 font-medium"
-      />
-      <textarea
-        value={getDirtyValue(img, 'textContent')}
-        onChange={e => markDirty(img.id, 'textContent', e.target.value)}
-        placeholder="內容文字..."
-        rows={4}
-        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 resize-y"
-      />
-    </div>
-  );
+  const cardProps = { dirty, savingIds, savedIds, uploading, onMarkDirty: markDirty, onSave: handleSaveFields, onUpload: handleUpload, onToggleVisible: handleToggleVisible, onMove: handleMove, onDelete: setDeleteTarget };
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -403,7 +443,7 @@ export function AdminSiteImages() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {allBanners.map((img, i) => (
-                <ImageCard key={img.id} img={img} showControls list={allBanners} index={i} />
+                <ImageCard key={img.id} img={img} showControls list={allBanners} index={i} {...cardProps} />
               ))}
             </div>
           )}
@@ -421,7 +461,7 @@ export function AdminSiteImages() {
           </div>
           {bottomImage ? (
             <div className="max-w-md">
-              <ImageCard img={bottomImage} showControls />
+              <ImageCard img={bottomImage} showControls {...cardProps} />
             </div>
           ) : (
             <div className="text-center py-12 text-slate-400">尚無圖片，點擊「新增圖片」開始</div>
@@ -448,17 +488,17 @@ export function AdminSiteImages() {
             <div className="space-y-4">
               {aboutBlocks.map((img, i) => (
                 img.blockType === 'text' ? (
-                  <TextBlockCard key={img.id} img={img} list={aboutBlocks} index={i} />
+                  <TextBlockCard key={img.id} img={img} list={aboutBlocks} index={i} {...cardProps} />
                 ) : (
                   <div key={img.id} className="flex gap-4 items-start">
                     <div className="flex-1">
                       <input
-                        value={getDirtyValue(img, 'title')}
+                        value={(dirty[img.id] && 'title' in dirty[img.id]) ? dirty[img.id].title : (img.title || '')}
                         onChange={e => markDirty(img.id, 'title', e.target.value)}
                         placeholder="標題（選填）"
                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 mb-2 font-medium"
                       />
-                      <ImageCard img={img} showControls list={aboutBlocks} index={i} />
+                      <ImageCard img={img} showControls list={aboutBlocks} index={i} {...cardProps} />
                     </div>
                   </div>
                 )
