@@ -96,7 +96,7 @@ export async function login(email: string, password: string): Promise<LoginResul
   }
 }
 
-export async function register(name: string, email: string, password: string, phone: string): Promise<LoginResult> {
+export async function register(name: string, email: string, password: string, phone?: string): Promise<LoginResult> {
   try {
     const res = await apiFetch('/auth/register', {
       method: 'POST',

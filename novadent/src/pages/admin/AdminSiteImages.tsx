@@ -46,34 +46,40 @@ export function AdminSiteImages() {
   const aboutBlocks = images.filter(i => i.page === 'ABOUT').sort((a, b) => a.sortOrder - b.sortOrder);
 
   const handleUpload = async (imgId: string, file: File) => {
-    if (file.size > 5 * 1024 * 1024) { showToast('error', '檔案大小不可超過 5MB'); return; }
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { showToast('error', '僅支援 JPG / PNG / WebP 格式'); return; }
+    const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+    console.log(`[SiteImages] 開始上傳: ${file.name} (${fileSizeMB}MB, ${file.type}) → 目標ID: ${imgId}`);
+    if (file.size > 5 * 1024 * 1024) { showToast('error', `檔案 ${file.name} 太大 (${fileSizeMB}MB)，上限 5MB`); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { showToast('error', `${file.name} 格式不支援，僅接受 JPG / PNG / WebP`); return; }
     setUploading(imgId);
     const formData = new FormData();
     formData.append('file', file);
     try {
+      console.log('[SiteImages] Step 1: POST /api/upload ...');
       const uploadRes = await apiFetch('/upload', { method: 'POST', body: formData });
       if (!uploadRes.ok) {
         const errText = await uploadRes.text().catch(() => '');
-        console.error('[SiteImages] Upload failed:', uploadRes.status, errText);
-        showToast('error', `上傳失敗 (${uploadRes.status})`);
+        console.error(`[SiteImages] Step 1 失敗: HTTP ${uploadRes.status}`, errText);
+        showToast('error', `上傳失敗 (HTTP ${uploadRes.status})，檔案: ${file.name}`);
         return;
       }
       const { url } = await uploadRes.json();
+      console.log(`[SiteImages] Step 1 成功: 檔案已上傳 → ${url}`);
+      console.log(`[SiteImages] Step 2: PUT /api/admin/site-images/${imgId} ...`);
       const updateRes = await apiFetch(`/admin/site-images/${imgId}`, {
         method: 'PUT',
         body: JSON.stringify({ imageUrl: url }),
       });
       if (!updateRes.ok) {
         const errText = await updateRes.text().catch(() => '');
-        console.error('[SiteImages] Update failed:', updateRes.status, errText);
-        showToast('error', `儲存失敗 (${updateRes.status})`);
+        console.error(`[SiteImages] Step 2 失敗: HTTP ${updateRes.status}`, errText);
+        showToast('error', `儲存失敗 (HTTP ${updateRes.status})，圖片已上傳但未套用`);
         return;
       }
-      showToast('success', '上傳成功');
+      console.log(`[SiteImages] Step 2 成功: 圖片已套用到 ${imgId}`);
+      showToast('success', `上傳成功 — ${file.name}`);
       load();
     } catch (err) {
-      console.error('[SiteImages] Upload error:', err);
+      console.error('[SiteImages] 上傳例外錯誤:', err);
       showToast('error', '上傳失敗，請檢查網路連線');
     } finally {
       setUploading(null);
