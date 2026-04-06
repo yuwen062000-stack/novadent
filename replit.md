@@ -7,7 +7,7 @@ NestJS backend + React/Vite frontend dental industry platform. **Standalone npm 
 - **Backend**: NestJS 11 (TypeScript), Drizzle ORM, PostgreSQL
 - **Frontend**: React 18 + Vite, TailwindCSS, Framer Motion, Lucide icons
 - **Auth**: JWT access token (memory) + HttpOnly refresh cookie
-- **File uploads**: Local storage at `{cwd}/../uploads/`, served at `/api/uploads/*`
+- **File uploads**: GCS object storage (Replit App Storage) with local filesystem fallback, served at `/api/uploads/*`
 - **Email**: Nodemailer (MailService, configurable via SMTP env vars)
 
 ## Project Structure
@@ -127,3 +127,6 @@ cd novadent/backend && NODE_ENV=production node dist/src/main.js
 - `SESSION_SECRET` — Session secret
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — Mail config (optional)
 - `CORS_ORIGINS` — Comma-separated allowed origins (optional)
+- `DEFAULT_OBJECT_STORAGE_BUCKET_ID` — GCS bucket for file uploads (auto-provisioned)
+- `PUBLIC_OBJECT_SEARCH_PATHS` — GCS public asset search paths
+- `PRIVATE_OBJECT_DIR` — GCS private object directory
