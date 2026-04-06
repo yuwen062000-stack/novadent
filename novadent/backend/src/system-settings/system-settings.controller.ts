@@ -1,6 +1,6 @@
 // ── V1.3 系統參數設定 Controller ──────────────────────────────
 // 僅 SUPER_ADMIN 可存取，提供系統參數的讀取與批次/單筆更新
-import { Controller, Get, Put, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { SystemSettingsService } from './system-settings.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -28,6 +28,15 @@ export class SystemSettingsController {
 
   @Put(':key')
   async upsertByKey(
+    @Param('key') key: string,
+    @Body() body: { value: string; description?: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.service.upsert(key, body.value, body.description, user.id);
+  }
+
+  @Patch(':key')
+  async patchByKey(
     @Param('key') key: string,
     @Body() body: { value: string; description?: string },
     @CurrentUser() user: any,

@@ -7,6 +7,12 @@ export function SuperMenuManager() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const showToast = (msg: string, ok: boolean) => {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 2500);
+  };
 
   const load = () => {
     setLoading(true);
@@ -24,12 +30,17 @@ export function SuperMenuManager() {
       body: JSON.stringify({ items: menuItems }),
     });
     setSaving(false);
-    if (res.ok) alert('選單設定已儲存');
-    else alert('儲存失敗，請重試');
+    if (res.ok) { showToast('選單設定已儲存', true); load(); }
+    else showToast('儲存失敗，請重試', false);
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto relative">
+      {toast && (
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-white font-bold shadow-lg transition-all ${toast.ok ? 'bg-green-600' : 'bg-red-600'}`}>
+          {toast.msg}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">選單管理</h1>

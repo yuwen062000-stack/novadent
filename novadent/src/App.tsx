@@ -544,6 +544,61 @@ const QAPage = React.memo(({ setQaCompleted, setView }: { setQaCompleted: (v: bo
   );
 });
 
+const ClinicDetail = React.memo(({ setView, selectedClinic }: { setView: (v: string) => void; selectedClinic: any }) => (
+  <div className="p-4 md:p-8 max-w-5xl mx-auto py-6 md:py-10">
+    <button onClick={() => setView('CASE_MANAGEMENT')} className="text-slate-500 hover:text-blue-800 flex items-center gap-2 mb-6 md:mb-8 font-medium transition-colors text-sm md:text-base">
+      <ArrowRight size={18} className="rotate-180" /> 返回案件管理
+    </button>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+      <div className="lg:col-span-2 space-y-6 md:space-y-8">
+        <div className="bg-white rounded-2xl md:rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+          <img src={selectedClinic?.coverPhoto || `https://picsum.photos/seed/${selectedClinic?.id}/800/400`} className="w-full h-48 md:h-64 object-cover" referrerPolicy="no-referrer" />
+          <div className="p-6 md:p-10">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
+              <div>
+                <h1 className="text-2xl md:text-4xl font-black text-slate-900 mb-2">{selectedClinic?.name}</h1>
+                <p className="flex items-center gap-2 text-slate-500 text-xs md:text-base"><MapPin size={18} className="shrink-0" /> {selectedClinic?.detailedAddress}</p>
+              </div>
+              <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-3 md:px-4 py-1.5 md:py-2 rounded-xl font-bold text-xs md:text-base">
+                <Star size={16} fill="currentColor" /> {selectedClinic?.rating}
+              </div>
+            </div>
+            <p className="text-sm md:text-lg text-slate-600 leading-relaxed mb-8 md:mb-10">{selectedClinic?.description}</p>
+            <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-4">服務項目</h3>
+            <div className="flex flex-wrap gap-2 md:gap-3 mb-8 md:mb-10">
+              {selectedClinic?.services?.map((s: string) => (
+                <span key={s} className="px-3 md:px-4 py-1.5 md:py-2 bg-blue-50 text-blue-900 rounded-xl text-[10px] md:text-sm font-bold">{s}</span>
+              ))}
+            </div>
+            <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-4">專業醫師團隊</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              {selectedClinic?.doctorTeam?.map((d: string) => (
+                <div key={d} className="flex items-center gap-3 p-3 md:p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center text-blue-700 shadow-sm shrink-0"><Stethoscope size={18} /></div>
+                  <span className="font-bold text-slate-800 text-sm md:text-base">{d}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="lg:col-span-1 space-y-6">
+        <div className="bg-blue-950 text-white p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] shadow-xl lg:sticky lg:top-24">
+          <h3 className="text-xl md:text-2xl font-bold mb-6">立即預約諮詢</h3>
+          <div className="space-y-4 mb-8">
+            <div className="flex items-center gap-3 text-slate-400 text-sm md:text-base"><Phone size={18} /> {selectedClinic?.phone}</div>
+            <div className="flex items-center gap-3 text-slate-400 text-sm md:text-base"><Clock size={18} /> 09:00 - 21:00</div>
+          </div>
+          <button className="w-full bg-blue-800 hover:bg-blue-700 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-base md:text-lg transition-all shadow-lg shadow-blue-800/20">
+            撥打電話預約
+          </button>
+          <p className="text-[10px] md:text-xs text-slate-500 mt-6 text-center">預約後請告知診所您是 Novadent 會員，以便開啟進度追蹤。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+));
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -640,6 +695,7 @@ function AppContent() {
     SUPER_AUDIT_LOGS: '/super/audit',
     SUPER_QA_QUESTIONS: '/super/qa',
     SUPER_MFG_TEMPLATES: '/super/mfg',
+    ARTICLE: '/article',
     QA: '/qa',
     RECOMMENDATIONS: '/recommendations',
   };
@@ -736,66 +792,12 @@ function AppContent() {
 
 
   const handleRegisterSuccess = (registeredUser: AuthUser) => {
-    setUser(registeredUser);
+    setCurrentUser(registeredUser);
     setRole(registeredUser.role);
     handleSetView('MEMBER_QA');
   };
 
 
-  const ClinicDetail = ({ setView, selectedClinic }: any) => (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto py-6 md:py-10">
-      <button onClick={() => setView('CASE_MANAGEMENT')} className="text-slate-500 hover:text-blue-800 flex items-center gap-2 mb-6 md:mb-8 font-medium transition-colors text-sm md:text-base">
-        <ArrowRight size={18} className="rotate-180" /> 返回案件管理
-      </button>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-        <div className="lg:col-span-2 space-y-6 md:space-y-8">
-          <div className="bg-white rounded-2xl md:rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-            <img src={selectedClinic?.coverPhoto || `https://picsum.photos/seed/${selectedClinic?.id}/800/400`} className="w-full h-48 md:h-64 object-cover" referrerPolicy="no-referrer" />
-            <div className="p-6 md:p-10">
-              <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
-                <div>
-                  <h1 className="text-2xl md:text-4xl font-black text-slate-900 mb-2">{selectedClinic?.name}</h1>
-                  <p className="flex items-center gap-2 text-slate-500 text-xs md:text-base"><MapPin size={18} className="shrink-0" /> {selectedClinic?.detailedAddress}</p>
-                </div>
-                <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-3 md:px-4 py-1.5 md:py-2 rounded-xl font-bold text-xs md:text-base">
-                  <Star size={16} md:size={18} fill="currentColor" /> {selectedClinic?.rating}
-                </div>
-              </div>
-              <p className="text-sm md:text-lg text-slate-600 leading-relaxed mb-8 md:mb-10">{selectedClinic?.description}</p>
-              <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-4">服務項目</h3>
-              <div className="flex flex-wrap gap-2 md:gap-3 mb-8 md:mb-10">
-                {selectedClinic?.services.map((s: string) => (
-                  <span key={s} className="px-3 md:px-4 py-1.5 md:py-2 bg-blue-50 text-blue-900 rounded-xl text-[10px] md:text-sm font-bold">{s}</span>
-                ))}
-              </div>
-              <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-4">專業醫師團隊</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                {selectedClinic?.doctorTeam.map((d: string) => (
-                  <div key={d} className="flex items-center gap-3 p-3 md:p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center text-blue-700 shadow-sm shrink-0"><Stethoscope size={18} /></div>
-                    <span className="font-bold text-slate-800 text-sm md:text-base">{d}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-blue-950 text-white p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] shadow-xl lg:sticky lg:top-24">
-            <h3 className="text-xl md:text-2xl font-bold mb-6">立即預約諮詢</h3>
-            <div className="space-y-4 mb-8">
-              <div className="flex items-center gap-3 text-slate-400 text-sm md:text-base"><Phone size={18} /> {selectedClinic?.phone}</div>
-              <div className="flex items-center gap-3 text-slate-400 text-sm md:text-base"><Clock size={18} /> 09:00 - 21:00</div>
-            </div>
-            <button className="w-full bg-blue-800 hover:bg-blue-700 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-base md:text-lg transition-all shadow-lg shadow-blue-800/20">
-              撥打電話預約
-            </button>
-            <p className="text-[10px] md:text-xs text-slate-500 mt-6 text-center">預約後請告知診所您是 Novadent 會員，以便開啟進度追蹤。</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const PersonalSettings = () => (
     <div className="p-4 md:p-8 max-w-4xl mx-auto">

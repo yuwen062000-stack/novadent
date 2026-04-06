@@ -23,6 +23,11 @@ export class SiteImagesPublicController {
 export class SiteImagesAdminController {
   constructor(private siteImagesService: SiteImagesService) {}
 
+  @Get()
+  findAll(@Query('page') page?: string) {
+    return this.siteImagesService.findAll(page);
+  }
+
   @Post()
   create(
     @Body() body: { page: string; position: string; title?: string; blockType?: string; textContent?: string; imageUrl?: string; altText?: string },
