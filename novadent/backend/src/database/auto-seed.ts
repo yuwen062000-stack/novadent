@@ -88,13 +88,13 @@ async function deduplicateAndSeedMenu(pool: Pool) {
 
 async function seedSystemSettings(pool: Pool) {
   const defaults: [string, string, string][] = [
-    ['SMTP_HOST', 'smtp.gmail.com', 'SMTP 伺服器地址'],
-    ['SMTP_PORT', '587', 'SMTP 通訊埠'],
-    ['SMTP_SECURE', 'false', 'SMTP 是否使用 TLS'],
-    ['SMTP_USER', '', 'SMTP 帳號（Gmail 地址）'],
-    ['SMTP_PASS', '', 'SMTP 密碼（Gmail 應用程式密碼）'],
-    ['MAIL_FROM', 'noreply@novadent.com', '預設寄件者信箱'],
-    ['SITE_NAME', 'Novadent 諾星牙科平台', '網站名稱'],
+    ['smtp_host', 'smtp.gmail.com', 'SMTP 伺服器地址（Gmail）'],
+    ['smtp_port', '587', 'SMTP 通訊埠'],
+    ['smtp_secure', 'false', 'SMTP 是否使用 SSL'],
+    ['smtp_user', '', 'SMTP 帳號（Gmail 地址）'],
+    ['smtp_pass', '', 'SMTP 密碼（Gmail 應用程式密碼）'],
+    ['smtp_from', 'noreply@novadent.com', '預設寄件者信箱'],
+    ['site_name', 'Novadent 諾星牙科平台', '網站名稱'],
   ];
   for (const [key, value, desc] of defaults) {
     await pool.query(
