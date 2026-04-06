@@ -181,6 +181,11 @@ export async function refreshAccessToken(): Promise<AuthUser | null> {
       return null;
     }
     setToken(data.accessToken);
+    // ⚠️ Token Rotation 修正：後端每次 refresh 都會產生新的 refreshToken（舊的已刪除）
+    // 必須把新的 refreshToken 存回 localStorage，否則下次 AT 過期時會拿舊 RT 去換 → 401 → 變 GUEST
+    if (data.refreshToken) {
+      setRefreshToken(data.refreshToken);
+    }
     const user: AuthUser = {
       id:                  data.user.id,
       email:               data.user.email,
