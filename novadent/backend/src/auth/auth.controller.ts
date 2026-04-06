@@ -47,12 +47,19 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() body: RefreshTokenDto, @Req() req: Request) {
+  async refresh(
+    @Body() body: RefreshTokenDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const token = body?.refreshToken || req.cookies?.refresh_token;
     if (!token) {
       return { success: false, message: 'Refresh token 不存在' };
     }
     const result = await this.authService.refreshAccessToken(token);
+    if (result.refreshToken) {
+      this.setRefreshCookie(res, result.refreshToken);
+    }
     return { success: true, ...result };
   }
 
@@ -128,6 +135,9 @@ export class AuthController {
   @Post('init-super-admin')
   @HttpCode(HttpStatus.OK)
   async initSuperAdmin() {
+    if (process.env.NODE_ENV === 'production') {
+      return { success: false, message: '正式環境禁止使用此端點' };
+    }
     return this.authService.initSuperAdmin();
   }
 }

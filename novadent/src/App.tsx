@@ -56,12 +56,357 @@ import { AccountMgmtPage } from './pages/shared/AccountMgmtPage';
 export default function App() {
   return (
     <BrowserRouter>
-      {/* C-08 ToastContainer：全域輕量通知，放在最頂層確保全頁可用 */}
       <ToastContainer />
       <AppContent />
     </BrowserRouter>
   );
 }
+
+const NavItem = React.memo(({ icon, label, active, onClick, badge }: any) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative ${
+      active ? 'bg-navy-700 text-white shadow-lg shadow-blue-950/20' : 'hover:bg-blue-900 hover:text-white'
+    }`}
+  >
+    {icon}
+    <span className="font-medium">{label}</span>
+    {badge && <div className="absolute right-4 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />}
+  </button>
+));
+
+const NavGroup = React.memo(({ icon, label, active, children }: { icon: React.ReactNode; label: string; active: boolean; children: React.ReactNode }) => {
+  const [open, setOpen] = useState(active);
+  useEffect(() => { if (active) setOpen(true); }, [active]);
+  return (
+    <div>
+      <button onClick={() => setOpen(!open)}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active ? 'text-white' : 'hover:bg-blue-900 hover:text-white'}`}>
+        {icon}
+        <span className="font-medium flex-1 text-left">{label}</span>
+        <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="ml-4 pl-2 border-l border-blue-800/50 space-y-0.5 mt-0.5">{children}</div>}
+    </div>
+  );
+});
+
+const FeatureCard = React.memo(({ icon, title, desc }: any) => (
+  <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all">
+    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-8">{icon}</div>
+    <h3 className="text-2xl font-bold text-slate-900 mb-4">{title}</h3>
+    <p className="text-slate-500 leading-relaxed">{desc}</p>
+  </div>
+));
+
+const PublicHeader = React.memo(() => {
+  const location = useLocation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  return (
+    <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 sm:gap-3 cursor-pointer">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-800 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-800/20">
+            <Activity className="text-white w-5 h-5 sm:w-6 sm:h-6" />
+          </div>
+          <span className="font-bold text-xl sm:text-2xl text-slate-900 tracking-tight">Novadent</span>
+        </Link>
+        <nav className="hidden md:flex items-center gap-8">
+          <Link to="/" className={`text-sm font-bold ${location.pathname === '/' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>首頁</Link>
+          <Link to="/about" className={`text-sm font-bold ${location.pathname === '/about' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>關於我們與服務</Link>
+          <Link to="/education" className={`text-sm font-bold ${location.pathname === '/education' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>衛教中心</Link>
+          <Link to="/videos" className={`text-sm font-bold ${location.pathname === '/videos' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>影音專區</Link>
+        </nav>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden sm:flex items-center gap-2">
+            <Link to="/login" className="text-sm font-bold text-blue-800 px-4 py-2 hover:bg-blue-50 rounded-xl transition-colors">登入</Link>
+            <Link to="/register" className="bg-navy-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:bg-blue-950 transition-all">立即註冊</Link>
+          </div>
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </div>
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white border-b border-slate-100 overflow-hidden">
+            <div className="px-4 py-6 space-y-4">
+              <Link to="/" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">首頁</Link>
+              <Link to="/about" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">關於我們與服務</Link>
+              <Link to="/education" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">衛教中心</Link>
+              <Link to="/videos" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">影音專區</Link>
+              <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
+                <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-sm font-bold text-blue-800 border border-blue-100 rounded-xl hover:bg-blue-50 transition-all">登入</Link>
+                <Link to="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-sm font-bold text-white bg-navy-700 rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-950 transition-all">立即註冊</Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  );
+});
+
+const PublicFooter = React.memo(({ footerContacts }: { footerContacts: Record<string, string> }) => (
+  <footer className="bg-blue-950 text-slate-400 py-16">
+    <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+      <div className="col-span-1 md:col-span-1">
+        <div className="flex items-center gap-3 mb-6">
+          <Activity className="text-blue-700 w-6 h-6" />
+          <span className="font-bold text-xl text-white">Novadent</span>
+        </div>
+        <p className="text-sm leading-relaxed">專業假牙製作透明化平台，連結診所、牙技所與會員，建立醫療信任新標準。</p>
+      </div>
+      <div>
+        <h4 className="text-white font-bold mb-6">快速連結</h4>
+        <ul className="space-y-4 text-sm">
+          <li><Link to="/about" className="hover:text-blue-500">關於我們</Link></li>
+          <li><Link to="/education" className="hover:text-blue-500">衛教知識</Link></li>
+          <li><Link to="/videos" className="hover:text-blue-500">影音專區</Link></li>
+        </ul>
+      </div>
+      <div>
+        <h4 className="text-white font-bold mb-6">平台說明</h4>
+        <ul className="space-y-4 text-sm">
+          <li><Link to="/terms" className="hover:text-blue-500">服務條款</Link></li>
+          <li><Link to="/privacy" className="hover:text-blue-500">隱私權政策</Link></li>
+        </ul>
+      </div>
+      <div>
+        <h4 className="text-white font-bold mb-6">聯絡我們</h4>
+        <ul className="space-y-4 text-sm">
+          {(footerContacts.CONTACT_PHONE || '02-2345-6789') && (
+            <li className="flex items-center gap-2"><Phone size={16} /> {footerContacts.CONTACT_PHONE || '02-2345-6789'}</li>
+          )}
+          {(footerContacts.CONTACT_ADDRESS || '台北市信義區信義路五段') && (
+            <li className="flex items-center gap-2"><MapPin size={16} /> {footerContacts.CONTACT_ADDRESS || '台北市信義區信義路五段'}</li>
+          )}
+        </ul>
+      </div>
+    </div>
+    <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-slate-800 text-center text-xs">
+      &copy; 2026 Novadent. All rights reserved. 本平台不提供醫療診斷建議。
+    </div>
+  </footer>
+));
+
+interface HomePageProps {
+  homeBanners: any[];
+  heroBannerIndex: number;
+  setHeroBannerIndex: (i: number) => void;
+  homeConfig: HomeConfig;
+  homeBottomImage: any;
+}
+
+const HomePage = React.memo(({ homeBanners, heroBannerIndex, setHeroBannerIndex, homeConfig, homeBottomImage }: HomePageProps) => (
+  <div className="bg-white">
+    <section className="relative py-12 sm:py-24 overflow-hidden">
+      <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full bg-blue-50/50 -skew-x-12 translate-x-1/4 -z-10"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+          <span className="inline-block px-4 py-1.5 bg-blue-100 text-blue-900 rounded-full text-[10px] sm:text-xs font-bold mb-6 uppercase tracking-widest">牙科製作透明化首選</span>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6 sm:mb-8">
+            讓假牙製作過程<br />
+            <span className="text-blue-800">清晰可見</span>，建立信任
+          </h1>
+          <p className="text-base sm:text-xl text-slate-600 mb-8 sm:mb-10 leading-relaxed">
+            Novadent 連結病患、診所與牙技所，提供即時進度追蹤與專業衛教，讓您的假牙製作旅程不再充滿未知。
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link to="/login" className="bg-navy-700 text-white px-8 sm:px-10 py-4 rounded-2xl font-bold text-base sm:text-lg shadow-xl shadow-blue-900/20 hover:bg-blue-950 transition-all flex items-center justify-center gap-2">
+              立即開始 QA 諮詢 <ArrowRight size={20} />
+            </Link>
+            <Link to="/about" className="bg-white text-slate-700 border border-slate-200 px-8 sm:px-10 py-4 rounded-2xl font-bold text-base sm:text-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+              了解服務流程
+            </Link>
+          </div>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative">
+          <div className="bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden relative">
+            {homeBanners.length > 0 ? (
+              <>
+                {homeBanners.map((b, i) => (
+                  <img key={b.id} src={b.imageUrl} alt={b.altText || 'Banner'} className={`rounded-[1rem] sm:rounded-[1.5rem] w-full h-auto object-cover aspect-[4/3] transition-opacity duration-700 ${i === heroBannerIndex ? 'opacity-100' : 'opacity-0 absolute inset-0 p-3 sm:p-4'}`} referrerPolicy="no-referrer" />
+                ))}
+                {homeBanners.length > 1 && (
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                    {homeBanners.map((_, i) => (
+                      <button key={i} onClick={() => setHeroBannerIndex(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${i === heroBannerIndex ? 'bg-blue-800 scale-125' : 'bg-white/70'}`} />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <img src={homeConfig.heroBannerUrl} alt="Dental Tech" className="rounded-[1rem] sm:rounded-[1.5rem] w-full h-auto object-cover aspect-[4/3]" referrerPolicy="no-referrer" />
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </section>
+    <section className="py-16 sm:py-24 bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-20">
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 sm:mb-6">為什麼選擇 Novadent？</h2>
+          <p className="text-sm sm:text-lg text-slate-500">我們為牙科製作流程帶來前所未有的透明度與協作效率。</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+          <FeatureCard icon={<ShieldCheck className="text-blue-800" size={32} />} title="專業信任" desc="所有合作診所與牙技所皆經過嚴格審核，確保醫療品質。" />
+          <FeatureCard icon={<Clock className="text-blue-800" size={32} />} title="即時追蹤" desc="隨時隨地查看假牙製作進度，掌握每一個製程節點。" />
+          <FeatureCard icon={<BookOpen className="text-blue-800" size={32} />} title="衛教知識" desc="提供專業的假牙護理與口腔健康知識，讓您更安心。" />
+        </div>
+        <div className="mt-20 pt-20 border-t border-slate-200">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-20">
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 sm:mb-6">看懂牙科，從這裡開始</h2>
+            <p className="text-sm sm:text-lg text-slate-500">專業知識影音，讓你輕鬆了解牙科</p>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-[2rem] sm:rounded-[3rem] border border-slate-200 overflow-hidden shadow-xl">
+              <div className="grid grid-cols-1 lg:grid-cols-5">
+                <div className="lg:col-span-3 aspect-video relative">
+                  <iframe width="100%" height="100%" src="https://www.youtube.com/embed/VHqpMdA7fik" title="Novadent 平台介紹" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="absolute inset-0"></iframe>
+                </div>
+                <div className="lg:col-span-2 p-8 sm:p-10 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-blue-50 text-blue-800 text-xs font-bold px-3 py-1 rounded-full">平台介紹</span>
+                      <span className="text-slate-400 text-xs font-medium">2026/03/17</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-4">Novadent 平台介紹</h3>
+                    <p className="text-slate-500 text-sm leading-relaxed">了解 Novadent 如何透過數位化平台，連結診所、牙技所與病患，建立透明且高效的牙科製作流程。</p>
+                  </div>
+                  <div className="mt-8 flex justify-end">
+                    <Link to="/videos" className="text-blue-800 font-bold text-sm flex items-center gap-1 hover:gap-2 transition-all">查看更多影片 <ChevronRight size={18} /></Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {homeBottomImage?.imageUrl && (
+          <div className="mt-20 pt-20 border-t border-slate-200">
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 sm:mb-6">臺灣牙科產業的現狀挑戰</h2>
+            </div>
+            <div className="flex justify-center">
+              <img src={homeBottomImage.imageUrl} alt={homeBottomImage.altText || '臺灣牙科產業的現狀挑戰'} className="w-full rounded-2xl shadow-lg" referrerPolicy="no-referrer" />
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  </div>
+));
+
+interface SidebarProps {
+  role: string;
+  view: string;
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (v: boolean) => void;
+  handleSetView: (v: string) => void;
+  currentUser: AuthUser | null;
+  handleLogout: () => void;
+}
+
+const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen, handleSetView, currentUser, handleLogout }: SidebarProps) => {
+  const setViewAndClose = (v: string) => { handleSetView(v); setIsMobileMenuOpen(false); };
+  const goHome = () => { setIsMobileMenuOpen(false); };
+
+  return (
+    <>
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsMobileMenuOpen(false)} className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-50 md:hidden" />
+        )}
+      </AnimatePresence>
+      <div className={`fixed md:sticky top-0 left-0 z-50 h-screen bg-blue-950 text-blue-200 flex flex-col shrink-0 transition-transform duration-300 md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 w-64 shadow-2xl' : '-translate-x-full md:w-64'}`}>
+        <div className="p-6 flex items-center justify-between border-b border-blue-900">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={goHome}>
+            <div className="w-8 h-8 bg-blue-800 rounded-lg flex items-center justify-center">
+              <Activity className="text-white w-5 h-5" />
+            </div>
+            <span className="font-bold text-xl text-white tracking-tight">Novadent</span>
+          </div>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden p-2 hover:bg-blue-900 rounded-lg transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {role === 'INSURER' && (
+            <>
+              <NavItem icon={<LayoutDashboard size={20} />} label="總覽儀表板" active={view === 'OVERVIEW'} onClick={() => setViewAndClose('OVERVIEW')} />
+              <NavItem icon={<Users size={20} />} label="客戶管理" active={view === 'INSURER_CUSTOMER_MGMT'} onClick={() => setViewAndClose('INSURER_CUSTOMER_MGMT')} />
+            </>
+          )}
+          {role === 'ADMIN' && (
+            <NavItem icon={<ClipboardList size={20} />} label="案件總覽" active={view === 'CASE_MANAGEMENT' || view === 'DETAIL'} onClick={() => setViewAndClose('CASE_MANAGEMENT')} />
+          )}
+          {role === 'CLINIC' && (
+            <>
+              <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => setViewAndClose('CLINIC_CASES')} />
+              <NavItem icon={<Plus size={20} />} label="新建案件" active={view === 'CLINIC_CREATE_CASE'} onClick={() => setViewAndClose('CLINIC_CREATE_CASE')} />
+              <NavItem icon={<Microscope size={20} />} label="牙技所設定" active={view === 'LAB_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
+              <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
+            </>
+          )}
+          {role === 'LAB' && (
+            <>
+              <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => setViewAndClose('LAB_CASES')} />
+              <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
+            </>
+          )}
+          {role === 'MEMBER' && (
+            <>
+              <NavItem icon={<ClipboardList size={20} />} label="假牙問診" active={view === 'MEMBER_QA'} onClick={() => setViewAndClose('MEMBER_QA')} />
+              <NavItem icon={<HeartPulse size={20} />} label="推薦診所" active={view === 'MEMBER_RECOMMENDATIONS'} onClick={() => setViewAndClose('MEMBER_RECOMMENDATIONS')} />
+              <NavItem icon={<Activity size={20} />} label="案件追蹤" active={view === 'MEMBER_CASES'} onClick={() => setViewAndClose('MEMBER_CASES')} />
+              <NavItem icon={<User size={20} />} label="個人設定" active={view === 'SETTINGS'} onClick={() => setViewAndClose('SETTINGS')} />
+            </>
+          )}
+          {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+            <>
+              <NavItem icon={<LayoutDashboard size={20} />} label="統計儀表板" active={view === 'ADMIN_DASHBOARD'} onClick={() => setViewAndClose('ADMIN_DASHBOARD')} />
+              <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ADMIN_USERS'} onClick={() => setViewAndClose('ADMIN_USERS')} />
+              <NavItem icon={<Building2 size={20} />} label="診所管理" active={view === 'ADMIN_CLINICS'} onClick={() => setViewAndClose('ADMIN_CLINICS')} />
+              <NavItem icon={<Microscope size={20} />} label="牙技所管理" active={view === 'ADMIN_LABS'} onClick={() => setViewAndClose('ADMIN_LABS')} />
+              <NavItem icon={<Activity size={20} />} label="合作連結" active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => setViewAndClose('ADMIN_PARTNER_LINKS')} />
+              <NavGroup icon={<FileText size={20} />} label="內容管理" active={['ADMIN_ARTICLES','ADMIN_NOTIFICATION_CMS','ADMIN_SITE_IMAGES','ADMIN_VIDEOS'].includes(view)}>
+                <NavItem icon={<FileText size={18} />} label="文章管理" active={view === 'ADMIN_ARTICLES'} onClick={() => setViewAndClose('ADMIN_ARTICLES')} />
+                <NavItem icon={<Bell size={18} />} label="通知廣播" active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => setViewAndClose('ADMIN_NOTIFICATION_CMS')} />
+                <NavItem icon={<Image size={18} />} label="圖片管理" active={view === 'ADMIN_SITE_IMAGES'} onClick={() => setViewAndClose('ADMIN_SITE_IMAGES')} />
+                <NavItem icon={<VideoIcon size={18} />} label="影音管理" active={view === 'ADMIN_VIDEOS'} onClick={() => setViewAndClose('ADMIN_VIDEOS')} />
+              </NavGroup>
+            </>
+          )}
+          {role === 'SUPER_ADMIN' && (
+            <>
+              <NavItem icon={<Settings size={20} />} label="系統設定" active={view === 'SUPER_SYSTEM_SETTINGS'} onClick={() => setViewAndClose('SUPER_SYSTEM_SETTINGS')} />
+              <NavItem icon={<Settings size={20} />} label="選單管理" active={view === 'SUPER_MENU'} onClick={() => setViewAndClose('SUPER_MENU')} />
+              <NavItem icon={<ClipboardList size={20} />} label="QA問卷管理" active={view === 'SUPER_QA_QUESTIONS'} onClick={() => setViewAndClose('SUPER_QA_QUESTIONS')} />
+              <NavItem icon={<CheckCircle2 size={20} />} label="製程模板" active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => setViewAndClose('SUPER_MFG_TEMPLATES')} />
+              <NavItem icon={<ShieldCheck size={20} />} label="稽核日誌" active={view === 'SUPER_AUDIT_LOGS'} onClick={() => setViewAndClose('SUPER_AUDIT_LOGS')} />
+            </>
+          )}
+          {role !== 'GUEST' && (
+            <NavItem icon={<Bell size={20} />} label="通知中心" active={view === 'NOTIFICATIONS'} onClick={() => setViewAndClose('NOTIFICATIONS')} />
+          )}
+        </nav>
+        <div className="p-4 border-t border-blue-900 space-y-2">
+          <div className="flex items-center gap-3 p-2 bg-blue-900/50 rounded-xl">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-900 font-bold shrink-0">{role[0]}</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">{currentUser?.name || role}</p>
+              <p className="text-xs text-slate-500 truncate">{currentUser?.email || 'Novadent'}</p>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-xl transition-colors text-sm font-medium">
+            <LogOut size={16} /> 登出
+          </button>
+        </div>
+      </div>
+    </>
+  );
+});
 
 function AppContent() {
   const navigate = useNavigate();
@@ -239,66 +584,7 @@ function AppContent() {
     if (path) navigate(path);
   };
 
-  // --- Public Website Components ---
-  const PublicHeader = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    return (
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 sm:gap-3 cursor-pointer">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-800 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-800/20">
-              <Activity className="text-white w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
-            <span className="font-bold text-xl sm:text-2xl text-slate-900 tracking-tight">Novadent</span>
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className={`text-sm font-bold ${location.pathname === '/' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>首頁</Link>
-            <Link to="/about" className={`text-sm font-bold ${location.pathname === '/about' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>關於我們與服務</Link>
-            <Link to="/education" className={`text-sm font-bold ${location.pathname === '/education' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>衛教中心</Link>
-            <Link to="/videos" className={`text-sm font-bold ${location.pathname === '/videos' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>影音專區</Link>
-          </nav>
-
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="hidden sm:flex items-center gap-2">
-              <Link to="/login" className="text-sm font-bold text-blue-800 px-4 py-2 hover:bg-blue-50 rounded-xl transition-colors">登入</Link>
-              <Link to="/register" className="bg-navy-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:bg-blue-950 transition-all">立即註冊</Link>
-            </div>
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-white border-b border-slate-100 overflow-hidden"
-            >
-              <div className="px-4 py-6 space-y-4">
-                <Link to="/" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">首頁</Link>
-                <Link to="/about" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">關於我們與服務</Link>
-                <Link to="/education" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">衛教中心</Link>
-                <Link to="/videos" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">影音專區</Link>
-                <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
-                  <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-sm font-bold text-blue-800 border border-blue-100 rounded-xl hover:bg-blue-50 transition-all">登入</Link>
-                  <Link to="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-sm font-bold text-white bg-navy-700 rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-950 transition-all">立即註冊</Link>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
-    );
-  };
+  // --- Public Website Components (defined at module level) ---
 
   const [footerContacts, setFooterContacts] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -310,180 +596,7 @@ function AppContent() {
       }).catch(() => {});
   }, []);
 
-  const PublicFooter = () => (
-    <footer className="bg-blue-950 text-slate-400 py-16">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
-        <div className="col-span-1 md:col-span-1">
-          <div className="flex items-center gap-3 mb-6">
-            <Activity className="text-blue-700 w-6 h-6" />
-            <span className="font-bold text-xl text-white">Novadent</span>
-          </div>
-          <p className="text-sm leading-relaxed">專業假牙製作透明化平台，連結診所、牙技所與會員，建立醫療信任新標準。</p>
-        </div>
-        <div>
-          <h4 className="text-white font-bold mb-6">快速連結</h4>
-          <ul className="space-y-4 text-sm">
-            <li><Link to="/about" className="hover:text-blue-500">關於我們</Link></li>
-            <li><Link to="/education" className="hover:text-blue-500">衛教知識</Link></li>
-            <li><Link to="/videos" className="hover:text-blue-500">影音專區</Link></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="text-white font-bold mb-6">平台說明</h4>
-          <ul className="space-y-4 text-sm">
-            <li><Link to="/terms" className="hover:text-blue-500">服務條款</Link></li>
-            <li><Link to="/privacy" className="hover:text-blue-500">隱私權政策</Link></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="text-white font-bold mb-6">聯絡我們</h4>
-          <ul className="space-y-4 text-sm">
-            {(footerContacts.CONTACT_PHONE || '02-2345-6789') && (
-              <li className="flex items-center gap-2"><Phone size={16} /> {footerContacts.CONTACT_PHONE || '02-2345-6789'}</li>
-            )}
-            {(footerContacts.CONTACT_ADDRESS || '台北市信義區信義路五段') && (
-              <li className="flex items-center gap-2"><MapPin size={16} /> {footerContacts.CONTACT_ADDRESS || '台北市信義區信義路五段'}</li>
-            )}
-          </ul>
-        </div>
-      </div>
-      <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-slate-800 text-center text-xs">
-        © 2026 Novadent. All rights reserved. 本平台不提供醫療診斷建議。
-      </div>
-    </footer>
-  );
 
-  const HomePage = () => (
-    <div className="bg-white">
-      {/* Hero Section */}
-      <section className="relative py-12 sm:py-24 overflow-hidden">
-        <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full bg-blue-50/50 -skew-x-12 translate-x-1/4 -z-10"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <span className="inline-block px-4 py-1.5 bg-blue-100 text-blue-900 rounded-full text-[10px] sm:text-xs font-bold mb-6 uppercase tracking-widest">牙科製作透明化首選</span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6 sm:mb-8">
-              讓假牙製作過程<br />
-              <span className="text-blue-800">清晰可見</span>，建立信任
-            </h1>
-            <p className="text-base sm:text-xl text-slate-600 mb-8 sm:mb-10 leading-relaxed">
-              Novadent 連結病患、診所與牙技所，提供即時進度追蹤與專業衛教，讓您的假牙製作旅程不再充滿未知。
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/login" className="bg-navy-700 text-white px-8 sm:px-10 py-4 rounded-2xl font-bold text-base sm:text-lg shadow-xl shadow-blue-900/20 hover:bg-blue-950 transition-all flex items-center justify-center gap-2">
-                立即開始 QA 諮詢 <ArrowRight size={20} />
-              </Link>
-              <Link to="/about" className="bg-white text-slate-700 border border-slate-200 px-8 sm:px-10 py-4 rounded-2xl font-bold text-base sm:text-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
-                了解服務流程
-              </Link>
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative">
-            <div className="bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden relative">
-              {homeBanners.length > 0 ? (
-                <>
-                  {homeBanners.map((b, i) => (
-                    <img key={b.id} src={b.imageUrl} alt={b.altText || 'Banner'} className={`rounded-[1rem] sm:rounded-[1.5rem] w-full h-auto object-cover aspect-[4/3] transition-opacity duration-700 ${i === heroBannerIndex ? 'opacity-100' : 'opacity-0 absolute inset-0 p-3 sm:p-4'}`} referrerPolicy="no-referrer" />
-                  ))}
-                  {homeBanners.length > 1 && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-                      {homeBanners.map((_, i) => (
-                        <button key={i} onClick={() => setHeroBannerIndex(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${i === heroBannerIndex ? 'bg-blue-800 scale-125' : 'bg-white/70'}`} />
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <img src={homeConfig.heroBannerUrl} alt="Dental Tech" className="rounded-[1rem] sm:rounded-[1.5rem] w-full h-auto object-cover aspect-[4/3]" referrerPolicy="no-referrer" />
-              )}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Feature Section */}
-      <section className="py-16 sm:py-24 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-20">
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 sm:mb-6">為什麼選擇 Novadent？</h2>
-            <p className="text-sm sm:text-lg text-slate-500">我們為牙科製作流程帶來前所未有的透明度與協作效率。</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
-            <FeatureCard icon={<ShieldCheck className="text-blue-800" size={32} />} title="專業信任" desc="所有合作診所與牙技所皆經過嚴格審核，確保醫療品質。" />
-            <FeatureCard icon={<Clock className="text-blue-800" size={32} />} title="即時追蹤" desc="隨時隨地查看假牙製作進度，掌握每一個製程節點。" />
-            <FeatureCard icon={<BookOpen className="text-blue-800" size={32} />} title="衛教知識" desc="提供專業的假牙護理與口腔健康知識，讓您更安心。" />
-          </div>
-
-          {/* Video Section */}
-          <div className="mt-20 pt-20 border-t border-slate-200">
-            <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-20">
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 sm:mb-6">看懂牙科，從這裡開始</h2>
-              <p className="text-sm sm:text-lg text-slate-500">專業知識影音，讓你輕鬆了解牙科</p>
-            </div>
-            
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-white rounded-[2rem] sm:rounded-[3rem] border border-slate-200 overflow-hidden shadow-xl">
-                <div className="grid grid-cols-1 lg:grid-cols-5">
-                  <div className="lg:col-span-3 aspect-video relative">
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      src="https://www.youtube.com/embed/VHqpMdA7fik"
-                      title="Novadent 平台介紹"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="absolute inset-0"
-                    ></iframe>
-                  </div>
-                  <div className="lg:col-span-2 p-8 sm:p-10 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="bg-blue-50 text-blue-800 text-xs font-bold px-3 py-1 rounded-full">平台介紹</span>
-                        <span className="text-slate-400 text-xs font-medium">2026/03/17</span>
-                      </div>
-                      <h3 className="text-2xl font-bold text-slate-900 mb-4">Novadent 平台介紹</h3>
-                      <p className="text-slate-500 text-sm leading-relaxed">
-                        了解 Novadent 如何透過數位化平台，連結診所、牙技所與病患，建立透明且高效的牙科製作流程。
-                      </p>
-                    </div>
-                    <div className="mt-8 flex justify-end">
-                      <Link to="/videos" className="text-blue-800 font-bold text-sm flex items-center gap-1 hover:gap-2 transition-all">
-                        查看更多影片 <ChevronRight size={18} />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {homeBottomImage?.imageUrl && (
-            <div className="mt-20 pt-20 border-t border-slate-200">
-              <div className="text-center max-w-3xl mx-auto mb-12">
-                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 sm:mb-6">臺灣牙科產業的現狀挑戰</h2>
-              </div>
-              <div className="flex justify-center">
-                <img 
-                  src={homeBottomImage.imageUrl} 
-                  alt={homeBottomImage.altText || '臺灣牙科產業的現狀挑戰'} 
-                  className="w-full rounded-2xl shadow-lg"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
-  );
-
-  const FeatureCard = ({ icon, title, desc }: any) => (
-    <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all">
-      <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-8">{icon}</div>
-      <h3 className="text-2xl font-bold text-slate-900 mb-4">{title}</h3>
-      <p className="text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  );
 
   const AboutPage = () => (
     <div className="py-24 max-w-5xl mx-auto px-6">
@@ -947,154 +1060,6 @@ function AppContent() {
     </div>
   );
 
-  const Sidebar = () => {
-    const pendingCasesCount = role === 'LAB' && currentCase ? [currentCase].filter(c => c.status === CaseStatus.ASSIGNED).length : 0;
-
-    return (
-      <>
-        {/* Mobile Overlay */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm z-50 md:hidden"
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Sidebar Content */}
-        <div className={`
-          fixed md:sticky top-0 left-0 z-50 h-screen bg-blue-950 text-blue-200 flex flex-col shrink-0 transition-transform duration-300 md:translate-x-0
-          ${isMobileMenuOpen ? 'translate-x-0 w-64 shadow-2xl' : '-translate-x-full md:w-64'}
-        `}>
-          <div className="p-6 flex items-center justify-between border-b border-blue-900">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setRole('GUEST'); setView('HOME'); setIsMobileMenuOpen(false); }}>
-              <div className="w-8 h-8 bg-blue-800 rounded-lg flex items-center justify-center">
-                <Activity className="text-white w-5 h-5" />
-              </div>
-              <span className="font-bold text-xl text-white tracking-tight">Novadent</span>
-            </div>
-            <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden p-2 hover:bg-blue-900 rounded-lg transition-colors">
-              <X size={20} />
-            </button>
-          </div>
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            
-            {role === 'INSURER' && (
-              <>
-                <NavItem icon={<LayoutDashboard size={20} />} label="總覽儀表板" active={view === 'OVERVIEW'} onClick={() => { setView('OVERVIEW'); setIsMobileMenuOpen(false); }} />
-                <NavItem icon={<Users size={20} />} label="客戶管理" active={view === 'INSURER_CUSTOMER_MGMT'} onClick={() => { setView('INSURER_CUSTOMER_MGMT'); setIsMobileMenuOpen(false); }} />
-              </>
-            )}
-            {role === 'ADMIN' && (
-              <NavItem
-                icon={<ClipboardList size={20} />}
-                label="案件總覽"
-                active={view === 'CASE_MANAGEMENT' || view === 'DETAIL'}
-                onClick={() => { setView('CASE_MANAGEMENT'); setIsMobileMenuOpen(false); }}
-              />
-            )}
-            
-            {role === 'CLINIC' && (
-              <>
-                <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => { setView('CLINIC_CASES'); setIsMobileMenuOpen(false); }} />
-                <NavItem icon={<Plus size={20} />} label="新建案件" active={view === 'CLINIC_CREATE_CASE'} onClick={() => { setView('CLINIC_CREATE_CASE'); setIsMobileMenuOpen(false); }} />
-                <NavItem icon={<Microscope size={20} />} label="牙技所設定" active={view === 'LAB_SETTINGS'} onClick={() => { setView('ACCOUNT_MGMT'); setIsMobileMenuOpen(false); }} />
-                <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => { setView('ACCOUNT_MGMT'); setIsMobileMenuOpen(false); }} />
-              </>
-            )}
-            {role === 'LAB' && (
-              <>
-                <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => { setView('LAB_CASES'); setIsMobileMenuOpen(false); }} />
-                <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => { setView('ACCOUNT_MGMT'); setIsMobileMenuOpen(false); }} />
-              </>
-            )}
-            {role === 'MEMBER' && (
-            <>
-              <NavItem icon={<ClipboardList size={20} />} label="假牙問診" active={view === 'MEMBER_QA'} onClick={() => { setView('MEMBER_QA'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<HeartPulse size={20} />} label="推薦診所" active={view === 'MEMBER_RECOMMENDATIONS'} onClick={() => { setView('MEMBER_RECOMMENDATIONS'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Activity size={20} />} label="案件追蹤" active={view === 'MEMBER_CASES'} onClick={() => { setView('MEMBER_CASES'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<User size={20} />} label="個人設定" active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); setIsMobileMenuOpen(false); }} />
-            </>
-          )}
-          {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
-            <>
-              <NavItem icon={<LayoutDashboard size={20} />} label="統計儀表板" active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ADMIN_USERS'} onClick={() => { setView('ADMIN_USERS'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Building2 size={20} />} label="診所管理" active={view === 'ADMIN_CLINICS'} onClick={() => { setView('ADMIN_CLINICS'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Microscope size={20} />} label="牙技所管理" active={view === 'ADMIN_LABS'} onClick={() => { setView('ADMIN_LABS'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Activity size={20} />} label="合作連結" active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => { setView('ADMIN_PARTNER_LINKS'); setIsMobileMenuOpen(false); }} />
-              <NavGroup icon={<FileText size={20} />} label="內容管理"
-                active={['ADMIN_ARTICLES','ADMIN_NOTIFICATION_CMS','ADMIN_SITE_IMAGES','ADMIN_VIDEOS'].includes(view)}>
-                <NavItem icon={<FileText size={18} />} label="文章管理" active={view === 'ADMIN_ARTICLES'} onClick={() => { setView('ADMIN_ARTICLES'); setIsMobileMenuOpen(false); }} />
-                <NavItem icon={<Bell size={18} />} label="通知廣播" active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => { setView('ADMIN_NOTIFICATION_CMS'); setIsMobileMenuOpen(false); }} />
-                <NavItem icon={<Image size={18} />} label="圖片管理" active={view === 'ADMIN_SITE_IMAGES'} onClick={() => { setView('ADMIN_SITE_IMAGES'); setIsMobileMenuOpen(false); }} />
-                <NavItem icon={<VideoIcon size={18} />} label="影音管理" active={view === 'ADMIN_VIDEOS'} onClick={() => { setView('ADMIN_VIDEOS'); setIsMobileMenuOpen(false); }} />
-              </NavGroup>
-            </>
-          )}
-          {role === 'SUPER_ADMIN' && (
-            <>
-              <NavItem icon={<Settings size={20} />} label="系統設定" active={view === 'SUPER_SYSTEM_SETTINGS'} onClick={() => { setView('SUPER_SYSTEM_SETTINGS'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Settings size={20} />} label="選單管理" active={view === 'SUPER_MENU'} onClick={() => { setView('SUPER_MENU'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<ClipboardList size={20} />} label="QA問卷管理" active={view === 'SUPER_QA_QUESTIONS'} onClick={() => { setView('SUPER_QA_QUESTIONS'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<CheckCircle2 size={20} />} label="製程模板" active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => { setView('SUPER_MFG_TEMPLATES'); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<ShieldCheck size={20} />} label="稽核日誌" active={view === 'SUPER_AUDIT_LOGS'} onClick={() => { setView('SUPER_AUDIT_LOGS'); setIsMobileMenuOpen(false); }} />
-            </>
-          )}
-          {/* 通知：所有登入角色 */}
-          {role !== 'GUEST' && (
-            <NavItem icon={<Bell size={20} />} label="通知中心" active={view === 'NOTIFICATIONS'} onClick={() => { setView('NOTIFICATIONS'); setIsMobileMenuOpen(false); }} />
-          )}
-        </nav>
-        <div className="p-4 border-t border-blue-900 space-y-2">
-          <div className="flex items-center gap-3 p-2 bg-blue-900/50 rounded-xl">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-900 font-bold shrink-0">{role[0]}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{currentUser?.name || role}</p>
-              <p className="text-xs text-slate-500 truncate">{currentUser?.email || 'Novadent'}</p>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-xl transition-colors text-sm font-medium">
-            <LogOut size={16} /> 登出
-          </button>
-        </div>
-      </div>
-      </>
-    );
-  };
-
-  const NavItem = ({ icon, label, active, onClick, badge }: any) => (
-    <button 
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative ${
-        active ? 'bg-navy-700 text-white shadow-lg shadow-blue-950/20' : 'hover:bg-blue-900 hover:text-white'
-      }`}
-    >
-      {icon}
-      <span className="font-medium">{label}</span>
-      {badge && <div className="absolute right-4 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />}
-    </button>
-  );
-
-  const NavGroup = ({ icon, label, active, children }: { icon: React.ReactNode; label: string; active: boolean; children: React.ReactNode }) => {
-    const [open, setOpen] = useState(active);
-    useEffect(() => { if (active) setOpen(true); }, [active]);
-    return (
-      <div>
-        <button onClick={() => setOpen(!open)}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active ? 'text-white' : 'hover:bg-blue-900 hover:text-white'}`}>
-          {icon}
-          <span className="font-medium flex-1 text-left">{label}</span>
-          <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
-        </button>
-        {open && <div className="ml-4 pl-2 border-l border-blue-800/50 space-y-0.5 mt-0.5">{children}</div>}
-      </div>
-    );
-  };
 
   // M-01：新增 Auth 相關頁面也屬於公開視圖（不顯示側選單）
   const isPublicView = ['HOME', 'SERVICE', 'KNOWLEDGE', 'VIDEOS', 'ARTICLE', 'LOGIN', 'REGISTER', 'TERMS', 'PRIVACY', 'FORGOT_PASSWORD', 'RESET_PASSWORD', 'FORCE_CHANGE_PASSWORD'].includes(view);
@@ -1102,12 +1067,12 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans antialiased text-slate-900">
       {!isPublicView && <MobileHeader />}
-      {!isPublicView && <Sidebar />}
+      {!isPublicView && <Sidebar role={role} view={view} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} handleSetView={handleSetView} currentUser={currentUser} handleLogout={handleLogout} />}
       <main className="flex-1 overflow-y-auto">
         {isPublicView && <PublicHeader />}
         <AnimatePresence mode="wait">
           <motion.div key={`${role}-${view}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-            {view === 'HOME' && <HomePage />}
+            {view === 'HOME' && <HomePage homeBanners={homeBanners} heroBannerIndex={heroBannerIndex} setHeroBannerIndex={setHeroBannerIndex} homeConfig={homeConfig} homeBottomImage={homeBottomImage} />}
             {view === 'KNOWLEDGE' && <KnowledgeCenter setView={handleSetView} setSelectedArticle={setSelectedArticle} />}
             {view === 'VIDEOS' && <VideosPage />}
             {view === 'ARTICLE' && <ArticleDetail setView={handleSetView} selectedArticle={selectedArticle} />}
@@ -1165,7 +1130,7 @@ function AppContent() {
             {view === 'NOTIFICATIONS' && <NotificationsPage />}
           </motion.div>
         </AnimatePresence>
-        {isPublicView && <PublicFooter />}
+        {isPublicView && <PublicFooter footerContacts={footerContacts} />}
       </main>
     </div>
   );

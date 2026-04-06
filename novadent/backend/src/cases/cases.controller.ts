@@ -82,6 +82,13 @@ export class CasesController {
     return this.casesService.findByMember(user.id);
   }
 
+  // ── GET /api/cases/my — 登入用戶取自己的案件（跨角色）────
+  @Get('my')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'CLINIC', 'LAB', 'MEMBER')
+  findMyCases(@CurrentUser() user: any) {
+    return this.casesService.findMyCases(user.id, user.role);
+  }
+
   // ── GET /api/cases/:id — 登入用戶（依角色過濾）──────────
   @Get(':id')
   @Roles('ADMIN', 'SUPER_ADMIN', 'CLINIC', 'LAB', 'MEMBER')

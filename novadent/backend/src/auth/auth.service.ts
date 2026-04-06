@@ -78,9 +78,12 @@ export class AuthService {
     const [user] = await this.db.select().from(users).where(eq(users.id, stored.userId)).limit(1);
     if (!user || user.status === 'DISABLED') throw new UnauthorizedException('帳號已停用');
 
-    const accessToken = this.generateAccessToken(user.id, user.email, user.role, user.name);
+    await this.db.delete(refreshTokens).where(eq(refreshTokens.token, token));
+
+    const { accessToken, refreshToken } = await this.generateTokens(user.id, user.email, user.role, user.name);
     return {
       accessToken,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,

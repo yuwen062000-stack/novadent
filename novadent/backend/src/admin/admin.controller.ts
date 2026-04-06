@@ -9,6 +9,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { IsString, IsArray, IsBoolean, IsNumber, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -119,6 +120,25 @@ export class AdminController {
   @Patch('users/:id/toggle-status')
   toggleUserStatus(@Param('id') id: string, @CurrentUser() user: any) {
     return this.adminService.toggleUserStatus(id, user.id);
+  }
+}
+
+// ── 公開合作連結 API ──────────────────────────────────────────
+@Controller('api/partner-links')
+export class PartnerLinksPublicController {
+  constructor(private adminService: AdminService) {}
+
+  @Public()
+  @Get()
+  getPartnerLinks(
+    @Query('clinicId') clinicId?: string,
+    @Query('labId') labId?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.adminService.getPartnerLinks({
+      clinicId, labId,
+      page: page ? parseInt(page) : 1,
+    });
   }
 }
 

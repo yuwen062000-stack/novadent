@@ -227,6 +227,23 @@ export class CasesService {
     return rows;
   }
 
+  // ── 跨角色取自己的案件 ────────────────────────────────────
+  async findMyCases(userId: string, role: string) {
+    switch (role) {
+      case 'CLINIC':
+        return this.findByClinic(userId, {});
+      case 'LAB':
+        return this.findByLab(userId, {});
+      case 'MEMBER':
+        return { data: await this.findByMember(userId), total: 0, page: 1, pageSize: 100 };
+      case 'ADMIN':
+      case 'SUPER_ADMIN':
+        return this.findAll({});
+      default:
+        return { data: [], total: 0, page: 1, pageSize: 20 };
+    }
+  }
+
   // ── 取單一案件（依角色過濾 internalNotes 和 patientName）──
   async findById(id: string, userId: string, role: string) {
     const [caseRow] = await this.db
