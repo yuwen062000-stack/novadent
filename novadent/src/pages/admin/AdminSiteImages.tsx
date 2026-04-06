@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Image, Upload, RefreshCw, Plus, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, Type, FileText, X, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Image, Upload, RefreshCw, Plus, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, Type, FileText, X, AlertTriangle, Save, Check } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface SiteImage {
@@ -15,6 +15,8 @@ interface SiteImage {
   sortOrder: number;
 }
 
+type DirtyFields = Record<string, Record<string, string>>;
+
 export function AdminSiteImages() {
   const [images, setImages] = useState<SiteImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,9 @@ export function AdminSiteImages() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [dirty, setDirty] = useState<DirtyFields>({});
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
   const showToast = useCallback((type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -33,7 +38,7 @@ export function AdminSiteImages() {
     setLoading(true);
     apiFetch('/site-images')
       .then(r => r.json())
-      .then(data => { setImages(Array.isArray(data) ? data : []); setLoading(false); })
+      .then(data => { setImages(Array.isArray(data) ? data : []); setDirty({}); setLoading(false); })
       .catch(() => { showToast('error', '載入失敗'); setLoading(false); });
   }, [showToast]);
 
@@ -45,10 +50,49 @@ export function AdminSiteImages() {
   const bottomImage = images.find(i => i.page === 'HOME' && i.position === 'CHALLENGE');
   const aboutBlocks = images.filter(i => i.page === 'ABOUT').sort((a, b) => a.sortOrder - b.sortOrder);
 
+  const markDirty = (id: string, field: string, value: string) => {
+    setDirty(prev => ({
+      ...prev,
+      [id]: { ...(prev[id] || {}), [field]: value },
+    }));
+    setSavedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+  };
+
+  const getDirtyValue = (img: SiteImage, field: keyof SiteImage): string => {
+    if (dirty[img.id] && field in dirty[img.id]) return dirty[img.id][field];
+    return (img[field] as string) || '';
+  };
+
+  const hasDirtyFields = (id: string) => dirty[id] && Object.keys(dirty[id]).length > 0;
+
+  const handleSaveFields = async (id: string) => {
+    const fields = dirty[id];
+    if (!fields || Object.keys(fields).length === 0) return;
+    setSavingIds(prev => new Set(prev).add(id));
+    try {
+      const res = await apiFetch(`/admin/site-images/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(fields),
+      });
+      if (!res.ok) {
+        showToast('error', `儲存失敗 (HTTP ${res.status})`);
+        return;
+      }
+      setImages(prev => prev.map(img => img.id === id ? { ...img, ...fields } as SiteImage : img));
+      setDirty(prev => { const n = { ...prev }; delete n[id]; return n; });
+      setSavedIds(prev => new Set(prev).add(id));
+      setTimeout(() => setSavedIds(prev => { const n = new Set(prev); n.delete(id); return n; }), 2000);
+    } catch {
+      showToast('error', '儲存失敗');
+    } finally {
+      setSavingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+    }
+  };
+
   const handleUpload = async (imgId: string, file: File) => {
     const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
     console.log(`[SiteImages] 開始上傳: ${file.name} (${fileSizeMB}MB, ${file.type}) → 目標ID: ${imgId}`);
-    if (file.size > 5 * 1024 * 1024) { showToast('error', `檔案 ${file.name} 太大 (${fileSizeMB}MB)，上限 5MB`); return; }
+    if (file.size > 10 * 1024 * 1024) { showToast('error', `檔案 ${file.name} 太大 (${fileSizeMB}MB)，上限 10MB`); return; }
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { showToast('error', `${file.name} 格式不支援，僅接受 JPG / PNG / WebP`); return; }
     setUploading(imgId);
     const formData = new FormData();
@@ -76,8 +120,8 @@ export function AdminSiteImages() {
         return;
       }
       console.log(`[SiteImages] Step 2 成功: 圖片已套用到 ${imgId}`);
+      setImages(prev => prev.map(img => img.id === imgId ? { ...img, imageUrl: url } : img));
       showToast('success', `上傳成功 — ${file.name}`);
-      load();
     } catch (err) {
       console.error('[SiteImages] 上傳例外錯誤:', err);
       showToast('error', '上傳失敗，請檢查網路連線');
@@ -121,7 +165,7 @@ export function AdminSiteImages() {
         return;
       }
       showToast('success', '已刪除');
-      load();
+      setImages(prev => prev.filter(img => img.id !== id));
     } catch {
       showToast('error', '刪除失敗');
     }
@@ -133,18 +177,8 @@ export function AdminSiteImages() {
         method: 'PUT',
         body: JSON.stringify({ visible: !img.visible }),
       });
-      load();
+      setImages(prev => prev.map(i => i.id === img.id ? { ...i, visible: !i.visible } : i));
     } catch { showToast('error', '操作失敗'); }
-  };
-
-  const handleUpdateField = async (id: string, field: string, value: string) => {
-    try {
-      await apiFetch(`/admin/site-images/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ [field]: value }),
-      });
-      load();
-    } catch { showToast('error', '儲存失敗'); }
   };
 
   const handleMove = async (list: SiteImage[], index: number, direction: 'up' | 'down') => {
@@ -176,11 +210,32 @@ export function AdminSiteImages() {
     finally { setSaving(false); }
   };
 
+  const SaveButton = ({ id }: { id: string }) => {
+    const isSaving = savingIds.has(id);
+    const isSaved = savedIds.has(id);
+    const isDirty = hasDirtyFields(id);
+    if (isSaved) {
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg">
+          <Check className="w-3.5 h-3.5" /> 已儲存
+        </span>
+      );
+    }
+    if (!isDirty) return null;
+    return (
+      <button onClick={() => handleSaveFields(id)} disabled={isSaving}
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+        {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+        {isSaving ? '儲存中...' : '儲存'}
+      </button>
+    );
+  };
+
   const ImageCard = ({ img, showControls, list, index }: { img: SiteImage; showControls?: boolean; list?: SiteImage[]; index?: number }) => (
     <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${!img.visible ? 'opacity-60' : ''}`}>
       <div className="aspect-video bg-slate-100 flex items-center justify-center relative">
         {img.imageUrl ? (
-          <img src={img.imageUrl} alt={img.altText || ''} className="w-full h-full object-contain" />
+          <img src={img.imageUrl} alt={getDirtyValue(img, 'altText')} className="w-full h-full object-contain" />
         ) : (
           <div className="text-slate-400 text-center">
             <Image className="w-10 h-10 mx-auto mb-1" />
@@ -194,14 +249,15 @@ export function AdminSiteImages() {
         )}
       </div>
       <div className="p-3 space-y-2">
-        {img.altText !== undefined && (
+        <div className="flex items-center gap-2">
           <input
-            defaultValue={img.altText || ''}
+            value={getDirtyValue(img, 'altText')}
+            onChange={e => markDirty(img.id, 'altText', e.target.value)}
             placeholder="替代文字 (alt)"
-            className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500"
-            onBlur={e => { if (e.target.value !== (img.altText || '')) handleUpdateField(img.id, 'altText', e.target.value); }}
+            className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
           />
-        )}
+          <SaveButton id={img.id} />
+        </div>
         <div className="flex gap-1.5 flex-wrap">
           <label className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-100 text-xs font-medium">
             <Upload className="w-3.5 h-3.5" />
@@ -240,6 +296,7 @@ export function AdminSiteImages() {
         <Type className="w-4 h-4 text-blue-600" />
         <span className="text-xs font-bold text-slate-500">文字區塊</span>
         <div className="flex-1" />
+        <SaveButton id={img.id} />
         <button onClick={() => handleToggleVisible(img)}
           className={`px-2 py-1 rounded text-xs ${img.visible ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
           {img.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -252,17 +309,17 @@ export function AdminSiteImages() {
           className="px-1 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100"><Trash2 className="w-3 h-3" /></button>
       </div>
       <input
-        defaultValue={img.title || ''}
+        value={getDirtyValue(img, 'title')}
+        onChange={e => markDirty(img.id, 'title', e.target.value)}
         placeholder="標題"
-        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 mb-2 font-medium"
-        onBlur={e => { if (e.target.value !== (img.title || '')) handleUpdateField(img.id, 'title', e.target.value); }}
+        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 mb-2 font-medium"
       />
       <textarea
-        defaultValue={img.textContent || ''}
+        value={getDirtyValue(img, 'textContent')}
+        onChange={e => markDirty(img.id, 'textContent', e.target.value)}
         placeholder="內容文字..."
         rows={4}
-        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 resize-y"
-        onBlur={e => { if (e.target.value !== (img.textContent || '')) handleUpdateField(img.id, 'textContent', e.target.value); }}
+        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 resize-y"
       />
     </div>
   );
@@ -396,10 +453,10 @@ export function AdminSiteImages() {
                   <div key={img.id} className="flex gap-4 items-start">
                     <div className="flex-1">
                       <input
-                        defaultValue={img.title || ''}
+                        value={getDirtyValue(img, 'title')}
+                        onChange={e => markDirty(img.id, 'title', e.target.value)}
                         placeholder="標題（選填）"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 mb-2 font-medium"
-                        onBlur={e => { if (e.target.value !== (img.title || '')) handleUpdateField(img.id, 'title', e.target.value); }}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 mb-2 font-medium"
                       />
                       <ImageCard img={img} showControls list={aboutBlocks} index={i} />
                     </div>
