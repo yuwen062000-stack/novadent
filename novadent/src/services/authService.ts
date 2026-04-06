@@ -1,18 +1,20 @@
 // M-01 AuthService — 串接 NestJS 後端 API
 import { AuthUser } from '../types';
 
-const API_BASE = '/api'; // Vite proxy 或同域部署時直接用 /api
+const API_BASE = '/api';
 
 // ── 內部工具 ──────────────────────────────────────────────────
 
-// Access Token 存 memory（不放 localStorage 避免 XSS）
 let _accessToken: string | null = null;
 
 function setToken(token: string) { _accessToken = token; }
 function getToken(): string | null { return _accessToken; }
 function clearToken() { _accessToken = null; }
 
-/** 通用 fetch，自動帶 Bearer token + credentials（Refresh Cookie）*/
+function setRefreshToken(token: string) { localStorage.setItem('novadent_rt', token); }
+function getRefreshToken(): string | null { return localStorage.getItem('novadent_rt'); }
+function clearRefreshToken() { localStorage.removeItem('novadent_rt'); }
+
 async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
@@ -37,9 +39,6 @@ export interface LoginResult {
 
 // ── API 函式 ──────────────────────────────────────────────────
 
-/**
- * 登入 → 取得 Access Token（記憶體）+ Refresh Token（HttpOnly Cookie）
- */
 export async function login(email: string, password: string): Promise<LoginResult> {
   try {
     const res = await apiFetch('/auth/login', {
@@ -54,6 +53,7 @@ export async function login(email: string, password: string): Promise<LoginResul
 
     const data = await res.json();
     setToken(data.accessToken);
+    setRefreshToken(data.refreshToken);
 
     const user: AuthUser = {
       id:                  data.user.id,
@@ -63,7 +63,6 @@ export async function login(email: string, password: string): Promise<LoginResul
       forceChangePassword: data.user.forceChangePassword,
     };
 
-    // 備份到 sessionStorage，讓頁面重整時能還原（搭配 refreshAccessToken）
     sessionStorage.setItem('novadent_user', JSON.stringify(user));
     return { success: true, user };
   } catch {
@@ -71,9 +70,6 @@ export async function login(email: string, password: string): Promise<LoginResul
   }
 }
 
-/**
- * 會員自助註冊
- */
 export async function register(name: string, email: string, password: string, phone: string): Promise<LoginResult> {
   try {
     const res = await apiFetch('/auth/register', {
@@ -88,6 +84,7 @@ export async function register(name: string, email: string, password: string, ph
 
     const data = await res.json();
     setToken(data.accessToken);
+    setRefreshToken(data.refreshToken);
 
     const user: AuthUser = {
       id:                  data.user.id,
@@ -104,30 +101,40 @@ export async function register(name: string, email: string, password: string, ph
   }
 }
 
-/**
- * 登出 → 清除 Refresh Cookie
- */
 export async function logout(): Promise<void> {
   try {
-    await apiFetch('/auth/logout', { method: 'POST' });
+    const rt = getRefreshToken();
+    await apiFetch('/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken: rt }),
+    });
   } finally {
     clearToken();
+    clearRefreshToken();
     sessionStorage.removeItem('novadent_user');
   }
 }
 
-/**
- * 頁面重整後用 Refresh Cookie 換新 Access Token
- * 在 App 啟動時呼叫（如果 sessionStorage 有 user）
- */
 export async function refreshAccessToken(): Promise<AuthUser | null> {
   try {
-    const res = await apiFetch('/auth/refresh', { method: 'POST' });
+    const rt = getRefreshToken();
+    if (!rt) return null;
+
+    const res = await apiFetch('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken: rt }),
+    });
     if (!res.ok) {
+      clearRefreshToken();
       sessionStorage.removeItem('novadent_user');
       return null;
     }
     const data = await res.json();
+    if (!data.success) {
+      clearRefreshToken();
+      sessionStorage.removeItem('novadent_user');
+      return null;
+    }
     setToken(data.accessToken);
     const user: AuthUser = {
       id:                  data.user.id,
@@ -143,9 +150,6 @@ export async function refreshAccessToken(): Promise<AuthUser | null> {
   }
 }
 
-/**
- * 取得目前登入用戶（從 sessionStorage 快取讀取）
- */
 export function getCurrentUser(): AuthUser | null {
   try {
     const raw = sessionStorage.getItem('novadent_user');
@@ -155,9 +159,6 @@ export function getCurrentUser(): AuthUser | null {
   }
 }
 
-/**
- * 忘記密碼：防 email 探測，無論結果都回傳成功
- */
 export async function forgotPassword(email: string): Promise<void> {
   await apiFetch('/auth/forgot-password', {
     method: 'POST',
@@ -165,9 +166,6 @@ export async function forgotPassword(email: string): Promise<void> {
   });
 }
 
-/**
- * 重設密碼（token 來自 email 連結 / console.log）
- */
 export async function resetPassword(
   token: string,
   newPassword: string,
@@ -190,9 +188,6 @@ export async function resetPassword(
 // ── 匯出 apiFetch 供頁面元件使用 ──────────────────────────────
 export { apiFetch };
 
-/**
- * 強制修改密碼（首次登入）
- */
 export async function changePassword(
   newPassword: string,
 ): Promise<{ success: boolean; error?: string }> {
@@ -205,7 +200,6 @@ export async function changePassword(
       const data = await res.json().catch(() => ({}));
       return { success: false, error: data.message || '密碼修改失敗' };
     }
-    // 更新 session 快取
     const user = getCurrentUser();
     if (user) {
       sessionStorage.setItem('novadent_user', JSON.stringify({ ...user, forceChangePassword: false }));
@@ -216,7 +210,6 @@ export async function changePassword(
   }
 }
 
-/** 密碼強度驗證：最少 8 碼，含大小寫 + 數字 */
 export function validatePassword(password: string): string | null {
   if (password.length < 8) return '密碼至少需要 8 個字元';
   if (!/[A-Z]/.test(password)) return '密碼需包含至少一個大寫字母';

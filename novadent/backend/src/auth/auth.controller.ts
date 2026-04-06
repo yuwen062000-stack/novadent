@@ -19,23 +19,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
     @Ip() ip: string,
   ) {
     const result = await this.authService.login(dto, ip);
 
-    // Refresh Token 存入 HttpOnly Cookie
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
-      path: '/',
-    });
-
     return {
       success: true,
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       user: result.user,
     };
   }
@@ -44,8 +35,8 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Req() req: Request) {
-    const token = req.cookies?.refresh_token;
+  async refresh(@Body() body: { refreshToken?: string }, @Req() req: Request) {
+    const token = body?.refreshToken || req.cookies?.refresh_token;
     if (!token) {
       return { success: false, message: 'Refresh token 不存在' };
     }
@@ -56,8 +47,8 @@ export class AuthController {
   // POST /api/auth/logout
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const token = req.cookies?.refresh_token;
+  async logout(@Body() body: { refreshToken?: string }, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const token = body?.refreshToken || req.cookies?.refresh_token;
     await this.authService.logout(token);
     res.clearCookie('refresh_token', { path: '/' });
     return { success: true };
@@ -76,7 +67,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.authService.forgotPassword(dto);
-    // 無論結果都回傳相同訊息（防 email 探測攻擊）
     return { success: true, message: '如果該 Email 已在系統中登記，您將收到重設連結' };
   }
 
@@ -107,22 +97,14 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() dto: RegisterDto,
-    @Res({ passthrough: true }) res: Response,
     @Ip() ip: string,
   ) {
     const result = await this.authService.register(dto, ip);
 
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
-
     return {
       success: true,
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       user: result.user,
     };
   }
