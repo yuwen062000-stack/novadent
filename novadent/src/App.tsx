@@ -819,6 +819,14 @@ function AppContent() {
   // M-01：新增 Auth 相關頁面也屬於公開視圖（不顯示側選單）
   const isPublicView = ['HOME', 'SERVICE', 'KNOWLEDGE', 'VIDEOS', 'ARTICLE', 'LOGIN', 'REGISTER', 'TERMS', 'PRIVACY', 'FORGOT_PASSWORD', 'RESET_PASSWORD', 'FORCE_CHANGE_PASSWORD'].includes(view);
 
+  if (!authReady && !isPublicView) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-10 h-10 border-4 border-blue-800 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans antialiased text-slate-900">
       {!isPublicView && <MobileHeader handleLogout={handleLogout} setIsMobileMenuOpen={setIsMobileMenuOpen} />}

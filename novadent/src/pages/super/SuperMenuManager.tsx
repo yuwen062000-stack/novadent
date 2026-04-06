@@ -20,11 +20,18 @@ export function SuperMenuManager() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  const load = () => {
+  const load = (retryCount = 0) => {
     setLoading(true);
     apiFetch('/admin/menu-config')
-      .then(r => r.json())
+      .then(r => {
+        if (r.status === 401 && retryCount < 2) {
+          setTimeout(() => load(retryCount + 1), 500);
+          return null;
+        }
+        return r.json();
+      })
       .then(data => {
+        if (!data) return;
         const items = Array.isArray(data) ? data : [];
         menuItemsRef.current = items;
         setMenuItems(items);
