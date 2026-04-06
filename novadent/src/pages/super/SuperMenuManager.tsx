@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Save, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 import { MenuManager } from '../../components/shared';
@@ -8,6 +8,12 @@ export function SuperMenuManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const menuItemsRef = useRef(menuItems);
+
+  const handleMenuChange = useCallback((newItems: any[]) => {
+    menuItemsRef.current = newItems;
+    setMenuItems(newItems);
+  }, []);
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -18,7 +24,12 @@ export function SuperMenuManager() {
     setLoading(true);
     apiFetch('/admin/menu-config')
       .then(r => r.json())
-      .then(data => { setMenuItems(Array.isArray(data) ? data : []); setLoading(false); })
+      .then(data => {
+        const items = Array.isArray(data) ? data : [];
+        menuItemsRef.current = items;
+        setMenuItems(items);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
@@ -27,7 +38,7 @@ export function SuperMenuManager() {
     setSaving(true);
     const res = await apiFetch('/admin/menu-config', {
       method: 'PUT',
-      body: JSON.stringify({ items: menuItems }),
+      body: JSON.stringify({ items: menuItemsRef.current }),
     });
     setSaving(false);
     if (res.ok) { showToast('選單設定已儲存', true); load(); }
@@ -65,7 +76,7 @@ export function SuperMenuManager() {
           <div className="w-8 h-8 border-4 border-blue-800 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <MenuManager items={menuItems} onChange={setMenuItems} />
+        <MenuManager items={menuItems} onChange={handleMenuChange} />
       )}
     </div>
   );
