@@ -211,6 +211,16 @@ function AppContent() {
     const matchedView = PATH_VIEW_MAP[path];
     if (matchedView) {
       setView(matchedView);
+    } else if (path === '/admin' || path.startsWith('/admin/')) {
+      setView('ADMIN_DASHBOARD');
+    } else if (path === '/clinic' || path.startsWith('/clinic/')) {
+      setView('CLINIC_CASES');
+    } else if (path === '/lab' || path.startsWith('/lab/')) {
+      setView('LAB_CASES');
+    } else if (path === '/member' || path.startsWith('/member/')) {
+      setView('MEMBER_CASES');
+    } else if (path === '/super' || path.startsWith('/super/')) {
+      setView('SUPER_SYSTEM_SETTINGS');
     }
   }, [location]);
 
