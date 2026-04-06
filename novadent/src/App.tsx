@@ -70,21 +70,16 @@ function AppContent() {
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    const savedUser = getCurrentUser();
-    if (savedUser) {
-      refreshAccessToken().then(user => {
-        if (user) {
-          setCurrentUser(user);
-          setRole(user.role);
-        } else {
-          setCurrentUser(null);
-          setRole('GUEST');
-        }
-        setAuthReady(true);
-      });
-    } else {
+    refreshAccessToken().then(user => {
+      if (user) {
+        setCurrentUser(user);
+        setRole(user.role);
+      } else {
+        setCurrentUser(null);
+        setRole('GUEST');
+      }
       setAuthReady(true);
-    }
+    });
   }, []);
 
 
