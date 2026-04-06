@@ -48,8 +48,8 @@ novadent/
 
 ## Key Commands
 ```bash
-# Frontend build
-cd novadent && npm run build
+# Frontend build (output to novadent/dist/ — NestJS ServeStaticModule reads from there)
+cd novadent && npx vite build --outDir dist
 
 # Backend build (must use NODE_ENV=development for devDeps)
 cd novadent/backend && NODE_ENV=development ./node_modules/.bin/nest build
