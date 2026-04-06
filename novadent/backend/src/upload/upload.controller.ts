@@ -28,16 +28,17 @@ export class UploadServeController {
   constructor(private readonly svc: UploadService) {}
 
   @Public()
-  @Get('*path')
-  async serveFile(@Param('path') filePath: string[], @Res() res: Response) {
-    const objectKey = filePath.join('/');
+  @Get('*')
+  async serveFile(@Param('0') filePath: string, @Res() res: Response) {
+    const objectKey = filePath;
 
     if (!this.svc.isValidObjectKey(objectKey)) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     const uploadDir = path.join(process.cwd(), '..', 'uploads');
-    const fullPath = path.join(uploadDir, ...filePath);
+    const segments = filePath.split('/').filter(Boolean);
+    const fullPath = path.join(uploadDir, ...segments);
     if (fullPath.startsWith(uploadDir) && fs.existsSync(fullPath)) {
       return res.sendFile(fullPath);
     }
