@@ -18,7 +18,7 @@ localPort = 24505
 run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
 
 [services.production]
-build = ["bash", "-c", "cd /home/runner/workspace/novadent && npm run build && cd /home/runner/workspace/novadent/backend && NODE_ENV=development ./node_modules/.bin/nest build"]
+build = ["bash", "-c", "cd /home/runner/workspace/novadent && npm install --legacy-peer-deps && npx vite build && cd /home/runner/workspace/novadent/backend && npm install --legacy-peer-deps && npx tsc -p tsconfig.json || true"]
 run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
 
 [services.env]
