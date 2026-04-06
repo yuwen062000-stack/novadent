@@ -1,0 +1,85 @@
+Novadent 修正指引 v2.0（2026-04-06）
+測試通過率：12/19（上次 11/24）
+✅ 重整後登入狀態已修復（本次最大進步）
+
+🔴 P0 — 必修
+1. Clinics 缺少新增 / 刪除路由
+新增：POST /api/admin/clinics
+新增：DELETE /api/admin/clinics/:id
+
+2. Labs 缺少新增 / 刪除路由
+新增：POST /api/admin/labs
+新增：DELETE /api/admin/labs/:id
+
+3. Users toggle-status 路由不存在
+測試發現：PATCH /api/admin/users/:id/toggle-status → 404
+實際有效：PATCH /api/users/:id（帶 {isActive: false}）
+
+請新增 PATCH /api/admin/users/:id/toggle-status
+讓前端可以明確呼叫停用功能
+
+4. System Settings 寫入無效
+現狀：PUT /api/admin/system-settings 回 200 但資料沒寫入，GET 仍回空陣列
+請確認：
+- PUT /api/admin/system-settings/:key 有正確寫入 DB
+- Seed 需初始化 GMAIL_USER、GMAIL_PASSWORD、GMAIL_FROM_NAME 等 key
+
+5. Dashboard 主內容空白
+前端呼叫：GET /api/admin/dashboard → 404
+實際有效：GET /api/admin/stats → 200（有資料）
+
+請擇一修正：
+  方案A：新增 GET /api/admin/dashboard（alias to stats）
+  方案B：前端改呼叫 /api/admin/stats
+
+🟡 P1 — 建議修正
+6. Notifications 路徑與前端不符
+前端預期：POST /api/admin/notifications
+實際有效：POST /api/admin/notifications/broadcast
+
+請新增 POST /api/admin/notifications（不帶 /broadcast）
+或更新前端呼叫路徑
+
+7. Articles publish 路徑不符
+前端預期：PATCH /api/admin/articles/:id/publish
+實際有效：PATCH /api/admin/articles/:id（帶 {isPublished: true}）
+
+請新增 PATCH /api/admin/articles/:id/publish 作為語義路由
+
+修正完成後告訴我，我再跑一次驗收測試！
+
+還有一個問題，每次reflash，都會回到儀表板的頁面，不然我留在我當下的頁面嗎
+
+
+
+這個問題在 Replit 那邊的 refreshAccessToken 邏輯裡，換完 Token 後多做了一個 navigate('/admin/dashboard')，所以每次重整都被導回儀表板。
+
+請告訴 Replit
+重整頁面後，不管當下在哪個頁面，都會被導回 /admin/dashboard。
+
+原因：refreshAccessToken() 成功後不應該 navigate，
+應該讓 URL sync 的 useEffect 自己根據當前 URL 決定顯示哪個頁面。
+
+請確認 refreshAccessToken 的 .then() 裡面：
+
+❌ 錯誤寫法（不要 navigate）：
+  refreshAccessToken().then(user => {
+    if (user) {
+      setCurrentUser(user);
+      setRole(user.role);
+      navigate('/admin/dashboard');  ← 把這行刪掉
+    }
+  });
+
+✅ 正確寫法（只還原狀態，不跳頁）：
+  refreshAccessToken().then(user => {
+    if (user) {
+      setCurrentUser(user);   // 還原使用者資料
+      setRole(user.role);     // 還原角色
+      // 不要 navigate！讓 URL sync useEffect 根據當前 URL 顯示正確頁面
+    } else {
+      setCurrentUser(null);
+      setRole('GUEST');
+      // token 過期才跳登入頁
+    }
+  });
