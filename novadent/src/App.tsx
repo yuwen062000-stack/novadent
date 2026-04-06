@@ -97,15 +97,14 @@ function AppContent() {
   const handleLogin = (user: AuthUser) => {
     setCurrentUser(user);
     setRole(user.role);
-    // 導向對應角色的預設頁面
-    if (user.forceChangePassword) return; // LoginPage 自己處理 force-change-password
+    if (user.forceChangePassword) return;
     switch (user.role) {
       case 'SUPER_ADMIN':
-      case 'ADMIN':    setView('ADMIN_DASHBOARD'); break;
-      case 'CLINIC':   setView('CLINIC_CASES');    break;
-      case 'LAB':      setView('LAB_CASES');        break;
-      case 'MEMBER':   setView('MEMBER_CASES');     break;
-      default:         setView('HOME');
+      case 'ADMIN':    navigate('/admin/dashboard', { replace: true }); break;
+      case 'CLINIC':   navigate('/clinic/cases', { replace: true }); break;
+      case 'LAB':      navigate('/lab/cases', { replace: true }); break;
+      case 'MEMBER':   navigate('/member/cases', { replace: true }); break;
+      default:         navigate('/', { replace: true });
     }
   };
 
@@ -116,43 +115,6 @@ function AppContent() {
     setRole('GUEST');
     navigate('/');
   };
-  const [view, setView] = useState<string>('HOME');
-  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
-  const [consultationId, setConsultationId] = useState<string | null>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
-  const [currentCase, setCurrentCase] = useState<Case | null>(null);
-  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
-  const [caseFilter, setCaseFilter] = useState<string>('ALL');
-  const [qaCompleted, setQaCompleted] = useState(false);
-  const [hasActiveCase, setHasActiveCase] = useState(false);
-  const [subAccounts, setSubAccounts] = useState<SubAccount[]>([]);
-  const [homeConfig, setHomeConfig] = useState<HomeConfig>({ heroBannerUrl: '/S__14336065_0_0.jpg' });
-  const [homeBanners, setHomeBanners] = useState<any[]>([]);
-  const [homeBottomImage, setHomeBottomImage] = useState<any>(null);
-  const [aboutBlocks, setAboutBlocks] = useState<any[]>([]);
-  const [heroBannerIndex, setHeroBannerIndex] = useState(0);
-
-  useEffect(() => {
-    fetch('/api/site-images').then(r => r.ok ? r.json() : []).then((imgs: any[]) => {
-      const hero = imgs.find((i: any) => i.position === 'HERO');
-      if (hero?.imageUrl) setHomeConfig(prev => ({ ...prev, heroBannerUrl: hero.imageUrl }));
-      const banners = imgs.filter((i: any) => i.page === 'HOME' && (i.position === 'HERO' || i.position.startsWith('BANNER')) && i.visible && i.imageUrl).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
-      if (banners.length > 0) setHomeBanners(banners);
-      const bottom = imgs.find((i: any) => i.page === 'HOME' && i.position === 'CHALLENGE');
-      if (bottom) setHomeBottomImage(bottom);
-      const about = imgs.filter((i: any) => i.page === 'ABOUT' && i.visible).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
-      setAboutBlocks(about);
-    }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (homeBanners.length <= 1) return;
-    const timer = setInterval(() => setHeroBannerIndex(prev => (prev + 1) % homeBanners.length), 5000);
-    return () => clearInterval(timer);
-  }, [homeBanners.length]);
-
   const VIEW_PATH_MAP: Record<string, string> = {
     HOME: '/',
     SERVICE: '/about',
@@ -202,9 +164,56 @@ function AppContent() {
   };
 
   const PATH_VIEW_MAP: Record<string, string> = {};
-  for (const [view, path] of Object.entries(VIEW_PATH_MAP)) {
-    PATH_VIEW_MAP[path] = view;
+  for (const [v, p] of Object.entries(VIEW_PATH_MAP)) {
+    PATH_VIEW_MAP[p] = v;
   }
+
+  const resolveViewFromPath = (path: string): string => {
+    if (PATH_VIEW_MAP[path]) return PATH_VIEW_MAP[path];
+    if (path === '/admin' || path.startsWith('/admin/')) return 'ADMIN_DASHBOARD';
+    if (path === '/clinic' || path.startsWith('/clinic/')) return 'CLINIC_CASES';
+    if (path === '/lab' || path.startsWith('/lab/')) return 'LAB_CASES';
+    if (path === '/member' || path.startsWith('/member/')) return 'MEMBER_CASES';
+    if (path === '/super' || path.startsWith('/super/')) return 'SUPER_SYSTEM_SETTINGS';
+    return 'HOME';
+  };
+
+  const [view, setView] = useState<string>(() => resolveViewFromPath(location.pathname));
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
+  const [consultationId, setConsultationId] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
+  const [currentCase, setCurrentCase] = useState<Case | null>(null);
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+  const [caseFilter, setCaseFilter] = useState<string>('ALL');
+  const [qaCompleted, setQaCompleted] = useState(false);
+  const [hasActiveCase, setHasActiveCase] = useState(false);
+  const [subAccounts, setSubAccounts] = useState<SubAccount[]>([]);
+  const [homeConfig, setHomeConfig] = useState<HomeConfig>({ heroBannerUrl: '/S__14336065_0_0.jpg' });
+  const [homeBanners, setHomeBanners] = useState<any[]>([]);
+  const [homeBottomImage, setHomeBottomImage] = useState<any>(null);
+  const [aboutBlocks, setAboutBlocks] = useState<any[]>([]);
+  const [heroBannerIndex, setHeroBannerIndex] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/site-images').then(r => r.ok ? r.json() : []).then((imgs: any[]) => {
+      const hero = imgs.find((i: any) => i.position === 'HERO');
+      if (hero?.imageUrl) setHomeConfig(prev => ({ ...prev, heroBannerUrl: hero.imageUrl }));
+      const banners = imgs.filter((i: any) => i.page === 'HOME' && (i.position === 'HERO' || i.position.startsWith('BANNER')) && i.visible && i.imageUrl).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
+      if (banners.length > 0) setHomeBanners(banners);
+      const bottom = imgs.find((i: any) => i.page === 'HOME' && i.position === 'CHALLENGE');
+      if (bottom) setHomeBottomImage(bottom);
+      const about = imgs.filter((i: any) => i.page === 'ABOUT' && i.visible).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
+      setAboutBlocks(about);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (homeBanners.length <= 1) return;
+    const timer = setInterval(() => setHeroBannerIndex(prev => (prev + 1) % homeBanners.length), 5000);
+    return () => clearInterval(timer);
+  }, [homeBanners.length]);
 
   useEffect(() => {
     const path = location.pathname;

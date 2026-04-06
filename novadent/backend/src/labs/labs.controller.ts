@@ -1,13 +1,13 @@
 // Labs Controller — 牙技所 API 路由（Admin + 牙技所自身）
 import {
-  Controller, Get, Patch, Body, Param, Query, UseGuards, ParseUUIDPipe
+  Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode, HttpStatus
 } from '@nestjs/common';
 import { JwtAuthGuard }    from '../common/guards/jwt-auth.guard';
 import { RolesGuard }      from '../common/guards/roles.guard';
 import { Roles }           from '../common/decorators/roles.decorator';
 import { CurrentUser }     from '../common/decorators/current-user.decorator';
 import { LabsService }     from './labs.service';
-import { UpdateLabDto, UpdateLabStatusDto } from './dto/lab.dto';
+import { CreateLabDto, UpdateLabDto, UpdateLabStatusDto } from './dto/lab.dto';
 
 // ── 牙技所自身路由（GET/PATCH /api/labs/me）──────────────────
 @Controller('api/labs')
@@ -99,6 +99,16 @@ export class LabsAdminController {
     return this.labsService.update(id, dto, user.id);
   }
 
+  // POST /api/admin/labs — Admin 新增牙技所
+  @Post()
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  create(
+    @Body() dto: CreateLabDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.labsService.adminCreate(dto, user.id);
+  }
+
   // PATCH /api/admin/labs/:id/status — Admin 審核牙技所狀態
   @Patch(':id/status')
   @Roles('ADMIN', 'SUPER_ADMIN')
@@ -108,5 +118,16 @@ export class LabsAdminController {
     @CurrentUser() user: any,
   ) {
     return this.labsService.updateStatus(id, dto, user.id);
+  }
+
+  // DELETE /api/admin/labs/:id — Admin 刪除牙技所
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.labsService.adminDelete(id, user.id);
   }
 }

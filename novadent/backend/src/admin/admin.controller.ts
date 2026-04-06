@@ -2,7 +2,7 @@
 // ADMIN/SUPER_ADMIN：儀表板統計、選單設定、合作連結、廣播通知
 // SUPER_ADMIN 專屬：稽核日誌
 import {
-  Controller, Get, Post, Delete, Put,
+  Controller, Get, Post, Patch, Delete, Put,
   Param, Query, Body, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
@@ -92,12 +92,33 @@ export class AdminController {
     return this.adminService.deletePartnerLink(id);
   }
 
+  // GET /api/admin/dashboard — alias for /api/admin/stats
+  @Get('dashboard')
+  getDashboard() {
+    return this.adminService.getDashboardStats();
+  }
+
   @Post('notifications/broadcast')
   broadcastNotification(
     @Body() dto: BroadcastNotificationDto,
     @CurrentUser() user: any,
   ) {
     return this.adminService.broadcastNotification(dto.title, dto.content, dto.targetRoles, user.id);
+  }
+
+  // POST /api/admin/notifications — alias (without /broadcast)
+  @Post('notifications')
+  broadcastNotificationAlias(
+    @Body() dto: BroadcastNotificationDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.broadcastNotification(dto.title, dto.content, dto.targetRoles, user.id);
+  }
+
+  // PATCH /api/admin/users/:id/toggle-status — Admin 啟用/停用帳號
+  @Patch('users/:id/toggle-status')
+  toggleUserStatus(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.adminService.toggleUserStatus(id, user.id);
   }
 }
 

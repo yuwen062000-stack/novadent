@@ -6,7 +6,7 @@ import { eq, ilike, and, sql } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import { labs, auditLogs } from '../database/schema';
-import { UpdateLabDto, UpdateLabStatusDto } from './dto/lab.dto';
+import { CreateLabDto, UpdateLabDto, UpdateLabStatusDto } from './dto/lab.dto';
 
 // 牙技所公開欄位（不含 internalNotes）
 const PUBLIC_FIELDS = {
@@ -110,6 +110,33 @@ export class LabsService {
 
     if (!lab) throw new NotFoundException('找不到對應的牙技所資料');
     return lab;
+  }
+
+  // ── Admin 新增牙技所 ───────────────────────────────────────
+  async adminCreate(dto: CreateLabDto, adminId: string) {
+    const [created] = await this.db.insert(labs).values({
+      ...dto,
+      userId: adminId,
+      status: 'ACTIVE',
+    } as any).returning();
+
+    await this.writeAuditLog(adminId, 'CREATE_LAB', created.id, { name: dto.name });
+    return created;
+  }
+
+  // ── Admin 刪除牙技所 ──────────────────────────────────────
+  async adminDelete(id: string, adminId: string) {
+    const [existing] = await this.db
+      .select({ id: labs.id, name: labs.name })
+      .from(labs)
+      .where(eq(labs.id, id))
+      .limit(1);
+
+    if (!existing) throw new NotFoundException('牙技所不存在');
+
+    await this.db.delete(labs).where(eq(labs.id, id));
+    await this.writeAuditLog(adminId, 'DELETE_LAB', id, { name: existing.name });
+    return { success: true };
   }
 
   // ── 更新牙技所資料 ───────────────────────────────────────

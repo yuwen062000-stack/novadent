@@ -1,5 +1,19 @@
-// Labs DTO — 牙技所資料更新與狀態審核的驗證規則
+// Labs DTO — 牙技所資料建立、更新與狀態審核的驗證規則
 import { IsString, IsOptional, IsArray, IsIn, IsEmail } from 'class-validator';
+
+// ── Admin 建立牙技所 ───────────────────────────────────────────
+export class CreateLabDto {
+  @IsString() name: string;
+  @IsString() leadTechnicianName: string;
+  @IsString() phone: string;
+  @IsEmail() email: string;
+  @IsString() city: string;
+  @IsString() @IsOptional() detailedAddress?: string;
+  @IsArray() @IsOptional() acceptedCaseTypes?: string[];
+  @IsArray() @IsOptional() specialties?: string[];
+  @IsString() @IsOptional() coverPhotoUrl?: string;
+  @IsString() @IsOptional() internalNotes?: string;
+}
 
 // ── 牙技所資料更新（Lab 角色或 Admin 皆可用）──────────────────
 export class UpdateLabDto {

@@ -1,12 +1,12 @@
 // Clinics Service — 診所資料管理核心邏輯
 import {
-  Injectable, Inject, NotFoundException, ForbiddenException
+  Injectable, Inject, NotFoundException, ForbiddenException, ConflictException
 } from '@nestjs/common';
 import { eq, ilike, and, sql } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import { clinics, auditLogs } from '../database/schema';
-import { UpdateClinicDto, UpdateClinicStatusDto } from './dto/clinic.dto';
+import { CreateClinicDto, UpdateClinicDto, UpdateClinicStatusDto } from './dto/clinic.dto';
 
 // 診所公開欄位（不含 internalNotes）
 const PUBLIC_FIELDS = {
@@ -149,9 +149,36 @@ export class ClinicsService {
     return this.findById(id, true);
   }
 
+  // ── Admin 新增診所 ─────────────────────────────────────────
+  async adminCreate(dto: CreateClinicDto, adminId: string) {
+    const [created] = await this.db.insert(clinics).values({
+      ...dto,
+      userId: adminId,
+      status: 'ACTIVE',
+    } as any).returning();
+
+    await this.writeAuditLog(adminId, 'CREATE_CLINIC', created.id, { name: dto.name });
+    return created;
+  }
+
   // ── Admin 更新診所資料（可改 internalNotes）──────────────
   async adminUpdate(id: string, dto: UpdateClinicDto, adminId: string) {
     return this.update(id, dto, adminId);
+  }
+
+  // ── Admin 刪除診所 ─────────────────────────────────────────
+  async adminDelete(id: string, adminId: string) {
+    const [existing] = await this.db
+      .select({ id: clinics.id, name: clinics.name })
+      .from(clinics)
+      .where(eq(clinics.id, id))
+      .limit(1);
+
+    if (!existing) throw new NotFoundException('診所不存在');
+
+    await this.db.delete(clinics).where(eq(clinics.id, id));
+    await this.writeAuditLog(adminId, 'DELETE_CLINIC', id, { name: existing.name });
+    return { success: true };
   }
 
   // ── Admin 審核診所狀態 ───────────────────────────────────

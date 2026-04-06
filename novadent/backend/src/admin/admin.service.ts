@@ -1,5 +1,5 @@
 // M-08 Admin Service — 後台管理
-import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { eq, desc, sql, and, inArray } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
@@ -209,5 +209,33 @@ export class AdminService {
       })) as any,
     ).returning();
     return rows;
+  }
+
+  // ── Toggle user status (active/inactive) ──────────────────
+  async toggleUserStatus(userId: string, adminId: string) {
+    const [existing] = await this.db
+      .select({ id: users.id, status: users.status, name: users.name, role: users.role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!existing) throw new NotFoundException('使用者不存在');
+    if (existing.role === 'SUPER_ADMIN') throw new ForbiddenException('無法變更超級管理員狀態');
+
+    const newStatus = existing.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+    const [updated] = await this.db
+      .update(users)
+      .set({ status: newStatus, updatedAt: new Date() } as any)
+      .where(eq(users.id, userId))
+      .returning();
+
+    await this.db.insert(auditLogs).values({
+      userId: adminId,
+      action: 'TOGGLE_USER_STATUS',
+      targetId: userId,
+      detail: { name: existing.name, from: existing.status, to: newStatus },
+    } as any).catch(() => {});
+
+    return updated;
   }
 }

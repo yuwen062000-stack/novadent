@@ -1,6 +1,6 @@
 // Clinics Controller — 診所資料 API 路由（公開 + 診所自身 + Admin）
 import {
-  Controller, Get, Patch, Post, Body, Param, Query, UseGuards, ParseUUIDPipe
+  Controller, Get, Patch, Post, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode, HttpStatus
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard }   from '../common/guards/roles.guard';
@@ -8,7 +8,7 @@ import { Roles }        from '../common/decorators/roles.decorator';
 import { Public }       from '../common/decorators/public.decorator';
 import { CurrentUser }  from '../common/decorators/current-user.decorator';
 import { ClinicsService } from './clinics.service';
-import { UpdateClinicDto, UpdateClinicStatusDto } from './dto/clinic.dto';
+import { CreateClinicDto, UpdateClinicDto, UpdateClinicStatusDto } from './dto/clinic.dto';
 
 // ── 公開路由（GET /api/clinics, GET /api/clinics/:id）──────────
 @Controller('api/clinics')
@@ -102,6 +102,16 @@ export class ClinicsAdminController {
     return this.clinicsService.adminUpdate(id, dto, user.id);
   }
 
+  // POST /api/admin/clinics — Admin 新增診所
+  @Post()
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  create(
+    @Body() dto: CreateClinicDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.clinicsService.adminCreate(dto, user.id);
+  }
+
   // PATCH /api/admin/clinics/:id/status — Admin 審核診所狀態
   @Patch(':id/status')
   @Roles('ADMIN', 'SUPER_ADMIN')
@@ -111,5 +121,16 @@ export class ClinicsAdminController {
     @CurrentUser() user: any,
   ) {
     return this.clinicsService.updateStatus(id, dto, user.id);
+  }
+
+  // DELETE /api/admin/clinics/:id — Admin 刪除診所
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.clinicsService.adminDelete(id, user.id);
   }
 }

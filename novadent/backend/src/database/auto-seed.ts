@@ -86,12 +86,34 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   }
 }
 
+async function seedSystemSettings(pool: Pool) {
+  const defaults: [string, string, string][] = [
+    ['SMTP_HOST', 'smtp.gmail.com', 'SMTP 伺服器地址'],
+    ['SMTP_PORT', '587', 'SMTP 通訊埠'],
+    ['SMTP_SECURE', 'false', 'SMTP 是否使用 TLS'],
+    ['SMTP_USER', '', 'SMTP 帳號（Gmail 地址）'],
+    ['SMTP_PASS', '', 'SMTP 密碼（Gmail 應用程式密碼）'],
+    ['MAIL_FROM', 'noreply@novadent.com', '預設寄件者信箱'],
+    ['SITE_NAME', 'Novadent 諾星牙科平台', '網站名稱'],
+  ];
+  for (const [key, value, desc] of defaults) {
+    await pool.query(
+      `INSERT INTO system_settings (key, value, description)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (key) DO NOTHING`,
+      [key, value, desc],
+    );
+  }
+  console.log('[AutoSeed] System settings GMAIL defaults seeded');
+}
+
 export async function autoSeed() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
     await ensureDefaultPasswords(pool);
     await deduplicateAndSeedMenu(pool);
+    await seedSystemSettings(pool);
 
     const { rows } = await pool.query('SELECT count(*)::int as cnt FROM users WHERE role != $1', ['MEMBER']);
     if (rows[0].cnt >= 5) {

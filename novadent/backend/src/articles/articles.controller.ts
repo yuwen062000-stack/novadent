@@ -64,6 +64,12 @@ export class ArticlesAdminController {
     return this.articlesService.publish(id);
   }
 
+  // PATCH /api/admin/articles/:id/publish — alias for frontend compatibility
+  @Patch(':id/publish')
+  publishViaPatch(@Param('id') id: string) {
+    return this.articlesService.publish(id);
+  }
+
   @Post(':id/unpublish')
   @HttpCode(HttpStatus.OK)
   unpublish(@Param('id') id: string) {
