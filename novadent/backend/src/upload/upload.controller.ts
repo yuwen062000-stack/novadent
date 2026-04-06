@@ -36,13 +36,6 @@ export class UploadServeController {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const uploadDir = path.join(process.cwd(), '..', 'uploads');
-    const segments = filePath.split('/').filter(Boolean);
-    const fullPath = path.join(uploadDir, ...segments);
-    if (fullPath.startsWith(uploadDir) && fs.existsSync(fullPath)) {
-      return res.sendFile(fullPath);
-    }
-
     try {
       const result = await this.svc.getFileBuffer(objectKey);
       if (result) {
@@ -51,7 +44,13 @@ export class UploadServeController {
         return res.send(result.buffer);
       }
     } catch {
-      return res.status(500).json({ message: 'Storage service error' });
+    }
+
+    const uploadDir = path.join(process.cwd(), '..', 'uploads');
+    const segments = filePath.split('/').filter(Boolean);
+    const fullPath = path.join(uploadDir, ...segments);
+    if (fullPath.startsWith(uploadDir) && fs.existsSync(fullPath)) {
+      return res.sendFile(fullPath);
     }
 
     return res.status(404).json({ message: 'File not found' });
