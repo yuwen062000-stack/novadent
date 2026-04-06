@@ -123,13 +123,10 @@ export function MenuManager({ items, onChange }: MenuManagerProps) {
                     onChange={(e) => {
                       const newVal = e.target.value;
                       setEditLabel(newVal);
-                      onChange(
-                        items.map((item2) =>
-                          item2.id === editing
-                            ? { ...item2, label: newVal }
-                            : item2
-                        )
-                      );
+                      // 即時同步到父層 state，避免按儲存時讀到舊值（stale closure bug）
+                      onChange(items.map((i) =>
+                        i.id === editing ? { ...i, label: newVal } : i
+                      ));
                     }}
                     onBlur={() => saveEdit(item.id)}
                     onKeyDown={(e) => {
