@@ -75,13 +75,14 @@ function AppContent() {
       if (user) {
         setCurrentUser(user);
         setRole(user.role);
-        if (location.pathname === '/' || location.pathname === '') {
+        const p = location.pathname;
+        if (p === '/' || p === '' || p === '/admin' || p === '/clinic' || p === '/lab' || p === '/member' || p === '/super') {
           switch (user.role) {
             case 'SUPER_ADMIN':
-            case 'ADMIN':    navigate('/admin/dashboard'); break;
-            case 'CLINIC':   navigate('/clinic/cases'); break;
-            case 'LAB':      navigate('/lab/cases'); break;
-            case 'MEMBER':   navigate('/member/cases'); break;
+            case 'ADMIN':    navigate('/admin/dashboard', { replace: true }); break;
+            case 'CLINIC':   navigate('/clinic/cases', { replace: true }); break;
+            case 'LAB':      navigate('/lab/cases', { replace: true }); break;
+            case 'MEMBER':   navigate('/member/cases', { replace: true }); break;
           }
         }
       } else {

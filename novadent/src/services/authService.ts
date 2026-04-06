@@ -144,16 +144,13 @@ export async function logout(): Promise<void> {
 export async function refreshAccessToken(): Promise<AuthUser | null> {
   try {
     const rt = getRefreshToken();
-    console.log('[AUTH] refreshAccessToken called, has RT:', !!rt, 'RT length:', rt?.length);
-    if (!rt) {
-      console.log('[AUTH] No refresh token in localStorage, returning null');
-      return null;
-    }
+    console.log('[AUTH] refreshAccessToken called, has local RT:', !!rt);
 
     const res = await apiFetch('/auth/refresh', {
       method: 'POST',
-      body: JSON.stringify({ refreshToken: rt }),
-    });
+      body: JSON.stringify({ refreshToken: rt || undefined }),
+      credentials: 'include',
+    } as RequestInit);
     console.log('[AUTH] refresh response status:', res.status);
     if (!res.ok) {
       console.log('[AUTH] refresh response not ok, clearing tokens');

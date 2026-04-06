@@ -13,6 +13,16 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  private setRefreshCookie(res: Response, token: string) {
+    res.cookie('refresh_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+  }
+
   // POST /api/auth/login
   @Public()
   @Post('login')
@@ -20,8 +30,10 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Ip() ip: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto, ip);
+    this.setRefreshCookie(res, result.refreshToken);
 
     return {
       success: true,
@@ -98,8 +110,10 @@ export class AuthController {
   async register(
     @Body() dto: RegisterDto,
     @Ip() ip: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.register(dto, ip);
+    this.setRefreshCookie(res, result.refreshToken);
 
     return {
       success: true,
