@@ -79,7 +79,16 @@ export class AuthService {
     if (!user || user.status === 'DISABLED') throw new UnauthorizedException('帳號已停用');
 
     const accessToken = this.generateAccessToken(user.id, user.email, user.role, user.name);
-    return { accessToken };
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        forceChangePassword: user.forceChangePassword,
+      },
+    };
   }
 
   // ── Forgot Password（A-01）──────────────────────────────

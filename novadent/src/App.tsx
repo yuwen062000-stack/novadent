@@ -17,7 +17,7 @@ import { LoginPage as NewLoginPage } from './components/auth/LoginPage';
 import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import { ForceChangePasswordPage } from './components/auth/ForceChangePasswordPage';
-import { getCurrentUser, logout, register as authRegister } from './services/authService';
+import { getCurrentUser, logout, register as authRegister, refreshAccessToken } from './services/authService';
 const authService = { register: authRegister };
 
 // ── Admin Pages ────────────────────────────────────────────
@@ -66,10 +66,28 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const [role, setRole] = useState<UserRole>('GUEST');
-  // M-01：已登入使用者狀態（從 localStorage 恢復）
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getCurrentUser());
+  const [authReady, setAuthReady] = useState(false);
 
-  // 登入成功的 callback（由新版 LoginPage 呼叫）
+  useEffect(() => {
+    const savedUser = getCurrentUser();
+    if (savedUser) {
+      refreshAccessToken().then(user => {
+        if (user) {
+          setCurrentUser(user);
+          setRole(user.role);
+        } else {
+          setCurrentUser(null);
+          setRole('GUEST');
+        }
+        setAuthReady(true);
+      });
+    } else {
+      setAuthReady(true);
+    }
+  }, []);
+
+
   const handleLogin = (user: AuthUser) => {
     setCurrentUser(user);
     setRole(user.role);
@@ -1014,9 +1032,7 @@ function AppContent() {
             </button>
           </div>
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
-              <NavItem icon={<LayoutDashboard size={20} />} label="總覽儀表板" active={view === 'OVERVIEW'} onClick={() => { setView('OVERVIEW'); setIsMobileMenuOpen(false); }} />
-            )}
+            
             {role === 'INSURER' && (
               <>
                 <NavItem icon={<LayoutDashboard size={20} />} label="總覽儀表板" active={view === 'OVERVIEW'} onClick={() => { setView('OVERVIEW'); setIsMobileMenuOpen(false); }} />
@@ -1135,26 +1151,6 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans antialiased text-slate-900">
-      <div className="fixed bottom-6 right-6 z-50 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200 shadow-2xl flex gap-0.5 overflow-x-auto no-scrollbar max-w-[95vw]">
-        {(['GUEST', 'MEMBER', 'CLINIC', 'LAB', 'ADMIN', 'SUPER_ADMIN', 'INSURER'] as UserRole[]).map(r => (
-          <button 
-            key={r} 
-            onClick={() => { 
-              setRole(r); 
-              if (r === 'GUEST') handleSetView('HOME');
-              else if (r === 'MEMBER') handleSetView('MEMBER_QA');
-              else if (r === 'CLINIC') handleSetView('CLINIC_CASES');
-              else if (r === 'LAB') handleSetView('LAB_CASES');
-              else if (r === 'ADMIN' || r === 'SUPER_ADMIN') handleSetView('ADMIN_DASHBOARD');
-              else if (r === 'INSURER') handleSetView('OVERVIEW');
-              else handleSetView('OVERVIEW');
-            }} 
-            className={`px-2.5 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all shrink-0 ${role === r ? 'bg-navy-700 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
-          >
-            {r}
-          </button>
-        ))}
-      </div>
       {!isPublicView && <MobileHeader />}
       {!isPublicView && <Sidebar />}
       <main className="flex-1 overflow-y-auto">

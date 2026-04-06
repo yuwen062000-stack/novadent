@@ -112,15 +112,16 @@ export function AdminSiteImages() {
     load();
   };
 
-  const ensureBottom = async () => {
+  const handleAddBottom = async () => {
     if (bottomImage) return;
+    setSaving(true);
     await apiFetch('/admin/site-images', {
       method: 'POST',
       body: JSON.stringify({ page: 'HOME', position: 'CHALLENGE', blockType: 'image', altText: '首頁下方圖片' }),
     });
+    setSaving(false);
     load();
   };
-  useEffect(() => { if (!loading && !bottomImage) ensureBottom(); }, [loading]);
 
   const ImageCard = ({ img, showControls, list, index }: { img: SiteImage; showControls?: boolean; list?: SiteImage[]; index?: number }) => (
     <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${!img.visible ? 'opacity-60' : ''}`}>
@@ -263,11 +264,21 @@ export function AdminSiteImages() {
         </div>
       ) : tab === 'BOTTOM' ? (
         <div>
-          <p className="text-sm text-slate-500 mb-4">首頁下方區塊圖片（單張）</p>
-          {bottomImage && (
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-slate-500">首頁下方區塊圖片（單張）</p>
+            {!bottomImage && (
+              <button onClick={handleAddBottom} disabled={saving}
+                className="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1.5 hover:bg-blue-900 disabled:opacity-50">
+                <Plus className="w-4 h-4" /> 新增圖片
+              </button>
+            )}
+          </div>
+          {bottomImage ? (
             <div className="max-w-md">
-              <ImageCard img={bottomImage} />
+              <ImageCard img={bottomImage} showControls />
             </div>
+          ) : (
+            <div className="text-center py-12 text-slate-400">尚無圖片，點擊「新增圖片」開始</div>
           )}
         </div>
       ) : (
