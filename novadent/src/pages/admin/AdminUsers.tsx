@@ -33,7 +33,7 @@ export function AdminUsers() {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (roleFilter) params.append('role', roleFilter);
-    apiFetch(`/users?${params}`)
+    apiFetch(`/admin/users?${params}`)
       .then(r => r.json())
       .then(data => { setUsers(Array.isArray(data) ? data : data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -45,7 +45,7 @@ export function AdminUsers() {
     if (!form.name || !form.email || !form.password) return alert('請填入所有欄位');
     setSubmitting(true);
     try {
-      const res = await apiFetch('/users', {
+      const res = await apiFetch('/admin/users', {
         method: 'POST',
         body: JSON.stringify(form),
       });
@@ -69,7 +69,7 @@ export function AdminUsers() {
   };
 
   const handleToggleStatus = async (user: User) => {
-    await apiFetch(`/users/${user.id}/toggle-status`, { method: 'POST' });
+    await apiFetch(`/admin/users/${user.id}/toggle-status`, { method: 'POST' });
     load();
   };
 
@@ -83,7 +83,7 @@ export function AdminUsers() {
     if (!editUser) return;
     setSubmitting(true);
     try {
-      const res = await apiFetch(`/users/${editUser.id}`, {
+      const res = await apiFetch(`/admin/users/${editUser.id}`, {
         method: 'PATCH',
         body: JSON.stringify(editForm),
       });
@@ -104,7 +104,7 @@ export function AdminUsers() {
   const handleResetPwd = async (userId: string) => {
     const newPwd = prompt('輸入新密碼（留空取消）');
     if (!newPwd) return;
-    const res = await apiFetch(`/users/${userId}/reset-password`, {
+    const res = await apiFetch(`/admin/users/${userId}/reset-password`, {
       method: 'POST',
       body: JSON.stringify({ newPassword: newPwd }),
     });

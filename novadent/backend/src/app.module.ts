@@ -28,7 +28,7 @@ import { PageContentsModule } from './page-contents/page-contents.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', '..', 'dist'),
       exclude: ['/api/{*path}'],
-      serveStaticOptions: { fallthrough: true },
+      serveStaticOptions: { index: 'index.html' },
     }),
     DatabaseModule,
     MailModule,

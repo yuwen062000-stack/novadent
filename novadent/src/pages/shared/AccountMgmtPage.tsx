@@ -35,7 +35,7 @@ export function AccountMgmtPage({ userRole }: Props) {
   }
 
   useEffect(() => {
-    apiFetch('/users/me/sub-accounts')
+    apiFetch('/admin/users/me/sub-accounts')
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : data.data ?? [];
@@ -64,7 +64,7 @@ export function AccountMgmtPage({ userRole }: Props) {
 
     setSaving(true);
     try {
-      const res = await apiFetch('/users/me/sub-accounts', {
+      const res = await apiFetch('/admin/users/me/sub-accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

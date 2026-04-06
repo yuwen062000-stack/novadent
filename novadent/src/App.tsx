@@ -408,10 +408,146 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
   );
 });
 
+const AboutPage = React.memo(({ aboutBlocks }: { aboutBlocks: any[] }) => (
+  <div className="py-24 max-w-5xl mx-auto px-6">
+    <div className="space-y-20">
+      {aboutBlocks.length === 0 ? (
+        <div className="text-center py-20 text-slate-400">載入中...</div>
+      ) : (
+        aboutBlocks.map((block: any) => (
+          <section key={block.id} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            {block.title && (
+              <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">{block.title}</h2>
+            )}
+            {block.blockType === 'text' ? (
+              <div className="space-y-6 text-slate-600 leading-relaxed max-w-3xl mx-auto">
+                {(block.textContent || '').split('\n').filter((p: string) => p.trim()).map((p: string, i: number) => (
+                  <p key={i}>{p}</p>
+                ))}
+              </div>
+            ) : block.imageUrl ? (
+              <div className="flex justify-center">
+                <img src={block.imageUrl} alt={block.altText || block.title || ''} className="w-[85%] rounded-2xl shadow-md" referrerPolicy="no-referrer" />
+              </div>
+            ) : null}
+          </section>
+        ))
+      )}
+    </div>
+  </div>
+));
+
+const QAStep = React.memo(({ title, desc, options, onSelect, multi = false, final = false }: any) => {
+  const [selected, setSelected] = useState<string[]>([]);
+  const toggle = (opt: string) => {
+    if (multi) {
+      setSelected(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt]);
+    } else {
+      onSelect();
+    }
+  };
+  return (
+    <div className="space-y-6 md:space-y-8">
+      <div>
+        <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-3 md:mb-4">{title}</h2>
+        <p className="text-sm md:text-base text-slate-500">{desc}</p>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        {options.map((opt: string) => (
+          <button key={opt} onClick={() => toggle(opt)}
+            className={`w-full p-4 md:p-5 rounded-xl md:rounded-2xl border-2 text-left font-bold transition-all flex items-center justify-between text-sm md:text-base ${
+              selected.includes(opt) ? 'border-blue-800 bg-blue-50 text-blue-900' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50 text-slate-700'
+            }`}>
+            {opt}
+            {selected.includes(opt) && <CheckCircle2 size={20} className="text-blue-700" />}
+          </button>
+        ))}
+      </div>
+      {multi && (
+        <button onClick={onSelect} className="w-full bg-navy-700 text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-bold text-lg md:text-xl shadow-xl shadow-blue-900/20 hover:bg-blue-950 transition-all">
+          {final ? '完成諮詢，查看推薦' : '繼續下一步'}
+        </button>
+      )}
+    </div>
+  );
+});
+
+const QAPage = React.memo(({ setQaCompleted, setView }: { setQaCompleted: (v: boolean) => void; setView: (v: string) => void }) => {
+  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const totalSteps = 6;
+
+  const handleNext = () => {
+    if (step < totalSteps) {
+      setStep(step + 1);
+    } else {
+      setIsLoading(true);
+      setTimeout(() => {
+        setIsLoading(false);
+        setQaCompleted(true);
+        setView('RECOMMENDATIONS');
+      }, 3000);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="w-16 h-16 border-4 border-blue-100 border-t-navy-700 rounded-full mb-8" />
+        <h2 className="text-2xl font-black text-slate-900 mb-4">正在為您分析適合的診所...</h2>
+        <p className="text-slate-500">我們正在根據您的需求，從合作名單中篩選最專業的醫療團隊</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto py-8 md:py-20">
+      <div className="mb-8 md:mb-12">
+        <div className="flex justify-between items-end mb-3">
+          <span className="text-[10px] md:text-xs font-black text-blue-800 uppercase tracking-widest">Step {step} of {totalSteps}</span>
+          <span className="text-[10px] md:text-xs font-bold text-slate-400">{Math.round((step / totalSteps) * 100)}% 完成</span>
+        </div>
+        <div className="h-1.5 md:h-2 bg-slate-100 rounded-full overflow-hidden mb-4">
+          <motion.div initial={{ width: 0 }} animate={{ width: `${(step / totalSteps) * 100}%` }} className="h-full bg-blue-800" />
+        </div>
+        <p className="text-[10px] md:text-xs text-slate-400 text-center flex items-center justify-center gap-1">
+          <ShieldCheck size={12} /> 本問卷僅供初步媒合參考，不作為正式醫療診斷
+        </p>
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-white rounded-3xl md:rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden">
+          <div className="p-6 md:p-12">
+            {step === 1 && <QAStep title="您今天想解決什麼牙齒困擾呢？" desc="這能幫助我們為您媒合具備相關專長的醫師" options={['缺牙 / 想做假牙', '牙齒疼痛', '牙齒斷裂 / 破裂', '牙套 / 牙冠鬆動', '想評估是否需要植牙', '其他']} onSelect={handleNext} />}
+            {step === 2 && <QAStep title="目前牙齒會感到明顯不舒服嗎？" desc="若有急迫疼痛，我們將優先為您標註急診需求" options={['非常疼痛', '偶爾疼痛', '只有咬東西不舒服', '沒有疼痛，只想改善外觀或功能']} onSelect={handleNext} />}
+            {step === 3 && <QAStep title="這個狀況大約持續多久了？" desc="了解病程時間有助於醫師初步評估治療急迫性" options={['1 週內', '1 個月內', '3 個月以上', '已經拖很久了']} onSelect={handleNext} />}
+            {step === 4 && <QAStep title="您的牙齒目前有以下哪些情況？" desc="可複選，這能讓我們推估治療的複雜程度" multi options={['已缺牙', '牙齒搖晃', '假牙鬆動', '曾做過根管治療', '曾做過植牙', '不確定']} onSelect={handleNext} />}
+            {step === 5 && (
+              <div className="space-y-6 md:space-y-8">
+                <div>
+                  <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-3 md:mb-4">還有其他想補充的細節嗎？</h2>
+                  <p className="text-sm md:text-base text-slate-500">選填。例如：左下後方咬東西會痛，之前做過假牙但最近鬆動。</p>
+                </div>
+                <textarea rows={4} className="w-full p-4 md:p-6 rounded-xl md:rounded-2xl border border-slate-200 focus:ring-2 focus:ring-blue-800 outline-none text-base md:text-lg" placeholder="請輸入您的描述..." />
+                <button onClick={handleNext} className="w-full bg-navy-700 text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-bold text-lg md:text-xl shadow-xl shadow-blue-900/20 hover:bg-blue-950 transition-all">繼續下一步</button>
+              </div>
+            )}
+            {step === 6 && <QAStep title="您希望在哪個地區尋找診所？" desc="我們將為您篩選該地區評價優良的合作診所" options={['台北市', '新北市', '桃園市', '台中市', '高雄市', '其他縣市']} onSelect={handleNext} final />}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+      {step > 1 && (
+        <button onClick={() => setStep(step - 1)} className="mt-6 md:mt-8 text-slate-400 font-bold flex items-center gap-2 mx-auto hover:text-slate-600 transition-colors text-sm md:text-base">
+          <ArrowRight size={18} className="rotate-180" /> 返回上一題
+        </button>
+      )}
+    </div>
+  );
+});
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [role, setRole] = useState<UserRole>('GUEST');
+  const [role, setRole] = useState<UserRole>(() => getCurrentUser()?.role ?? 'GUEST');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getCurrentUser());
   const [authReady, setAuthReady] = useState(false);
 
@@ -598,34 +734,6 @@ function AppContent() {
 
 
 
-  const AboutPage = () => (
-    <div className="py-24 max-w-5xl mx-auto px-6">
-      <div className="space-y-20">
-        {aboutBlocks.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">載入中...</div>
-        ) : (
-          aboutBlocks.map((block: any) => (
-            <section key={block.id} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-              {block.title && (
-                <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">{block.title}</h2>
-              )}
-              {block.blockType === 'text' ? (
-                <div className="space-y-6 text-slate-600 leading-relaxed max-w-3xl mx-auto">
-                  {(block.textContent || '').split('\n').filter((p: string) => p.trim()).map((p: string, i: number) => (
-                    <p key={i}>{p}</p>
-                  ))}
-                </div>
-              ) : block.imageUrl ? (
-                <div className="flex justify-center">
-                  <img src={block.imageUrl} alt={block.altText || block.title || ''} className="w-[85%] rounded-2xl shadow-md" referrerPolicy="no-referrer" />
-                </div>
-              ) : null}
-            </section>
-          ))
-        )}
-      </div>
-    </div>
-  );
 
   const handleRegisterSuccess = (registeredUser: AuthUser) => {
     setUser(registeredUser);
@@ -633,188 +741,6 @@ function AppContent() {
     handleSetView('MEMBER_QA');
   };
 
-  const QAPage = () => {
-    const [step, setStep] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
-    const totalSteps = 6;
-
-    const handleNext = () => {
-      if (step < totalSteps) {
-        setStep(step + 1);
-      } else {
-        setIsLoading(true);
-        setTimeout(() => {
-          setIsLoading(false);
-          setQaCompleted(true);
-          setView('RECOMMENDATIONS');
-        }, 3000);
-      }
-    };
-
-    if (isLoading) {
-      return (
-        <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
-          <motion.div 
-            animate={{ rotate: 360 }} 
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-4 border-blue-100 border-t-navy-700 rounded-full mb-8"
-          />
-          <h2 className="text-2xl font-black text-slate-900 mb-4">正在為您分析適合的診所...</h2>
-          <p className="text-slate-500">我們正在根據您的需求，從合作名單中篩選最專業的醫療團隊</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="p-4 md:p-6 max-w-2xl mx-auto py-8 md:py-20">
-        {/* Progress Bar */}
-        <div className="mb-8 md:mb-12">
-          <div className="flex justify-between items-end mb-3">
-            <span className="text-[10px] md:text-xs font-black text-blue-800 uppercase tracking-widest">Step {step} of {totalSteps}</span>
-            <span className="text-[10px] md:text-xs font-bold text-slate-400">{Math.round((step / totalSteps) * 100)}% 完成</span>
-          </div>
-          <div className="h-1.5 md:h-2 bg-slate-100 rounded-full overflow-hidden mb-4">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${(step / totalSteps) * 100}%` }}
-              className="h-full bg-blue-800"
-            />
-          </div>
-          <p className="text-[10px] md:text-xs text-slate-400 text-center flex items-center justify-center gap-1">
-            <ShieldCheck size={12} /> 本問卷僅供初步媒合參考，不作為正式醫療診斷
-          </p>
-        </div>
-
-        <AnimatePresence mode="wait">
-          <motion.div 
-            key={step}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="bg-white rounded-3xl md:rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden"
-          >
-            <div className="p-6 md:p-12">
-              {step === 1 && (
-                <QAStep 
-                  title="您今天想解決什麼牙齒困擾呢？" 
-                  desc="這能幫助我們為您媒合具備相關專長的醫師"
-                  options={['缺牙 / 想做假牙', '牙齒疼痛', '牙齒斷裂 / 破裂', '牙套 / 牙冠鬆動', '想評估是否需要植牙', '其他']}
-                  onSelect={handleNext}
-                />
-              )}
-              {step === 2 && (
-                <QAStep 
-                  title="目前牙齒會感到明顯不舒服嗎？" 
-                  desc="若有急迫疼痛，我們將優先為您標註急診需求"
-                  options={['非常疼痛', '偶爾疼痛', '只有咬東西不舒服', '沒有疼痛，只想改善外觀或功能']}
-                  onSelect={handleNext}
-                />
-              )}
-              {step === 3 && (
-                <QAStep 
-                  title="這個狀況大約持續多久了？" 
-                  desc="了解病程時間有助於醫師初步評估治療急迫性"
-                  options={['1 週內', '1 個月內', '3 個月以上', '已經拖很久了']}
-                  onSelect={handleNext}
-                />
-              )}
-              {step === 4 && (
-                <QAStep 
-                  title="您的牙齒目前有以下哪些情況？" 
-                  desc="可複選，這能讓我們推估治療的複雜程度"
-                  multi
-                  options={['已缺牙', '牙齒搖晃', '假牙鬆動', '曾做過根管治療', '曾做過植牙', '不確定']}
-                  onSelect={handleNext}
-                />
-              )}
-              {step === 5 && (
-                <div className="space-y-6 md:space-y-8">
-                  <div>
-                    <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-3 md:mb-4">還有其他想補充的細節嗎？</h2>
-                    <p className="text-sm md:text-base text-slate-500">選填。例如：左下後方咬東西會痛，之前做過假牙但最近鬆動。</p>
-                  </div>
-                  <textarea 
-                    rows={4} 
-                    className="w-full p-4 md:p-6 rounded-xl md:rounded-2xl border border-slate-200 focus:ring-2 focus:ring-blue-800 outline-none text-base md:text-lg" 
-                    placeholder="請輸入您的描述..."
-                  />
-                  <button 
-                    onClick={handleNext}
-                    className="w-full bg-navy-700 text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-bold text-lg md:text-xl shadow-xl shadow-blue-900/20 hover:bg-blue-950 transition-all"
-                  >
-                    繼續下一步
-                  </button>
-                </div>
-              )}
-              {step === 6 && (
-                <QAStep 
-                  title="您希望在哪個地區尋找診所？" 
-                  desc="我們將為您篩選該地區評價優良的合作診所"
-                  options={['台北市', '新北市', '桃園市', '台中市', '高雄市', '其他縣市']}
-                  onSelect={handleNext}
-                  final
-                />
-              )}
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {step > 1 && (
-          <button 
-            onClick={() => setStep(step - 1)}
-            className="mt-6 md:mt-8 text-slate-400 font-bold flex items-center gap-2 mx-auto hover:text-slate-600 transition-colors text-sm md:text-base"
-          >
-            <ArrowRight size={18} className="rotate-180" /> 返回上一題
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  const QAStep = ({ title, desc, options, onSelect, multi = false, final = false }: any) => {
-    const [selected, setSelected] = useState<string[]>([]);
-
-    const toggle = (opt: string) => {
-      if (multi) {
-        setSelected(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt]);
-      } else {
-        onSelect();
-      }
-    };
-
-    return (
-      <div className="space-y-6 md:space-y-8">
-        <div>
-          <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-3 md:mb-4">{title}</h2>
-          <p className="text-sm md:text-base text-slate-500">{desc}</p>
-        </div>
-        <div className="grid grid-cols-1 gap-3">
-          {options.map((opt: string) => (
-            <button 
-              key={opt} 
-              onClick={() => toggle(opt)}
-              className={`w-full p-4 md:p-5 rounded-xl md:rounded-2xl border-2 text-left font-bold transition-all flex items-center justify-between text-sm md:text-base ${
-                selected.includes(opt) 
-                  ? 'border-blue-800 bg-blue-50 text-blue-900' 
-                  : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50 text-slate-700'
-              }`}
-            >
-              {opt}
-              {selected.includes(opt) && <CheckCircle2 size={20} className="text-blue-700" />}
-            </button>
-          ))}
-        </div>
-        {multi && (
-          <button 
-            onClick={onSelect}
-            className="w-full bg-navy-700 text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-bold text-lg md:text-xl shadow-xl shadow-blue-900/20 hover:bg-blue-950 transition-all"
-          >
-            {final ? '完成諮詢，查看推薦' : '繼續下一步'}
-          </button>
-        )}
-      </div>
-    );
-  };
 
   const ClinicDetail = ({ setView, selectedClinic }: any) => (
     <div className="p-4 md:p-8 max-w-5xl mx-auto py-6 md:py-10">
@@ -1085,7 +1011,7 @@ function AppContent() {
             {/* M-01：強制修改密碼（admin 代重設後首次登入） */}
             {view === 'FORCE_CHANGE_PASSWORD' && <ForceChangePasswordPage />}
             {view === 'REGISTER' && <RegisterPageComponent onSuccess={handleRegisterSuccess} />}
-            {view === 'SERVICE' && <AboutPage />}
+            {view === 'SERVICE' && <AboutPage aboutBlocks={aboutBlocks} />}
             {view === 'TERMS' && <TermsPage />}
             {view === 'PRIVACY' && <PrivacyPage />}
             {view === 'QA' && <QAPage setQaCompleted={setQaCompleted} setView={handleSetView} />}

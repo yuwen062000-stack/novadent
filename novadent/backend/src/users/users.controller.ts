@@ -9,7 +9,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, CreateSubAccountDto } from './dto/user.dto';
 
-@Controller('api/users')
+@Controller('api/admin/users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
