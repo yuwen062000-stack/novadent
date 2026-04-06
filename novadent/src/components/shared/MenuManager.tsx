@@ -120,7 +120,14 @@ export function MenuManager({ items, onChange }: MenuManagerProps) {
                   <input
                     autoFocus
                     value={editLabel}
-                    onChange={(e) => setEditLabel(e.target.value)}
+                    onChange={(e) => {
+                      const newVal = e.target.value;
+                      setEditLabel(newVal);
+                      // 即時同步到父層 state，避免按儲存時讀到舊值（stale closure bug）
+                      onChange(items.map((i) =>
+                        i.id === editing ? { ...i, label: newVal } : i
+                      ));
+                    }}
                     onBlur={() => saveEdit(item.id)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveEdit(item.id);
