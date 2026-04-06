@@ -39,7 +39,9 @@ function clearRefreshToken() {
   deleteCookie('novadent_rt');
 }
 
-async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
+let _refreshing: Promise<AuthUser | null> | null = null;
+
+async function apiFetch(path: string, options: RequestInit = {}, _retry = false): Promise<Response> {
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -47,11 +49,23 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<Respon
   };
   if (_accessToken) headers['Authorization'] = `Bearer ${_accessToken}`;
 
-  return fetch(API_BASE + path, {
+  const res = await fetch(API_BASE + path, {
     ...options,
     headers,
     credentials: 'include',
   });
+
+  if (res.status === 401 && !_retry && !path.startsWith('/auth/')) {
+    if (!_refreshing) {
+      _refreshing = refreshAccessToken().finally(() => { _refreshing = null; });
+    }
+    const user = await _refreshing;
+    if (user && _accessToken) {
+      return apiFetch(path, options, true);
+    }
+  }
+
+  return res;
 }
 
 // ── 型別 ──────────────────────────────────────────────────────

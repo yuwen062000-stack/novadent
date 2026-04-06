@@ -98,7 +98,7 @@ export class UploadService {
         return { buffer: Buffer.from(buffer), contentType: (metadata.contentType as string) || 'application/octet-stream' };
       } catch (err) {
         this.logger.error(`GCS download failed for ${objectKey}`, err);
-        throw err;
+        return null;
       }
     }
     return null;
