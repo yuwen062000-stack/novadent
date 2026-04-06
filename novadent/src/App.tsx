@@ -544,6 +544,20 @@ const QAPage = React.memo(({ setQaCompleted, setView }: { setQaCompleted: (v: bo
   );
 });
 
+const MobileHeader = React.memo(({ handleLogout, setIsMobileMenuOpen }: { handleLogout: () => void; setIsMobileMenuOpen: (v: boolean) => void }) => (
+  <div className="md:hidden bg-blue-950 text-white p-4 flex items-center justify-between sticky top-0 z-40">
+    <div className="flex items-center gap-2 cursor-pointer" onClick={handleLogout}>
+      <div className="w-8 h-8 bg-blue-800 rounded-lg flex items-center justify-center">
+        <Activity className="text-white w-5 h-5" />
+      </div>
+      <span className="font-bold text-lg tracking-tight">Novadent</span>
+    </div>
+    <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 hover:bg-blue-900 rounded-lg transition-colors">
+      <Menu size={24} />
+    </button>
+  </div>
+));
+
 const ClinicDetail = React.memo(({ setView, selectedClinic }: { setView: (v: string) => void; selectedClinic: any }) => (
   <div className="p-4 md:p-8 max-w-5xl mx-auto py-6 md:py-10">
     <button onClick={() => setView('CASE_MANAGEMENT')} className="text-slate-500 hover:text-blue-800 flex items-center gap-2 mb-6 md:mb-8 font-medium transition-colors text-sm md:text-base">
@@ -799,194 +813,7 @@ function AppContent() {
 
 
 
-  const PersonalSettings = () => (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-6 md:mb-8">個人設定</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-        <div className="md:col-span-3 space-y-6">
-          <div className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
-            <h3 className="text-lg md:text-xl font-bold text-slate-900 border-b border-slate-100 pb-4">基本資料</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">姓名</label>
-                <input type="text" defaultValue="Member User" className="w-full px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-800 text-sm md:text-base" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">手機</label>
-                <input type="text" defaultValue="0912-345-678" className="w-full px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-800 text-sm md:text-base" />
-              </div>
-            </div>
-            <button className="w-full sm:w-auto bg-navy-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm">儲存修改</button>
-          </div>
-          <div className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
-            <h3 className="text-lg md:text-xl font-bold text-slate-900 border-b border-slate-100 pb-4">變更密碼</h3>
-            <div className="space-y-4">
-              <input type="password" placeholder="目前密碼" className="w-full px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-800 text-sm md:text-base" />
-              <input type="password" placeholder="新密碼" className="w-full px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-800 text-sm md:text-base" />
-            </div>
-            <button className="w-full sm:w-auto bg-blue-950 text-white px-6 py-2.5 rounded-xl font-bold text-sm">變更密碼</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
-  const AccountMgmt = ({ role, subAccounts }: any) => {
-    const [accounts, setAccounts] = useState(role === 'LAB' ? [
-      { id: 'l-s1', name: '李技師', role: '牙技師', email: 'lee@lab.com' },
-      { id: 'l-s2', name: '張助理', role: '行政助理', email: 'chang@lab.com' }
-    ] : subAccounts);
-    const [showForm, setShowForm] = useState(false);
-    const [newAccount, setNewAccount] = useState({ name: '', role: role === 'LAB' ? '牙技師' : '牙醫師', email: '', password: '' });
-    const [showPassword, setShowPassword] = useState(false);
-
-    const handleAddAccount = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!newAccount.name || !newAccount.email || !newAccount.password) return;
-      
-      setAccounts([...accounts, { 
-        id: `sub-${Date.now()}`, 
-        name: newAccount.name, 
-        role: newAccount.role, 
-        email: newAccount.email 
-      }]);
-      
-      setNewAccount({ name: '', role: role === 'LAB' ? '牙技師' : '牙醫師', email: '', password: '' });
-      setShowForm(false);
-      alert('子帳號已建立');
-    };
-
-    return (
-      <div className="p-4 md:p-8 max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6 md:mb-8">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900">帳號管理</h1>
-            <p className="text-sm md:text-base text-slate-500">
-              {role === 'LAB' ? '管理牙技所主帳號與子帳號（牙技師／行政）' : '管理診所主帳號與子帳號（醫師/助理）'}
-            </p>
-          </div>
-          <button onClick={() => setShowForm(true)} className="w-full sm:w-auto bg-navy-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-sm md:text-base">
-            <Plus size={20} /> 新增子帳號
-          </button>
-        </div>
-
-        {showForm && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-6">新增子帳號</h2>
-              <form onSubmit={handleAddAccount} className="space-y-4">
-                <div>
-                  <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1">姓名 <span className="text-red-500">*</span></label>
-                  <input required type="text" value={newAccount.name} onChange={e => setNewAccount({...newAccount, name: e.target.value})} className="w-full px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-800 text-sm md:text-base" />
-                </div>
-                <div>
-                  <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1">角色 <span className="text-red-500">*</span></label>
-                  <select value={newAccount.role} onChange={e => setNewAccount({...newAccount, role: e.target.value})} className="w-full px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-800 bg-white text-sm md:text-base">
-                    {role === 'LAB' ? (
-                      <>
-                        <option value="牙技師">牙技師</option>
-                        <option value="行政助理">行政助理</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="牙醫師">牙醫師</option>
-                        <option value="行政助理">行政助理</option>
-                        <option value="護理師">護理師</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1">Email <span className="text-red-500">*</span></label>
-                  <input required type="email" value={newAccount.email} onChange={e => setNewAccount({...newAccount, email: e.target.value})} className="w-full px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-800 text-sm md:text-base" />
-                </div>
-                <div>
-                  <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1">密碼 <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <input required type={showPassword ? "text" : "password"} value={newAccount.password} onChange={e => setNewAccount({...newAccount, password: e.target.value})} className="w-full px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-800 text-sm md:text-base" />
-                    <button type="button" onClick={() => showPassword ? setShowPassword(false) : setShowPassword(true)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px] md:text-xs">
-                      {showPassword ? '隱藏' : '顯示'}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex gap-4 mt-8">
-                  <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-2.5 md:py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors text-sm md:text-base">取消</button>
-                  <button type="submit" className="flex-1 py-2.5 md:py-3 bg-navy-700 text-white rounded-xl font-bold shadow-lg shadow-blue-900/20 hover:bg-blue-950 transition-colors text-sm md:text-base">建立帳號</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-6 md:gap-8">
-          <div className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[2rem] border border-slate-200 shadow-sm">
-            <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <Building2 size={20} className="text-blue-800" /> 
-              {role === 'LAB' ? '牙技所主帳號資訊' : '診所主帳號資訊'}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              <InfoItem label={role === 'LAB' ? "牙技所名稱" : "診所名稱"} value={role === 'LAB' ? "精工牙技所" : "維新牙醫診所"} />
-              <InfoItem label="負責人" value={role === 'LAB' ? "王技師" : "陳大文 醫師"} />
-              <InfoItem label="聯絡電話" value={role === 'LAB' ? "02-8765-4321" : "02-1234-5678"} />
-              <InfoItem label="Email" value={role === 'LAB' ? "contact@seiko-lab.com" : "contact@weixin-dental.com"} />
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl md:rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-5 md:p-6 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="font-bold text-slate-900 text-sm md:text-base">子帳號列表</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left min-w-[500px] md:min-w-0">
-                <thead className="bg-slate-50/30 border-b border-slate-100">
-                  <tr>
-                    <th className="px-6 py-4 text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">姓名</th>
-                    <th className="px-6 py-4 text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">角色</th>
-                    <th className="px-6 py-4 text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">Email</th>
-                    <th className="px-6 py-4 text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest text-right">操作</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {accounts.map((s: any) => (
-                    <tr key={s.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-slate-900 text-sm md:text-base">{s.name}</td>
-                      <td className="px-6 py-4 text-xs md:text-sm text-slate-500">{s.role}</td>
-                      <td className="px-6 py-4 text-xs md:text-sm text-slate-500">{s.email}</td>
-                      <td className="px-6 py-4 text-right">
-                        <button className="text-slate-400 hover:text-red-600 font-bold text-xs md:text-sm">停用</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-
-  const InfoItem = ({ label, value }: any) => (
-    <div>
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-      <p className="font-bold text-slate-900">{value}</p>
-    </div>
-  );
-
-  // --- Sidebar Component ---
-  const MobileHeader = () => (
-    <div className="md:hidden bg-blue-950 text-white p-4 flex items-center justify-between sticky top-0 z-40">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setRole('GUEST'); setView('HOME'); }}>
-        <div className="w-8 h-8 bg-blue-800 rounded-lg flex items-center justify-center">
-          <Activity className="text-white w-5 h-5" />
-        </div>
-        <span className="font-bold text-lg tracking-tight">Novadent</span>
-      </div>
-      <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 hover:bg-blue-900 rounded-lg transition-colors">
-        <Menu size={24} />
-      </button>
-    </div>
-  );
 
 
   // M-01：新增 Auth 相關頁面也屬於公開視圖（不顯示側選單）
@@ -994,7 +821,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans antialiased text-slate-900">
-      {!isPublicView && <MobileHeader />}
+      {!isPublicView && <MobileHeader handleLogout={handleLogout} setIsMobileMenuOpen={setIsMobileMenuOpen} />}
       {!isPublicView && <Sidebar role={role} view={view} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} handleSetView={handleSetView} currentUser={currentUser} handleLogout={handleLogout} />}
       <main className="flex-1 overflow-y-auto">
         {isPublicView && <PublicHeader />}
@@ -1383,7 +1210,9 @@ function ArticleDetail({ setView, selectedArticle }: any) {
         <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 mb-4 md:mb-8 leading-tight">{selectedArticle?.title}</h1>
         <div className="prose prose-slate max-w-none text-sm md:text-base text-slate-700 leading-loose space-y-4 md:space-y-6">
           <p className="text-base md:text-lg font-medium text-slate-600">{selectedArticle?.summary}</p>
-          <p>假牙製作是一個精密的醫療過程，Novadent 致力於讓這個過程變得更加透明。全瓷冠假牙因為其優異的生物相容性與美觀效果，已成為現代牙科修復的首選...</p>
+          {(selectedArticle?.content || '').split('\n').filter((p: string) => p.trim()).map((p: string, i: number) => (
+            <p key={i}>{p}</p>
+          ))}
         </div>
       </div>
     </div>

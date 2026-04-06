@@ -18,8 +18,9 @@ localPort = 24505
 run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
 
 [services.production]
-build = ["bash", "-c", "cd /home/runner/workspace/novadent && npm install --legacy-peer-deps && npx vite build && cd /home/runner/workspace/novadent/backend && npm install --legacy-peer-deps && npx tsc -p tsconfig.json || true"]
-run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production node dist/src/main.js"
+deploy = "autoscale"
+build = ["bash", "-c", "cd /home/runner/workspace/novadent && pnpm install && npx vite build --outDir dist && cd /home/runner/workspace/novadent/backend && npx tsc -p tsconfig.json || true"]
+run = "cd /home/runner/workspace/novadent/backend && NODE_ENV=production PORT=24505 node dist/src/main.js"
 
 [services.env]
 PORT = "24505"
