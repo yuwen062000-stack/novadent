@@ -127,7 +127,7 @@ export function AdminSiteImages() {
     <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${!img.visible ? 'opacity-60' : ''}`}>
       <div className="aspect-video bg-slate-100 flex items-center justify-center relative">
         {img.imageUrl ? (
-          <img src={img.imageUrl} alt={img.altText || ''} className="w-full h-full object-cover" />
+          <img src={img.imageUrl} alt={img.altText || ''} className="w-full h-full object-contain" />
         ) : (
           <div className="text-slate-400 text-center">
             <Image className="w-10 h-10 mx-auto mb-1" />
