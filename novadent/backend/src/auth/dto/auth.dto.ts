@@ -36,6 +36,12 @@ export class ChangePasswordDto {
   newPassword: string;
 }
 
+export class RefreshTokenDto {
+  @IsOptional()
+  @IsString()
+  refreshToken?: string;
+}
+
 export class RegisterDto {
   @IsString({ message: '請輸入姓名' })
   @MinLength(1, { message: '請輸入姓名' })

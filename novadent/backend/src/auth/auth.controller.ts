@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto, RegisterDto } from './dto/auth.dto';
+import { LoginDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto, RegisterDto, RefreshTokenDto } from './dto/auth.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -35,7 +35,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() body: { refreshToken?: string }, @Req() req: Request) {
+  async refresh(@Body() body: RefreshTokenDto, @Req() req: Request) {
     const token = body?.refreshToken || req.cookies?.refresh_token;
     if (!token) {
       return { success: false, message: 'Refresh token 不存在' };
@@ -47,7 +47,7 @@ export class AuthController {
   // POST /api/auth/logout
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Body() body: { refreshToken?: string }, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async logout(@Body() body: RefreshTokenDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = body?.refreshToken || req.cookies?.refresh_token;
     await this.authService.logout(token);
     res.clearCookie('refresh_token', { path: '/' });

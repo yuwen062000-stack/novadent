@@ -11,9 +11,33 @@ function setToken(token: string) { _accessToken = token; }
 function getToken(): string | null { return _accessToken; }
 function clearToken() { _accessToken = null; }
 
-function setRefreshToken(token: string) { localStorage.setItem('novadent_rt', token); }
-function getRefreshToken(): string | null { return localStorage.getItem('novadent_rt'); }
-function clearRefreshToken() { localStorage.removeItem('novadent_rt'); }
+function setCookie(name: string, value: string, days: number) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+function deleteCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+}
+
+function setRefreshToken(token: string) {
+  try { localStorage.setItem('novadent_rt', token); } catch {}
+  setCookie('novadent_rt', token, 7);
+}
+function getRefreshToken(): string | null {
+  try {
+    const ls = localStorage.getItem('novadent_rt');
+    if (ls) return ls;
+  } catch {}
+  return getCookie('novadent_rt');
+}
+function clearRefreshToken() {
+  try { localStorage.removeItem('novadent_rt'); } catch {}
+  deleteCookie('novadent_rt');
+}
 
 async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const isFormData = options.body instanceof FormData;
@@ -52,8 +76,10 @@ export async function login(email: string, password: string): Promise<LoginResul
     }
 
     const data = await res.json();
+    console.log('[AUTH] login response has refreshToken:', !!data.refreshToken, 'length:', data.refreshToken?.length);
     setToken(data.accessToken);
     setRefreshToken(data.refreshToken);
+    console.log('[AUTH] stored RT in localStorage, verify:', !!getRefreshToken());
 
     const user: AuthUser = {
       id:                  data.user.id,
@@ -118,19 +144,27 @@ export async function logout(): Promise<void> {
 export async function refreshAccessToken(): Promise<AuthUser | null> {
   try {
     const rt = getRefreshToken();
-    if (!rt) return null;
+    console.log('[AUTH] refreshAccessToken called, has RT:', !!rt, 'RT length:', rt?.length);
+    if (!rt) {
+      console.log('[AUTH] No refresh token in localStorage, returning null');
+      return null;
+    }
 
     const res = await apiFetch('/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({ refreshToken: rt }),
     });
+    console.log('[AUTH] refresh response status:', res.status);
     if (!res.ok) {
+      console.log('[AUTH] refresh response not ok, clearing tokens');
       clearRefreshToken();
       sessionStorage.removeItem('novadent_user');
       return null;
     }
     const data = await res.json();
+    console.log('[AUTH] refresh response data.success:', data.success, 'has user:', !!data.user);
     if (!data.success) {
+      console.log('[AUTH] refresh returned success=false:', data.message);
       clearRefreshToken();
       sessionStorage.removeItem('novadent_user');
       return null;
@@ -144,8 +178,10 @@ export async function refreshAccessToken(): Promise<AuthUser | null> {
       forceChangePassword: data.user.forceChangePassword,
     };
     sessionStorage.setItem('novadent_user', JSON.stringify(user));
+    console.log('[AUTH] refresh success, user:', user.email, 'role:', user.role);
     return user;
-  } catch {
+  } catch (err) {
+    console.error('[AUTH] refresh exception:', err);
     return null;
   }
 }

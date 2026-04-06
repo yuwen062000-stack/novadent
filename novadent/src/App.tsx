@@ -74,6 +74,15 @@ function AppContent() {
       if (user) {
         setCurrentUser(user);
         setRole(user.role);
+        if (location.pathname === '/' || location.pathname === '') {
+          switch (user.role) {
+            case 'SUPER_ADMIN':
+            case 'ADMIN':    navigate('/admin/dashboard'); break;
+            case 'CLINIC':   navigate('/clinic/cases'); break;
+            case 'LAB':      navigate('/lab/cases'); break;
+            case 'MEMBER':   navigate('/member/cases'); break;
+          }
+        }
       } else {
         setCurrentUser(null);
         setRole('GUEST');

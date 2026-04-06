@@ -6,7 +6,7 @@ NestJS backend + React/Vite frontend dental industry platform. **Standalone npm 
 ## Stack
 - **Backend**: NestJS 11 (TypeScript), Drizzle ORM, PostgreSQL
 - **Frontend**: React 18 + Vite, TailwindCSS, Framer Motion, Lucide icons
-- **Auth**: JWT access token (memory) + HttpOnly refresh cookie
+- **Auth**: JWT access token (memory) + refresh token (dual: localStorage + first-party cookie fallback for iframe contexts)
 - **File uploads**: GCS object storage (Replit App Storage) with local filesystem fallback, served at `/api/uploads/*`
 - **Email**: Nodemailer (MailService, configurable via SMTP env vars)
 
