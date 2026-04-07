@@ -188,16 +188,30 @@ async function deduplicateAndSeedMenu(pool: Pool) {
 
     console.log('[AutoSeed] Menu config seeded with default items (PUBLIC + ADMIN with parent groups)');
   } else {
-    // ── 現有安裝：建立父群組（若尚未存在），使用虛擬路徑方便 Sidebar 對應名稱
+    // ── 現有安裝修復流程 ─────────────────────────────────────────
+
+    // Step 1：去除所有重複路徑（保留 created_at 最早的那筆）
+    await pool.query(`
+      DELETE FROM menu_config
+      WHERE id IN (
+        SELECT id FROM (
+          SELECT id,
+            ROW_NUMBER() OVER (PARTITION BY path ORDER BY created_at, id) AS rn
+          FROM menu_config
+          WHERE path <> ''
+        ) t WHERE rn > 1
+      )
+    `);
+    console.log('[AutoSeed] Deduplicated menu_config by path');
+
+    // Step 2：建立父群組（若不存在）
     const ensureParent = async (label: string, path: string, roles: string[], order: number) => {
-      // 先嘗試用 path 找（新版），再 fallback 用 label+空路徑（舊版資料）
       const { rows } = await pool.query(
-        `SELECT id FROM menu_config WHERE (path = $1 OR (label = $2 AND path = '')) AND menu_type = 'ADMIN' LIMIT 1`,
+        `SELECT id FROM menu_config WHERE (path = $1 OR (label = $2 AND (path = '' OR path IS NULL))) AND menu_type = 'ADMIN' LIMIT 1`,
         [path, label]
       );
       if (rows.length > 0) {
-        // 若找到但路徑是空的，更新為虛擬路徑
-        await pool.query(`UPDATE menu_config SET path = $1 WHERE id = $2 AND path = ''`, [path, rows[0].id]);
+        await pool.query(`UPDATE menu_config SET path = $1 WHERE id = $2 AND (path = '' OR path IS NULL)`, [path, rows[0].id]);
         return rows[0].id as string;
       }
       const { rows: ins } = await pool.query(
@@ -212,36 +226,53 @@ async function deduplicateAndSeedMenu(pool: Pool) {
     const systemId  = await ensureParent('系統管理', '/super/system',   ['SUPER_ADMIN'], 18);
     const advId     = await ensureParent('進階設定', '/super/advanced', ['SUPER_ADMIN'], 20);
 
-    // 將現有子項目連結至父群組（若尚未設定 parent_id）— 路徑已在上方統一更新
-    const childMap: [string, string][] = [
-      ['/admin/articles',        contentId],
-      ['/admin/notifications',   contentId],
-      ['/admin/site-images',     contentId],
-      ['/admin/videos',          contentId],
-      ['/super/settings',        systemId],
-      ['/super/menu',            systemId],
-      ['/super/audit-logs',      systemId],
-      ['/super/qa-questions',    advId],
-      ['/super/mfg-templates',   advId],
+    // Step 3：補建所有缺失的子選單（INSERT WHERE NOT EXISTS）
+    type ChildDef = [string, string, string[], number, string];
+    const allChildren: ChildDef[] = [
+      // 內容管理子項目
+      ['文章管理',  '/admin/articles',       ['ADMIN','SUPER_ADMIN'], 1, contentId],
+      ['通知廣播',  '/admin/notifications',  ['ADMIN','SUPER_ADMIN'], 2, contentId],
+      ['圖片管理',  '/admin/site-images',    ['ADMIN','SUPER_ADMIN'], 3, contentId],
+      ['影音管理',  '/admin/videos',         ['ADMIN','SUPER_ADMIN'], 4, contentId],
+      // 系統管理子項目
+      ['系統設定',  '/super/settings',       ['SUPER_ADMIN'], 1, systemId],
+      ['選單管理',  '/super/menu',           ['SUPER_ADMIN'], 2, systemId],
+      ['稽核日誌',  '/super/audit-logs',     ['SUPER_ADMIN'], 3, systemId],
+      // 進階設定子項目
+      ['QA問卷管理','/super/qa-questions',   ['SUPER_ADMIN'], 1, advId],
+      ['製程模板',  '/super/mfg-templates',  ['SUPER_ADMIN'], 2, advId],
     ];
-    for (const [path, parentId] of childMap) {
+    for (const [label, path, roles, order, parentId] of allChildren) {
+      // 若路徑已存在：更新 parent_id；若不存在：新建
+      const { rows: existing } = await pool.query(
+        `SELECT id FROM menu_config WHERE path = $1 LIMIT 1`, [path]
+      );
+      if (existing.length > 0) {
+        await pool.query(
+          `UPDATE menu_config SET parent_id = $1, label = $2, roles = $3, "order" = $4, menu_type = 'ADMIN' WHERE id = $5`,
+          [parentId, label, roles, order, existing[0].id]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type, parent_id)
+           VALUES ($1,$2,$3,$4,true,'ADMIN',$5)`,
+          [label, path, roles, order, parentId]
+        );
+      }
+    }
+
+    // Step 4：確保頂層獨立項目存在（合作連結）
+    const { rows: plExists } = await pool.query(
+      `SELECT id FROM menu_config WHERE path = '/admin/partner-links' LIMIT 1`
+    );
+    if (plExists.length === 0) {
       await pool.query(
-        `UPDATE menu_config SET parent_id = $1 WHERE path = $2 AND parent_id IS NULL`,
-        [parentId, path]
+        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
+         VALUES ('合作連結','/admin/partner-links','{ADMIN,SUPER_ADMIN}',15,true,'ADMIN')`
       );
     }
-    // 確保合作連結項目存在（舊版可能缺少）
-    await pool.query(
-      `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
-       VALUES ('合作連結','/admin/partner-links','{ADMIN,SUPER_ADMIN}',15,true,'ADMIN')
-       ON CONFLICT DO NOTHING`
-    );
-    // 確保 /super/menu 也在系統管理群組下
-    await pool.query(
-      `UPDATE menu_config SET parent_id = $1 WHERE path = '/super/menu' AND parent_id IS NULL`,
-      [systemId]
-    );
-    console.log('[AutoSeed] Existing menu_config parent groups ensured & children linked');
+
+    console.log('[AutoSeed] Existing menu_config: deduped + parent groups + children ensured');
   }
 }
 
