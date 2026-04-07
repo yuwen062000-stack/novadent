@@ -89,6 +89,24 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   await pool.query(`UPDATE menu_config SET show_in_footer = true WHERE path IN ('/about', '/knowledge', '/videos') AND menu_type = 'PUBLIC'`);
   console.log('[AutoSeed] menu_config columns migrated & menu_type/show_in_footer updated');
 
+  // ── 寫入預設 SEO 設定（不存在才 INSERT，避免覆蓋管理員已設定的值）──
+  const defaultSeoSettings: [string, string, string][] = [
+    ['seo_title',          'Novadent 諾星 — 牙科整合協作平台',                                               'SEO 網頁標題（瀏覽器 tab 顯示）'],
+    ['seo_description',    'Novadent 連結診所、牙技所與會員，提供透明化假牙製程追蹤與 QA 問診推薦。',      'SEO Meta 描述'],
+    ['seo_og_title',       'Novadent 諾星 — 牙科整合協作平台',                                               'OG 社群分享標題'],
+    ['seo_og_description', '連結診所、牙技所與會員，建立醫療信任新標準。',                                   'OG 社群分享描述'],
+    ['seo_og_url',         'https://novadent.replit.app',                                                     '網站標準 URL'],
+  ];
+  for (const [key, value, description] of defaultSeoSettings) {
+    await pool.query(
+      `INSERT INTO system_settings (key, value, description)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (key) DO NOTHING`,
+      [key, value, description]
+    );
+  }
+  console.log('[AutoSeed] Default SEO settings ensured');
+
   // ── 若表是空的，寫入預設選單 ──────────────────────────────────
   const { rows: menuRows } = await pool.query('SELECT count(*)::int as cnt FROM menu_config');
   if (menuRows[0].cnt === 0) {

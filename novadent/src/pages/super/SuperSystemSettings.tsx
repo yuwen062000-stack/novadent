@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, RefreshCw, Mail, Settings, Phone, Share2, FileText } from 'lucide-react';
+import { Save, RefreshCw, Mail, Settings, Phone, Share2, FileText, Search } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface SettingItem {
@@ -28,7 +28,17 @@ const SETTING_GROUPS = [
     keys: [
       { key: 'site_name', label: '網站名稱', placeholder: 'Novadent 諾星' },
       // 注意：前台 Footer 顯示的聯絡電話/信箱/地址請至下方「聯絡資訊」設定
-      // support_email / support_phone 為後台系統預留欄位，不顯示於前台，已移除避免混淆
+    ],
+  },
+  {
+    label: 'SEO 搜尋引擎設定',
+    icon: <Search size={20} />,
+    keys: [
+      { key: 'seo_title',          label: '網頁標題（<title>）',   placeholder: 'Novadent 諾星 — 牙科整合協作平台' },
+      { key: 'seo_description',    label: 'Meta 描述',              placeholder: 'Novadent 連結診所、牙技所與會員，提供透明化假牙製程追蹤...' },
+      { key: 'seo_og_title',       label: 'OG 標題（社群分享）',   placeholder: 'Novadent 諾星 — 牙科整合協作平台' },
+      { key: 'seo_og_description', label: 'OG 描述（社群分享）',   placeholder: '連結診所、牙技所與會員，建立醫療信任新標準。' },
+      { key: 'seo_og_url',         label: '網站網址（OG URL）',    placeholder: 'https://novadent.replit.app' },
     ],
   },
 ];
