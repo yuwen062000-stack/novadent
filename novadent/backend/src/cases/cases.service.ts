@@ -2,7 +2,7 @@
 import {
   Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException
 } from '@nestjs/common';
-import { eq, and, ilike, sql, desc, max } from 'drizzle-orm';
+import { eq, and, ilike, sql, desc } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import {
