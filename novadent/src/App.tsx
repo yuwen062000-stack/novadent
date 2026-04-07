@@ -408,11 +408,21 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
   );
 });
 
-const AboutPage = React.memo(({ aboutBlocks }: { aboutBlocks: any[] }) => (
+const AboutPage = React.memo(({ aboutBlocks, aboutLoaded }: { aboutBlocks: any[]; aboutLoaded: boolean }) => (
   <div className="py-24 max-w-5xl mx-auto px-6">
     <div className="space-y-20">
-      {aboutBlocks.length === 0 ? (
+      {!aboutLoaded ? (
+        // fetch 尚未完成 → 顯示真正的載入中
         <div className="text-center py-20 text-slate-400">載入中...</div>
+      ) : aboutBlocks.length === 0 ? (
+        // fetch 完成但 DB 沒有 ABOUT 資料 → 顯示靜態預設內容（不卡死）
+        <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+          <h2 className="text-3xl font-black text-slate-900 mb-8 text-center">關於 Novadent 諾星</h2>
+          <div className="space-y-6 text-slate-600 leading-relaxed max-w-3xl mx-auto">
+            <p>Novadent 是一個會員制牙科整合服務平台，專為需要假牙、牙套等較長週期牙科服務的民眾設計。</p>
+            <p>平台連結一般民眾、合作診所與牙技所，讓假牙製作流程透明化，從初步諮詢到追蹤製作進度，全程在一個平台完成。</p>
+          </div>
+        </section>
       ) : (
         aboutBlocks.map((block: any) => (
           <section key={block.id} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
@@ -745,6 +755,7 @@ function AppContent() {
   const [homeBanners, setHomeBanners] = useState<any[]>([]);
   const [homeBottomImage, setHomeBottomImage] = useState<any>(null);
   const [aboutBlocks, setAboutBlocks] = useState<any[]>([]);
+  const [aboutLoaded, setAboutLoaded] = useState(false); // 控制 AboutPage 是否完成載入（區分「載入中」與「無資料」）
   const [heroBannerIndex, setHeroBannerIndex] = useState(0);
 
   useEffect(() => {
@@ -757,7 +768,9 @@ function AppContent() {
       if (bottom) setHomeBottomImage(bottom);
       const about = imgs.filter((i: any) => i.page === 'ABOUT' && i.visible).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
       setAboutBlocks(about);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => {
+      setAboutLoaded(true); // 無論成功或失敗，都標記載入完成，避免頁面永遠卡在「載入中...」
+    });
   }, []);
 
   useEffect(() => {
@@ -848,7 +861,7 @@ function AppContent() {
             {/* M-01：強制修改密碼（admin 代重設後首次登入） */}
             {view === 'FORCE_CHANGE_PASSWORD' && <ForceChangePasswordPage />}
             {view === 'REGISTER' && <RegisterPageComponent onSuccess={handleRegisterSuccess} />}
-            {view === 'SERVICE' && <AboutPage aboutBlocks={aboutBlocks} />}
+            {view === 'SERVICE' && <AboutPage aboutBlocks={aboutBlocks} aboutLoaded={aboutLoaded} />}
             {view === 'TERMS' && <TermsPage />}
             {view === 'PRIVACY' && <PrivacyPage />}
             {view === 'QA' && <QAPage setQaCompleted={setQaCompleted} setView={handleSetView} />}
