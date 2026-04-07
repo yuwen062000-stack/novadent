@@ -54,7 +54,7 @@ async function deduplicateAndSeedMenu(pool: Pool) {
       SELECT DISTINCT ON (question_text) id FROM qa_questions ORDER BY question_text, is_active DESC, id
     )
   `);
-  await pool.query(`UPDATE qa_questions SET is_active = true`);
+  // 注意：不強制重置 is_active，保留管理員已手動停用的 QA 問題（Fix #8）
   console.log('[AutoSeed] Deduplicated qa_questions');
 
   // ── 遷移：確保新欄位存在（舊站升級不需手動跑 migration）───────

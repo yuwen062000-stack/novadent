@@ -2,11 +2,11 @@
 import {
   Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException
 } from '@nestjs/common';
-import { eq, and, ilike, sql, desc } from 'drizzle-orm';
+import { eq, and, ilike, sql, desc, max } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import {
-  cases, clinics, labs, partnerLinks, auditLogs
+  cases, clinics, labs, partnerLinks, auditLogs, mfgSteps
 } from '../database/schema';
 import { CreateCaseDto, AssignLabDto } from './dto/case.dto';
 import { MfgStepsService } from './mfg-steps.service';
@@ -244,7 +244,16 @@ export class CasesService {
     }
   }
 
+  // ── 取案件 + 製程節點（內部 helper）────────────────────────
+  private async fetchCaseWithSteps(caseId: string) {
+    const [caseRow] = await this.db.select().from(cases).where(eq(cases.id, caseId)).limit(1);
+    if (!caseRow) throw new NotFoundException('案件不存在');
+    const steps = await this.mfgStepsService.getStepsByCase(caseId);
+    return { ...caseRow, mfgSteps: steps };
+  }
+
   // ── 取單一案件（依角色過濾 internalNotes 和 patientName）──
+  // 回傳包含 mfgSteps，供前端 LabCaseDetail / ClinicCaseDetail 使用
   async findById(id: string, userId: string, role: string) {
     const [caseRow] = await this.db
       .select()
@@ -264,6 +273,9 @@ export class CasesService {
       if (caseRow.clinicId !== clinic.id) throw new ForbiddenException('無權存取此案件');
     }
 
+    // 取製程節點（所有角色都需要）
+    const steps = await this.mfgStepsService.getStepsByCase(id);
+
     if (role === 'LAB') {
       const lab = await this.getLabByUserId(userId);
       // 確認此案件的診所在 partner_links 中
@@ -280,10 +292,10 @@ export class CasesService {
       if (!link) throw new ForbiddenException('無權存取此案件');
 
       // Lab 看 patientName 需遮罩
-      return { ...caseRow, patientName: maskPatientName(caseRow.patientName) };
+      return { ...caseRow, patientName: maskPatientName(caseRow.patientName), mfgSteps: steps };
     }
 
-    return caseRow;
+    return { ...caseRow, mfgSteps: steps };
   }
 
   // ── Clinic 建案 ──────────────────────────────────────────
@@ -359,7 +371,8 @@ export class CasesService {
 
     await this.writeAuditLog(labUserId, 'ACCEPT_CASE', caseId, { labId: lab.id });
 
-    return this.db.select().from(cases).where(eq(cases.id, caseId)).limit(1).then(r => r[0]);
+    // 回傳完整案件（含製程節點）供前端 LabCaseDetail 更新畫面
+    return this.fetchCaseWithSteps(caseId);
   }
 
   // ── Clinic 確認結案 ──────────────────────────────────────
@@ -377,6 +390,32 @@ export class CasesService {
     await this.writeAuditLog(clinicUserId, 'COMPLETE_CASE', caseId);
 
     return this.db.select().from(cases).where(eq(cases.id, caseId)).limit(1).then(r => r[0]);
+  }
+
+  // ── Lab 新增製程步驟 ─────────────────────────────────────
+  // 允許 LAB 在接案後自由新增額外製程節點（非預設的 7 個）
+  async addMfgStep(caseId: string, dto: { name: string }, userId: string) {
+    // 確認案件存在
+    const [caseRow] = await this.db.select().from(cases).where(eq(cases.id, caseId)).limit(1);
+    if (!caseRow) throw new NotFoundException('案件不存在');
+
+    // 取目前最大的 order 值，新步驟排在最後
+    const existing = await this.mfgStepsService.getStepsByCase(caseId);
+    const nextOrder = existing.length > 0
+      ? Math.max(...existing.map((s: any) => s.order ?? 0)) + 1
+      : 1;
+
+    await this.db.insert(mfgSteps).values({
+      caseId,
+      name:   dto.name,
+      order:  nextOrder,
+      status: 'PENDING',
+    } as any);
+
+    await this.writeAuditLog(userId, 'ADD_MFG_STEP', caseId, { name: dto.name });
+
+    // 回傳完整案件（含更新後的製程節點）
+    return this.fetchCaseWithSteps(caseId);
   }
 
   // ── 通用更新狀態（內部使用）─────────────────────────────

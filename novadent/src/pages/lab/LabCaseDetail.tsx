@@ -77,7 +77,7 @@ export function LabCaseDetail({ caseId, setView }: Props) {
     if (!caseData) return;
     setAccepting(true);
     try {
-      const res = await apiFetch(`/cases/${caseData.id}/accept`, { method: 'PATCH' });
+      const res = await apiFetch(`/cases/${caseData.id}/accept`, { method: 'POST' });
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setCaseData(updated);
@@ -121,7 +121,7 @@ export function LabCaseDetail({ caseId, setView }: Props) {
         photoUrl = uploadData.url;
       }
 
-      const res = await apiFetch(`/cases/${caseData.id}/mfg-steps/${editingStep.id}`, {
+      const res = await apiFetch(`/cases/${caseData.id}/steps/${editingStep.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

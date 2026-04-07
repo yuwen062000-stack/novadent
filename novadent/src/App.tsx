@@ -364,13 +364,14 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
             <>
               <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => setViewAndClose('CLINIC_CASES')} />
               <NavItem icon={<Plus size={20} />} label="新建案件" active={view === 'CLINIC_CREATE_CASE'} onClick={() => setViewAndClose('CLINIC_CREATE_CASE')} />
-              <NavItem icon={<Microscope size={20} />} label="牙技所設定" active={view === 'LAB_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
+              <NavItem icon={<Building2 size={20} />} label="診所資料" active={view === 'CLINIC_PROFILE'} onClick={() => setViewAndClose('CLINIC_PROFILE')} />
               <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
             </>
           )}
           {role === 'LAB' && (
             <>
               <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => setViewAndClose('LAB_CASES')} />
+              <NavItem icon={<Microscope size={20} />} label="牙技所資料" active={view === 'LAB_PROFILE'} onClick={() => setViewAndClose('LAB_PROFILE')} />
               <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
             </>
           )}
@@ -916,24 +917,26 @@ function AppContent() {
     CLINIC_CREATE_CASE: '/clinic/cases/new',
     CLINIC_CASE_DETAIL: '/clinic/cases/detail',
     CLINIC_DETAIL: '/clinic/detail',
+    CLINIC_PROFILE: '/clinic/profile',
     LAB_CASES: '/lab/cases',
     LAB_CASE_DETAIL: '/lab/cases/detail',
+    LAB_PROFILE: '/lab/profile',
     LAB_SETTINGS: '/lab/settings',
     INSURER_CUSTOMER_MGMT: '/insurer/customers',
     ADMIN_DASHBOARD: '/admin/dashboard',
     ADMIN_USERS: '/admin/users',
     ADMIN_CLINICS: '/admin/clinics',
     ADMIN_LABS: '/admin/labs',
-    ADMIN_PARTNER_LINKS: '/admin/partners',
+    ADMIN_PARTNER_LINKS: '/admin/partner-links',
     ADMIN_ARTICLES: '/admin/articles',
     ADMIN_NOTIFICATION_CMS: '/admin/notifications',
     ADMIN_SITE_IMAGES: '/admin/site-images',
     ADMIN_VIDEOS: '/admin/videos',
     SUPER_SYSTEM_SETTINGS: '/super/settings',
     SUPER_MENU: '/super/menu',
-    SUPER_AUDIT_LOGS: '/super/audit',
-    SUPER_QA_QUESTIONS: '/super/qa',
-    SUPER_MFG_TEMPLATES: '/super/mfg',
+    SUPER_AUDIT_LOGS: '/super/audit-logs',
+    SUPER_QA_QUESTIONS: '/super/qa-questions',
+    SUPER_MFG_TEMPLATES: '/super/mfg-templates',
     ARTICLE: '/article',
     QA: '/qa',
     RECOMMENDATIONS: '/recommendations',
@@ -1143,15 +1146,179 @@ function AppContent() {
             {view === 'CLINIC_CASES' && <ClinicCaseList setView={handleSetView} setSelectedCaseId={setSelectedCaseId} />}
             {view === 'CLINIC_CREATE_CASE' && <ClinicCreateCase setView={handleSetView} />}
             {view === 'CLINIC_CASE_DETAIL' && <ClinicCaseDetail caseId={selectedCaseId} setView={handleSetView} />}
+            {view === 'CLINIC_PROFILE' && <ClinicProfilePage />}
             {/* ── Lab Pages ────────────────────────────────── */}
             {view === 'LAB_CASES' && <LabCaseList setView={handleSetView} setSelectedCaseId={setSelectedCaseId} />}
             {view === 'LAB_CASE_DETAIL' && <LabCaseDetail caseId={selectedCaseId} setView={handleSetView} />}
+            {view === 'LAB_PROFILE' && <LabProfilePage />}
             {/* ── Shared Pages ──────────────────────────────── */}
             {view === 'NOTIFICATIONS' && <NotificationsPage />}
           </motion.div>
         </AnimatePresence>
         {isPublicView && <PublicFooter footerContacts={footerContacts} quickLinks={quickLinks} />}
       </main>
+    </div>
+  );
+}
+
+// ── 診所資料編輯頁（CLINIC 角色專用）────────────────────────
+// 讓診所管理者更新自己的基本資訊（名稱、聯絡方式、地址、服務項目等）
+function ClinicProfilePage() {
+  const [form, setForm] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
+
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
+
+  useEffect(() => {
+    apiFetch('/clinics/me').then(r => r.json()).then(data => {
+      setForm(data || {});
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await apiFetch('/clinics/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          email: form.email,
+          city: form.city,
+          district: form.district,
+          detailedAddress: form.detailedAddress,
+          treatmentTypes: form.treatmentTypes,
+          services: form.services,
+          description: form.description,
+        }),
+      });
+      if (!res.ok) throw new Error('儲存失敗');
+      showToast('✅ 診所資料已更新');
+    } catch (err: any) {
+      showToast(`❌ ${err.message || '儲存失敗'}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900" /></div>;
+
+  const inputCls = "w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 focus:border-blue-800";
+  const labelCls = "text-xs font-semibold text-slate-500 uppercase tracking-wider";
+
+  return (
+    <div className="max-w-2xl mx-auto p-4 md:p-8">
+      {toast && <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl text-sm shadow-xl">{toast}</div>}
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">診所資料</h1>
+        <p className="text-slate-500 text-sm mt-1">管理您的診所基本資訊</p>
+      </header>
+      <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+        {[
+          { key: 'name', label: '診所名稱', required: true },
+          { key: 'phone', label: '聯絡電話' },
+          { key: 'email', label: '聯絡 Email', type: 'email' },
+          { key: 'city', label: '城市' },
+          { key: 'district', label: '區域' },
+          { key: 'detailedAddress', label: '詳細地址' },
+          { key: 'description', label: '診所簡介', textarea: true },
+        ].map(({ key, label, required, type, textarea }) => (
+          <div key={key} className="space-y-1.5">
+            <label className={labelCls}>{label}{required && ' *'}</label>
+            {textarea ? (
+              <textarea rows={3} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls + ' resize-none'} />
+            ) : (
+              <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls} required={required} />
+            )}
+          </div>
+        ))}
+        <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white rounded-xl text-sm font-semibold hover:bg-blue-900 disabled:opacity-40 transition-colors">
+          {saving ? '儲存中...' : '儲存'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ── 牙技所資料編輯頁（LAB 角色專用）─────────────────────────
+// 讓牙技所管理者更新自己的基本資訊（名稱、技師、聯絡方式、服務類型等）
+function LabProfilePage() {
+  const [form, setForm] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
+
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
+
+  useEffect(() => {
+    apiFetch('/labs/me').then(r => r.json()).then(data => {
+      setForm(data || {});
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await apiFetch('/labs/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          leadTechnicianName: form.leadTechnicianName,
+          phone: form.phone,
+          email: form.email,
+          city: form.city,
+          detailedAddress: form.detailedAddress,
+          acceptedCaseTypes: form.acceptedCaseTypes,
+          specialties: form.specialties,
+        }),
+      });
+      if (!res.ok) throw new Error('儲存失敗');
+      showToast('✅ 牙技所資料已更新');
+    } catch (err: any) {
+      showToast(`❌ ${err.message || '儲存失敗'}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900" /></div>;
+
+  const inputCls = "w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 focus:border-blue-800";
+  const labelCls = "text-xs font-semibold text-slate-500 uppercase tracking-wider";
+
+  return (
+    <div className="max-w-2xl mx-auto p-4 md:p-8">
+      {toast && <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl text-sm shadow-xl">{toast}</div>}
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">牙技所資料</h1>
+        <p className="text-slate-500 text-sm mt-1">管理您的牙技所基本資訊</p>
+      </header>
+      <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+        {[
+          { key: 'name', label: '牙技所名稱', required: true },
+          { key: 'leadTechnicianName', label: '主任技師姓名' },
+          { key: 'phone', label: '聯絡電話' },
+          { key: 'email', label: '聯絡 Email', type: 'email' },
+          { key: 'city', label: '城市' },
+          { key: 'detailedAddress', label: '詳細地址' },
+        ].map(({ key, label, required, type }) => (
+          <div key={key} className="space-y-1.5">
+            <label className={labelCls}>{label}{required && ' *'}</label>
+            <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls} required={required} />
+          </div>
+        ))}
+        <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white rounded-xl text-sm font-semibold hover:bg-blue-900 disabled:opacity-40 transition-colors">
+          {saving ? '儲存中...' : '儲存'}
+        </button>
+      </form>
     </div>
   );
 }
