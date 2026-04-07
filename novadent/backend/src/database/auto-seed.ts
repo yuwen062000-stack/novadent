@@ -1,31 +1,38 @@
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 
-const SALT = 12;
+const SALT      = 12; // 正式使用者 bcrypt 強度
+const SEED_SALT =  8; // 測試帳號用較低強度（加速 seed，降低 Replit CPU 超時風險）
 
-async function hash(pw: string) { return bcrypt.hash(pw, SALT); }
+async function hash(pw: string, rounds = SALT) { return bcrypt.hash(pw, rounds); }
 
 async function ensureDefaultPasswords(pool: Pool) {
   // 統一測試密碼，方便人工測試各角色
+  // 重要：只算一次 hash，所有測試帳號共用，避免 Replit 低速 CPU 超時
   const TEST_PW = 'admin@123';
-  const defaults: [string, string][] = [
-    ['superadmin@novadent.com', TEST_PW],
-    ['admin@novadent.com',      TEST_PW],
-    ['taipei-clinic@novadent.com',    TEST_PW],
-    ['taichung-clinic@novadent.com',  TEST_PW],
-    ['kaohsiung-clinic@novadent.com', TEST_PW],
-    ['precision-lab@novadent.com', TEST_PW],
-    ['artisan-lab@novadent.com',   TEST_PW],
-    ['member1@test.com',           TEST_PW],
+  const h = await hash(TEST_PW, SEED_SALT); // ← 只算一次
+  const emails = [
+    'superadmin@novadent.com',
+    'admin@novadent.com',
+    'taipei-clinic@novadent.com',
+    'taichung-clinic@novadent.com',
+    'kaohsiung-clinic@novadent.com',
+    'precision-lab@novadent.com',
+    'artisan-lab@novadent.com',
+    'member1@test.com',
   ];
-  for (const [email, pw] of defaults) {
-    const h = await hash(pw);
-    await pool.query(
-      `UPDATE users SET password_hash = $1, force_change_password = false WHERE email = $2`,
-      [h, email]
-    );
+  for (const email of emails) {
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE users SET password_hash = $1, force_change_password = false WHERE email = $2`,
+        [h, email]
+      );
+      if (rowCount === 0) console.warn(`[AutoSeed] Password reset skipped (user not found): ${email}`);
+    } catch (e: any) {
+      console.error(`[AutoSeed] Password reset failed for ${email}:`, e.message);
+    }
   }
-  console.log('[AutoSeed] Default passwords ensured for seed accounts');
+  console.log('[AutoSeed] Default passwords ensured (admin@123, salt=8)');
 }
 
 async function deduplicateAndSeedMenu(pool: Pool) {
