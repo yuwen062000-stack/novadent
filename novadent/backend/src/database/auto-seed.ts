@@ -110,6 +110,17 @@ async function seedSystemSettings(pool: Pool) {
 // ── page_contents 預設內容（聯絡資訊、服務條款、隱私權政策）──────
 // 對應 Footer 顯示的聯絡資訊、TermsPage、PrivacyPage 的內容來源
 async function seedPageContents(pool: Pool) {
+  // 先確保資料表存在（drizzle migration 若未執行也能自動建表）
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS page_contents (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      key         VARCHAR(100) NOT NULL UNIQUE,
+      content_type VARCHAR(20) NOT NULL DEFAULT 'TEXT',
+      value       TEXT,
+      updated_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+      updated_by  UUID REFERENCES users(id)
+    )
+  `);
   const { rows } = await pool.query(`SELECT COUNT(*)::int as cnt FROM page_contents`);
   if (rows[0].cnt === 0) {
     await pool.query(`
