@@ -26,6 +26,16 @@ export class SystemSettingsController {
     return this.service.bulkUpsert(body.settings, user.id);
   }
 
+  // 批次 PATCH（等同 PUT，供外部 API 整合使用）
+  // 注意：固定路由 @Patch() 必須在動態路由 @Patch(':key') 之前，避免 NestJS 路由衝突
+  @Patch()
+  async bulkUpsertPatch(
+    @Body() body: { settings: { key: string; value: string; description?: string }[] },
+    @CurrentUser() user: any,
+  ) {
+    return this.service.bulkUpsert(body.settings, user.id);
+  }
+
   @Put(':key')
   async upsertByKey(
     @Param('key') key: string,

@@ -107,6 +107,28 @@ async function seedSystemSettings(pool: Pool) {
   console.log('[AutoSeed] System settings GMAIL defaults seeded');
 }
 
+// ── site_images 預設內容（ABOUT 頁文字區塊）────────────────────
+// 避免 /about 頁面因 DB 無資料而永遠卡在「載入中...」
+async function seedSiteImages(pool: Pool) {
+  const { rows } = await pool.query(`SELECT COUNT(*)::int as cnt FROM site_images WHERE page = 'ABOUT'`);
+  if (rows[0].cnt === 0) {
+    await pool.query(`
+      INSERT INTO site_images (page, position, block_type, title, text_content, visible, sort_order)
+      VALUES
+        ('ABOUT', 'BLOCK_1', 'text',
+         '關於 Novadent 諾星',
+         'Novadent 是一個會員制牙科整合服務平台，專為需要假牙、牙套等較長週期牙科服務的民眾設計。\n平台解決的核心問題：牙科假牙流程漫長（通常數週至數月）、資訊不透明、診所選擇困難、製程進度無從追蹤。',
+         true, 1),
+        ('ABOUT', 'BLOCK_2', 'text',
+         '我們的服務',
+         '透過平台的 QA 問答系統，民眾可以描述自身牙齒狀況，平台根據地區與需求推薦合適的合作診所。診所接案後，可指派配合的牙技所執行假牙製作，並即時回報製程節點進度。',
+         true, 2)
+      ON CONFLICT DO NOTHING
+    `);
+    console.log('[AutoSeed] site_images ABOUT blocks seeded');
+  }
+}
+
 export async function autoSeed() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -114,6 +136,7 @@ export async function autoSeed() {
     await ensureDefaultPasswords(pool);
     await deduplicateAndSeedMenu(pool);
     await seedSystemSettings(pool);
+    await seedSiteImages(pool);
 
     const { rows } = await pool.query('SELECT count(*)::int as cnt FROM users WHERE role != $1', ['MEMBER']);
     if (rows[0].cnt >= 5) {
