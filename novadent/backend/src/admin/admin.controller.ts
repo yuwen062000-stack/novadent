@@ -27,6 +27,9 @@ class MenuItemDto {
   @IsArray() roles: string[];
   @IsNumber() @Type(() => Number) order: number;
   @IsBoolean() visible: boolean;
+  @IsOptional() @IsString() menuType?: string;       // 'PUBLIC' | 'ADMIN'
+  @IsOptional() parentId?: string | null;            // 父群組 id
+  @IsOptional() @IsBoolean() showInFooter?: boolean; // 是否顯示於 Footer 快速連結
 }
 
 class UpdateMenuConfigDto {
@@ -52,10 +55,18 @@ export class AdminController {
     return this.adminService.getDashboardStats();
   }
 
-  // 選單設定
+  // 選單設定（管理後台，需登入）
   @Get('menu-config')
   getMenuConfig() {
     return this.adminService.getMenuConfig();
+  }
+
+  // 公開前台選單（訪客導覽列 + Footer 快速連結，不需登入）
+  // 注意：固定路由 'menu-public' 必須在動態路由 'menu-config' 之前宣告
+  @Get('menu-public')
+  @Public()
+  getPublicMenuItems() {
+    return this.adminService.getPublicMenuItems();
   }
 
   @Put('menu-config')

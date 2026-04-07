@@ -48,41 +48,200 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   await pool.query(`UPDATE qa_questions SET is_active = true`);
   console.log('[AutoSeed] Deduplicated qa_questions');
 
+  // ── 遷移：確保新欄位存在（舊站升級不需手動跑 migration）───────
+  await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS menu_type VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'`);
+  await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS parent_id UUID`);
+  await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS show_in_footer BOOLEAN NOT NULL DEFAULT false`);
+  await pool.query(`ALTER TABLE menu_config ALTER COLUMN path SET DEFAULT ''`);
+
+  // ── 更新現有資料的 menu_type（ADMIN 類型）──────────────────────
+  const adminPaths = [
+    '/member/qa','/member/recs','/member/cases',
+    '/clinic/cases','/lab/cases',
+    '/admin','/admin/dashboard','/admin/users','/admin/clinics','/admin/labs','/admin/partner-links',
+    '/admin/articles','/admin/site-images','/admin/videos','/admin/notifications',
+    '/admin/content','/super/system','/super/advanced',
+    '/super/settings','/super/menu',
+    '/super/qa','/super/qa-questions',
+    '/super/mfg','/super/mfg-templates',
+    '/super/audit','/super/audit-logs',
+  ];
+  for (const p of adminPaths) {
+    await pool.query(`UPDATE menu_config SET menu_type = 'ADMIN' WHERE path = $1`, [p]);
+  }
+
+  // ── 統一舊路徑至新路徑（升級相容）─────────────────────────────
+  await pool.query(`UPDATE menu_config SET path = '/admin/dashboard' WHERE path = '/admin' AND label IN ('總覽儀表板','統計儀表板','儀表板')`);
+  await pool.query(`UPDATE menu_config SET path = '/super/audit-logs' WHERE path = '/super/audit'`);
+  await pool.query(`UPDATE menu_config SET path = '/super/qa-questions' WHERE path = '/super/qa'`);
+  await pool.query(`UPDATE menu_config SET path = '/super/mfg-templates' WHERE path = '/super/mfg'`);
+
+  // ── 設定前台 show_in_footer（關於我們、衛教中心、影音專區）──────
+  await pool.query(`UPDATE menu_config SET show_in_footer = true WHERE path IN ('/about', '/knowledge', '/videos') AND menu_type = 'PUBLIC'`);
+  console.log('[AutoSeed] menu_config columns migrated & menu_type/show_in_footer updated');
+
+  // ── 若表是空的，寫入預設選單 ──────────────────────────────────
   const { rows: menuRows } = await pool.query('SELECT count(*)::int as cnt FROM menu_config');
   if (menuRows[0].cnt === 0) {
-    const menuItems: [string, string, string[], number][] = [
-      ['首頁',       '/',              ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 0],
-      ['關於我們',    '/about',         ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 1],
-      ['衛教中心',    '/knowledge',     ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 2],
-      ['影音專區',    '/videos',        ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 3],
-      ['合作診所',    '/clinics',       ['GUEST','MEMBER'], 4],
-      ['合作牙技所',  '/labs',          ['GUEST','MEMBER'], 5],
-      ['假牙問診',    '/member/qa',     ['MEMBER'], 6],
-      ['推薦診所',    '/member/recs',   ['MEMBER'], 7],
-      ['案件追蹤',    '/member/cases',  ['MEMBER'], 8],
-      ['案件管理',    '/clinic/cases',  ['CLINIC'], 9],
-      ['案件管理',    '/lab/cases',     ['LAB'], 10],
-      ['總覽儀表板',  '/admin',         ['ADMIN','SUPER_ADMIN'], 11],
-      ['帳號管理',    '/admin/users',   ['ADMIN','SUPER_ADMIN'], 12],
-      ['診所管理',    '/admin/clinics', ['ADMIN','SUPER_ADMIN'], 13],
-      ['牙技所管理',  '/admin/labs',    ['ADMIN','SUPER_ADMIN'], 14],
-      ['文章管理',    '/admin/articles',['ADMIN','SUPER_ADMIN'], 15],
-      ['圖片管理',    '/admin/site-images', ['ADMIN','SUPER_ADMIN'], 16],
-      ['影音管理',    '/admin/videos',  ['ADMIN','SUPER_ADMIN'], 17],
-      ['通知廣播',    '/admin/notifications', ['ADMIN','SUPER_ADMIN'], 18],
-      ['系統設定',    '/super/settings',['SUPER_ADMIN'], 19],
-      ['選單管理',    '/super/menu',    ['SUPER_ADMIN'], 20],
-      ['QA問卷管理',  '/super/qa',      ['SUPER_ADMIN'], 21],
-      ['製程模板',    '/super/mfg',     ['SUPER_ADMIN'], 22],
-      ['稽核日誌',    '/super/audit',   ['SUPER_ADMIN'], 23],
+    // 前台公開選單（PUBLIC）
+    const publicItems: [string, string, string[], number, boolean][] = [
+      ['首頁',      '/',          ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 0, false],
+      ['關於我們',  '/about',     ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 1, true],
+      ['衛教中心',  '/knowledge', ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 2, true],
+      ['影音專區',  '/videos',    ['GUEST','MEMBER','CLINIC','LAB','ADMIN','SUPER_ADMIN'], 3, true],
+      ['合作診所',  '/clinics',   ['GUEST','MEMBER'], 4, false],
+      ['合作牙技所','/labs',      ['GUEST','MEMBER'], 5, false],
     ];
-    for (const [label, path, roles, order] of menuItems) {
+    for (const [label, path, roles, order, showInFooter] of publicItems) {
       await pool.query(
-        `INSERT INTO menu_config (label, path, roles, "order", visible) VALUES ($1, $2, $3, $4, true) ON CONFLICT DO NOTHING`,
+        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type, show_in_footer)
+         VALUES ($1,$2,$3,$4,true,'PUBLIC',$5) ON CONFLICT DO NOTHING`,
+        [label, path, roles, order, showInFooter]
+      );
+    }
+
+    // 後台登入後選單（ADMIN）— 先建立父群組，再建子項目
+    // 父群組有虛擬路徑（以 /group/ 前綴），方便前端 Sidebar 依路徑對應名稱
+    // 父群組 1：內容管理（ADMIN+SUPER_ADMIN）
+    const { rows: r1 } = await pool.query(
+      `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
+       VALUES ('內容管理','/admin/content','{ADMIN,SUPER_ADMIN}',14,true,'ADMIN') RETURNING id`
+    );
+    const contentGroupId = r1[0].id;
+
+    // 父群組 2：系統管理（SUPER_ADMIN）
+    const { rows: r2 } = await pool.query(
+      `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
+       VALUES ('系統管理','/super/system','{SUPER_ADMIN}',18,true,'ADMIN') RETURNING id`
+    );
+    const systemGroupId = r2[0].id;
+
+    // 父群組 3：進階設定（SUPER_ADMIN）
+    const { rows: r3 } = await pool.query(
+      `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
+       VALUES ('進階設定','/super/advanced','{SUPER_ADMIN}',20,true,'ADMIN') RETURNING id`
+    );
+    const advGroupId = r3[0].id;
+
+    // 後台獨立項目（無父群組）— 路徑與前端 Sidebar ml() 對應一致
+    const adminItems: [string, string, string[], number][] = [
+      ['假牙問診',   '/member/qa',           ['MEMBER'],              6],
+      ['推薦診所',   '/member/recs',         ['MEMBER'],              7],
+      ['案件追蹤',   '/member/cases',        ['MEMBER'],              8],
+      ['案件管理',   '/clinic/cases',        ['CLINIC'],              9],
+      ['案件管理',   '/lab/cases',           ['LAB'],                 10],
+      ['統計儀表板', '/admin/dashboard',     ['ADMIN','SUPER_ADMIN'], 11],
+      ['帳號管理',   '/admin/users',         ['ADMIN','SUPER_ADMIN'], 12],
+      ['診所管理',   '/admin/clinics',       ['ADMIN','SUPER_ADMIN'], 13],
+      ['牙技所管理', '/admin/labs',          ['ADMIN','SUPER_ADMIN'], 14],
+      ['合作連結',   '/admin/partner-links', ['ADMIN','SUPER_ADMIN'], 15],
+    ];
+    for (const [label, path, roles, order] of adminItems) {
+      await pool.query(
+        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
+         VALUES ($1,$2,$3,$4,true,'ADMIN') ON CONFLICT DO NOTHING`,
         [label, path, roles, order]
       );
     }
-    console.log('[AutoSeed] Menu config seeded with default items');
+
+    // 內容管理 子項目
+    const contentChildren: [string, string, number][] = [
+      ['文章管理',  '/admin/articles',       1],
+      ['通知廣播',  '/admin/notifications',  2],
+      ['圖片管理',  '/admin/site-images',    3],
+      ['影音管理',  '/admin/videos',         4],
+    ];
+    for (const [label, path, order] of contentChildren) {
+      await pool.query(
+        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type, parent_id)
+         VALUES ($1,$2,'{ADMIN,SUPER_ADMIN}',$3,true,'ADMIN',$4)`,
+        [label, path, order, contentGroupId]
+      );
+    }
+
+    // 系統管理 子項目（選單管理也歸入此群組）
+    const systemChildren: [string, string, number][] = [
+      ['系統設定', '/super/settings',   1],
+      ['選單管理', '/super/menu',       2],
+      ['稽核日誌', '/super/audit-logs', 3],
+    ];
+    for (const [label, path, order] of systemChildren) {
+      await pool.query(
+        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type, parent_id)
+         VALUES ($1,$2,'{SUPER_ADMIN}',$3,true,'ADMIN',$4)`,
+        [label, path, order, systemGroupId]
+      );
+    }
+
+    // 進階設定 子項目
+    const advChildren: [string, string, number][] = [
+      ['QA問卷管理', '/super/qa-questions',  1],
+      ['製程模板',   '/super/mfg-templates', 2],
+    ];
+    for (const [label, path, order] of advChildren) {
+      await pool.query(
+        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type, parent_id)
+         VALUES ($1,$2,'{SUPER_ADMIN}',$3,true,'ADMIN',$4)`,
+        [label, path, order, advGroupId]
+      );
+    }
+
+    console.log('[AutoSeed] Menu config seeded with default items (PUBLIC + ADMIN with parent groups)');
+  } else {
+    // ── 現有安裝：建立父群組（若尚未存在），使用虛擬路徑方便 Sidebar 對應名稱
+    const ensureParent = async (label: string, path: string, roles: string[], order: number) => {
+      // 先嘗試用 path 找（新版），再 fallback 用 label+空路徑（舊版資料）
+      const { rows } = await pool.query(
+        `SELECT id FROM menu_config WHERE (path = $1 OR (label = $2 AND path = '')) AND menu_type = 'ADMIN' LIMIT 1`,
+        [path, label]
+      );
+      if (rows.length > 0) {
+        // 若找到但路徑是空的，更新為虛擬路徑
+        await pool.query(`UPDATE menu_config SET path = $1 WHERE id = $2 AND path = ''`, [path, rows[0].id]);
+        return rows[0].id as string;
+      }
+      const { rows: ins } = await pool.query(
+        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
+         VALUES ($1,$2,$3,$4,true,'ADMIN') RETURNING id`,
+        [label, path, roles, order]
+      );
+      return ins[0].id as string;
+    };
+
+    const contentId = await ensureParent('內容管理', '/admin/content',  ['ADMIN','SUPER_ADMIN'], 14);
+    const systemId  = await ensureParent('系統管理', '/super/system',   ['SUPER_ADMIN'], 18);
+    const advId     = await ensureParent('進階設定', '/super/advanced', ['SUPER_ADMIN'], 20);
+
+    // 將現有子項目連結至父群組（若尚未設定 parent_id）— 路徑已在上方統一更新
+    const childMap: [string, string][] = [
+      ['/admin/articles',        contentId],
+      ['/admin/notifications',   contentId],
+      ['/admin/site-images',     contentId],
+      ['/admin/videos',          contentId],
+      ['/super/settings',        systemId],
+      ['/super/menu',            systemId],
+      ['/super/audit-logs',      systemId],
+      ['/super/qa-questions',    advId],
+      ['/super/mfg-templates',   advId],
+    ];
+    for (const [path, parentId] of childMap) {
+      await pool.query(
+        `UPDATE menu_config SET parent_id = $1 WHERE path = $2 AND parent_id IS NULL`,
+        [parentId, path]
+      );
+    }
+    // 確保合作連結項目存在（舊版可能缺少）
+    await pool.query(
+      `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
+       VALUES ('合作連結','/admin/partner-links','{ADMIN,SUPER_ADMIN}',15,true,'ADMIN')
+       ON CONFLICT DO NOTHING`
+    );
+    // 確保 /super/menu 也在系統管理群組下
+    await pool.query(
+      `UPDATE menu_config SET parent_id = $1 WHERE path = '/super/menu' AND parent_id IS NULL`,
+      [systemId]
+    );
+    console.log('[AutoSeed] Existing menu_config parent groups ensured & children linked');
   }
 }
 

@@ -182,14 +182,35 @@ export class AdminService {
   }
 
   // ── 選單管理 ─────────────────────────────────────────────────
+
+  // 取得所有選單（管理後台用，含新欄位）
   async getMenuConfig() {
     const rows = await this.db.select().from(menuConfig)
       .orderBy(menuConfig.order);
     return rows;
   }
 
+  // 公開查詢：前台 PUBLIC 選單（訪客導覽列用，不需登入）
+  async getPublicMenuItems() {
+    const rows = await this.db.select().from(menuConfig)
+      .where(eq(menuConfig.menuType as any, 'PUBLIC'))
+      .orderBy(menuConfig.order);
+    return rows;
+  }
+
+  // 整批更新選單設定（支援新欄位：menuType、parentId、showInFooter）
   async updateMenuConfig(
-    items: { id?: string; label: string; path: string; roles: string[]; order: number; visible: boolean }[],
+    items: {
+      id?: string;
+      label: string;
+      path: string;
+      roles: string[];
+      order: number;
+      visible: boolean;
+      menuType?: string;
+      parentId?: string | null;
+      showInFooter?: boolean;
+    }[],
     adminUserId: string,
   ) {
     // 清除舊有設定，重新寫入（整批替換）
@@ -199,13 +220,16 @@ export class AdminService {
 
     const rows = await this.db.insert(menuConfig).values(
       items.map((item) => ({
-        label:     item.label,
-        path:      item.path,
-        roles:     item.roles,
-        order:     item.order,
-        visible:   item.visible,
-        updatedAt: new Date(),
-        updatedBy: adminUserId,
+        label:        item.label,
+        path:         item.path,
+        roles:        item.roles,
+        order:        item.order,
+        visible:      item.visible,
+        menuType:     item.menuType  ?? 'PUBLIC',
+        parentId:     item.parentId  ?? null,
+        showInFooter: item.showInFooter ?? false,
+        updatedAt:    new Date(),
+        updatedBy:    adminUserId,
       })) as any,
     ).returning();
     return rows;
