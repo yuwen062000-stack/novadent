@@ -1048,7 +1048,7 @@ function AppContent() {
   const [adminMenuLabels, setAdminMenuLabels] = useState<Record<string, string>>({});
   useEffect(() => {
     if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') return;
-    apiFetch('/api/admin/menu-config')
+    apiFetch('/admin/menu-config')
       .then(r => r.ok ? r.json() : [])
       .then((items: any[]) => {
         const map: Record<string, string> = {};
