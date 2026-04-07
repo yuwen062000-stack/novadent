@@ -6,15 +6,17 @@ const SALT = 12;
 async function hash(pw: string) { return bcrypt.hash(pw, SALT); }
 
 async function ensureDefaultPasswords(pool: Pool) {
+  // 統一測試密碼，方便人工測試各角色
+  const TEST_PW = 'admin@123';
   const defaults: [string, string][] = [
-    ['superadmin@novadent.com', 'SuperAdmin123!'],
-    ['admin@novadent.com', 'Admin@2026'],
-    ['taipei-clinic@novadent.com', 'Clinic@2026'],
-    ['taichung-clinic@novadent.com', 'Clinic@2026'],
-    ['kaohsiung-clinic@novadent.com', 'Clinic@2026'],
-    ['precision-lab@novadent.com', 'Lab@2026'],
-    ['artisan-lab@novadent.com', 'Lab@2026'],
-    ['member1@test.com', 'Member@2026'],
+    ['superadmin@novadent.com', TEST_PW],
+    ['admin@novadent.com',      TEST_PW],
+    ['taipei-clinic@novadent.com',    TEST_PW],
+    ['taichung-clinic@novadent.com',  TEST_PW],
+    ['kaohsiung-clinic@novadent.com', TEST_PW],
+    ['precision-lab@novadent.com', TEST_PW],
+    ['artisan-lab@novadent.com',   TEST_PW],
+    ['member1@test.com',           TEST_PW],
   ];
   for (const [email, pw] of defaults) {
     const h = await hash(pw);
