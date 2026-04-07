@@ -31,6 +31,7 @@ const SETTING_GROUPS = [
     ],
   },
   {
+    // SEO 設定：儲存後前端動態套用到 <head>，不需重新部署
     label: 'SEO 搜尋引擎設定',
     icon: <Search size={20} />,
     keys: [

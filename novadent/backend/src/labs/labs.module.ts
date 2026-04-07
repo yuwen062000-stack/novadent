@@ -4,7 +4,10 @@ import { LabsPublicController, LabsUserController, LabsAdminController } from '.
 import { LabsService } from './labs.service';
 
 @Module({
-  controllers: [LabsPublicController, LabsUserController, LabsAdminController],
+  // 注意：LabsUserController 必須在 LabsPublicController 前面
+  // 原因：同掛 @Controller('api/labs')，若 Public 先註冊 @Get(':id')，
+  // 則 GET /api/labs/me 會被 ParseUUIDPipe 攔截並拋 400
+  controllers: [LabsUserController, LabsPublicController, LabsAdminController],
   providers:   [LabsService],
   exports:     [LabsService], // 供 Cases 模組使用
 })
