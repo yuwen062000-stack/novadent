@@ -180,6 +180,9 @@ const PublicFooter = React.memo(({ footerContacts }: { footerContacts: Record<st
           {(footerContacts.CONTACT_PHONE || '02-2345-6789') && (
             <li className="flex items-center gap-2"><Phone size={16} /> {footerContacts.CONTACT_PHONE || '02-2345-6789'}</li>
           )}
+          {footerContacts.CONTACT_EMAIL && (
+            <li className="flex items-center gap-2"><Mail size={16} /> {footerContacts.CONTACT_EMAIL}</li>
+          )}
           {(footerContacts.CONTACT_ADDRESS || '台北市信義區信義路五段') && (
             <li className="flex items-center gap-2"><MapPin size={16} /> {footerContacts.CONTACT_ADDRESS || '台北市信義區信義路五段'}</li>
           )}
