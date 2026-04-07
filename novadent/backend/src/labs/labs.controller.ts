@@ -1,13 +1,44 @@
-// Labs Controller — 牙技所 API 路由（Admin + 牙技所自身）
+// Labs Controller — 牙技所 API 路由（公開 + 牙技所自身 + Admin）
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode, HttpStatus
 } from '@nestjs/common';
 import { JwtAuthGuard }    from '../common/guards/jwt-auth.guard';
 import { RolesGuard }      from '../common/guards/roles.guard';
 import { Roles }           from '../common/decorators/roles.decorator';
+import { Public }          from '../common/decorators/public.decorator';
 import { CurrentUser }     from '../common/decorators/current-user.decorator';
 import { LabsService }     from './labs.service';
 import { CreateLabDto, UpdateLabDto, UpdateLabStatusDto } from './dto/lab.dto';
+
+// ── 公開路由（GET /api/labs, GET /api/labs/:id）───────────────
+@Controller('api/labs')
+export class LabsPublicController {
+  constructor(private readonly labsService: LabsService) {}
+
+  // GET /api/labs — 公開列表（只回傳 ACTIVE，不需登入）
+  @Public()
+  @Get()
+  findAll(
+    @Query('city')     city?: string,
+    @Query('search')   search?: string,
+    @Query('page')     page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.labsService.findAllPublic({
+      city,
+      search,
+      page:     page     ? Number(page)     : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
+  }
+
+  // GET /api/labs/:id — 公開取單一牙技所（只回傳 ACTIVE）
+  @Public()
+  @Get(':id')
+  findById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.labsService.findById(id, false);
+  }
+}
 
 // ── 牙技所自身路由（GET/PATCH /api/labs/me）──────────────────
 @Controller('api/labs')

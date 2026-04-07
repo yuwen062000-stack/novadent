@@ -52,7 +52,39 @@ export class LabsService {
     } as any).catch(() => {});
   }
 
-  // ── 分頁查詢牙技所列表（Admin）───────────────────────────
+  // ── 公開牙技所列表（只回傳 ACTIVE，PUBLIC_FIELDS）───────
+  async findAllPublic(query: {
+    city?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const page     = query.page     ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const offset   = (page - 1) * pageSize;
+
+    const conditions: any[] = [eq(labs.status, 'ACTIVE')];
+    if (query.city)   conditions.push(eq(labs.city, query.city));
+    if (query.search) conditions.push(ilike(labs.name, `%${query.search}%`));
+
+    const whereClause = and(...conditions);
+
+    const rows = await this.db
+      .select(PUBLIC_FIELDS as any)
+      .from(labs)
+      .where(whereClause)
+      .limit(pageSize)
+      .offset(offset);
+
+    const [{ count }] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(labs)
+      .where(whereClause);
+
+    return { data: rows, total: count, page, pageSize };
+  }
+
+  // ── 分頁查詢牙技所列表（Admin，含所有狀態）──────────────
   async findAll(query: {
     status?: string;
     city?: string;

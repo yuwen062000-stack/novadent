@@ -118,6 +118,8 @@ const PublicHeader = React.memo(() => {
           <Link to="/about" className={`text-sm font-bold ${location.pathname === '/about' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>關於我們與服務</Link>
           <Link to="/education" className={`text-sm font-bold ${location.pathname === '/education' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>衛教中心</Link>
           <Link to="/videos" className={`text-sm font-bold ${location.pathname === '/videos' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>影音專區</Link>
+          <Link to="/clinics" className={`text-sm font-bold ${location.pathname === '/clinics' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>合作診所</Link>
+          <Link to="/labs" className={`text-sm font-bold ${location.pathname === '/labs' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>合作牙技所</Link>
         </nav>
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="hidden sm:flex items-center gap-2">
@@ -137,6 +139,8 @@ const PublicHeader = React.memo(() => {
               <Link to="/about" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">關於我們與服務</Link>
               <Link to="/education" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">衛教中心</Link>
               <Link to="/videos" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">影音專區</Link>
+              <Link to="/clinics" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">合作診所</Link>
+              <Link to="/labs" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">合作牙技所</Link>
               <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
                 <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-sm font-bold text-blue-800 border border-blue-100 rounded-xl hover:bg-blue-50 transition-all">登入</Link>
                 <Link to="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-sm font-bold text-white bg-navy-700 rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-950 transition-all">立即註冊</Link>
@@ -469,6 +473,193 @@ const AboutPage = React.memo(({ aboutBlocks, aboutLoaded }: { aboutBlocks: any[]
   </div>
 ));
 
+// ── 合作診所公開頁 (/clinics) ─────────────────────────────────
+const ClinicsPublicPage = React.memo(() => {
+  const [clinics, setClinics] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [city, setCity] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (city) params.set('city', city);
+    fetch(`/api/clinics?${params}`)
+      .then(r => r.ok ? r.json() : { data: [] })
+      .then(res => { setClinics(res.data ?? res); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [search, city]);
+
+  const cities = ['台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市', '其他'];
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* 頁首 Banner */}
+      <div className="bg-blue-950 text-white py-16 px-6 text-center">
+        <Building2 className="mx-auto mb-4 text-blue-400" size={48} />
+        <h1 className="text-4xl font-black mb-3">合作診所</h1>
+        <p className="text-blue-200 text-lg">嚴選合作牙科診所，提供透明、高品質的假牙製作服務</p>
+      </div>
+      {/* 篩選列 */}
+      <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800 bg-white"
+            placeholder="搜尋診所名稱..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+          value={city}
+          onChange={e => setCity(e.target.value)}
+        >
+          <option value="">全部縣市</option>
+          {cities.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      {/* 診所卡片列表 */}
+      <div className="max-w-6xl mx-auto px-6 pb-16">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-4 border-blue-800 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : clinics.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">
+            <Building2 size={48} className="mx-auto mb-4 opacity-30" />
+            <p>目前沒有符合條件的診所</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {clinics.map((clinic: any) => (
+              <div key={clinic.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 flex flex-col gap-3">
+                {clinic.coverPhotoUrl ? (
+                  <img src={clinic.coverPhotoUrl} alt={clinic.name} className="w-full h-40 object-cover rounded-xl mb-1" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-full h-40 bg-blue-50 rounded-xl flex items-center justify-center mb-1">
+                    <Building2 size={40} className="text-blue-200" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">{clinic.name}</h3>
+                  {clinic.city && <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1"><MapPin size={13} />{clinic.city}{clinic.detailedAddress ? `・${clinic.detailedAddress}` : ''}</p>}
+                </div>
+                {clinic.phone && (
+                  <p className="text-sm text-slate-600 flex items-center gap-2"><Phone size={14} className="text-blue-600" />{clinic.phone}</p>
+                )}
+                {(clinic.specialties?.length > 0 || clinic.acceptedCaseTypes?.length > 0) && (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(clinic.specialties ?? clinic.acceptedCaseTypes ?? []).slice(0, 4).map((s: string, i: number) => (
+                      <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium">{s}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+// ── 合作牙技所公開頁 (/labs) ──────────────────────────────────
+const LabsPublicPage = React.memo(() => {
+  const [labs, setLabs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [city, setCity] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (city) params.set('city', city);
+    fetch(`/api/labs?${params}`)
+      .then(r => r.ok ? r.json() : { data: [] })
+      .then(res => { setLabs(res.data ?? res); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [search, city]);
+
+  const cities = ['台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市', '其他'];
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* 頁首 Banner */}
+      <div className="bg-blue-950 text-white py-16 px-6 text-center">
+        <Microscope className="mx-auto mb-4 text-blue-400" size={48} />
+        <h1 className="text-4xl font-black mb-3">合作牙技所</h1>
+        <p className="text-blue-200 text-lg">專業假牙製作技術團隊，確保每一件作品的精準品質</p>
+      </div>
+      {/* 篩選列 */}
+      <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800 bg-white"
+            placeholder="搜尋牙技所名稱..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+          value={city}
+          onChange={e => setCity(e.target.value)}
+        >
+          <option value="">全部縣市</option>
+          {cities.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      {/* 牙技所卡片列表 */}
+      <div className="max-w-6xl mx-auto px-6 pb-16">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-4 border-blue-800 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : labs.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">
+            <Microscope size={48} className="mx-auto mb-4 opacity-30" />
+            <p>目前沒有符合條件的牙技所</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {labs.map((lab: any) => (
+              <div key={lab.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 flex flex-col gap-3">
+                {lab.coverPhotoUrl ? (
+                  <img src={lab.coverPhotoUrl} alt={lab.name} className="w-full h-40 object-cover rounded-xl mb-1" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-full h-40 bg-indigo-50 rounded-xl flex items-center justify-center mb-1">
+                    <Microscope size={40} className="text-indigo-200" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">{lab.name}</h3>
+                  {lab.leadTechnicianName && <p className="text-sm text-blue-600 mt-0.5">技師：{lab.leadTechnicianName}</p>}
+                  {lab.city && <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1"><MapPin size={13} />{lab.city}{lab.detailedAddress ? `・${lab.detailedAddress}` : ''}</p>}
+                </div>
+                {lab.phone && (
+                  <p className="text-sm text-slate-600 flex items-center gap-2"><Phone size={14} className="text-indigo-600" />{lab.phone}</p>
+                )}
+                {(lab.specialties?.length > 0 || lab.acceptedCaseTypes?.length > 0) && (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(lab.specialties ?? lab.acceptedCaseTypes ?? []).slice(0, 4).map((s: string, i: number) => (
+                      <span key={i} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">{s}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
 const QAStep = React.memo(({ title, desc, options, onSelect, multi = false, final = false }: any) => {
   const [selected, setSelected] = useState<string[]>([]);
   const toggle = (opt: string) => {
@@ -706,6 +897,8 @@ function AppContent() {
     REGISTER: '/register',
     TERMS: '/terms',
     PRIVACY: '/privacy',
+    CLINICS_PUBLIC: '/clinics',
+    LABS_PUBLIC: '/labs',
     FORGOT_PASSWORD: '/forgot-password',
     RESET_PASSWORD: '/reset-password',
     FORCE_CHANGE_PASSWORD: '/force-change-password',
@@ -879,7 +1072,7 @@ function AppContent() {
 
 
   // M-01：新增 Auth 相關頁面也屬於公開視圖（不顯示側選單）
-  const isPublicView = ['HOME', 'SERVICE', 'KNOWLEDGE', 'VIDEOS', 'ARTICLE', 'LOGIN', 'REGISTER', 'TERMS', 'PRIVACY', 'FORGOT_PASSWORD', 'RESET_PASSWORD', 'FORCE_CHANGE_PASSWORD'].includes(view);
+  const isPublicView = ['HOME', 'SERVICE', 'KNOWLEDGE', 'VIDEOS', 'ARTICLE', 'LOGIN', 'REGISTER', 'TERMS', 'PRIVACY', 'FORGOT_PASSWORD', 'RESET_PASSWORD', 'FORCE_CHANGE_PASSWORD', 'CLINICS_PUBLIC', 'LABS_PUBLIC'].includes(view);
 
   if (!authReady && !isPublicView) {
     return (
@@ -913,6 +1106,8 @@ function AppContent() {
             {view === 'SERVICE' && <AboutPage aboutBlocks={aboutBlocks} aboutLoaded={aboutLoaded} />}
             {view === 'TERMS' && <TermsPage />}
             {view === 'PRIVACY' && <PrivacyPage />}
+            {view === 'CLINICS_PUBLIC' && <ClinicsPublicPage />}
+            {view === 'LABS_PUBLIC' && <LabsPublicPage />}
             {view === 'QA' && <QAPage setQaCompleted={setQaCompleted} setView={handleSetView} />}
             {view === 'RECOMMENDATIONS' && <Recommendations setView={handleSetView} setSelectedClinic={setSelectedClinic} />}
             {view === 'OVERVIEW' && <Overview role={role} setView={handleSetView} currentCase={currentCase} setCaseFilter={setCaseFilter} />}
