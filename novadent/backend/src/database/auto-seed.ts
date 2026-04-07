@@ -107,6 +107,27 @@ async function seedSystemSettings(pool: Pool) {
   console.log('[AutoSeed] System settings GMAIL defaults seeded');
 }
 
+// ── page_contents 預設內容（聯絡資訊、服務條款、隱私權政策）──────
+// 對應 Footer 顯示的聯絡資訊、TermsPage、PrivacyPage 的內容來源
+async function seedPageContents(pool: Pool) {
+  const { rows } = await pool.query(`SELECT COUNT(*)::int as cnt FROM page_contents`);
+  if (rows[0].cnt === 0) {
+    await pool.query(`
+      INSERT INTO page_contents (key, value, content_type)
+      VALUES
+        ('CONTACT_PHONE',   '',                                                            'TEXT'),
+        ('CONTACT_EMAIL',   '',                                                            'TEXT'),
+        ('CONTACT_ADDRESS', '',                                                            'TEXT'),
+        ('SOCIAL_FACEBOOK', '',                                                            'TEXT'),
+        ('SOCIAL_LINE',     '',                                                            'TEXT'),
+        ('TERMS',   '# 服務條款\n\n請在後台「系統設定 → 法律聲明」輸入服務條款內容。',    'RICHTEXT'),
+        ('PRIVACY', '# 隱私權政策\n\n請在後台「系統設定 → 法律聲明」輸入隱私權政策內容。','RICHTEXT')
+      ON CONFLICT DO NOTHING
+    `);
+    console.log('[AutoSeed] page_contents defaults seeded');
+  }
+}
+
 // ── site_images 預設內容（ABOUT 頁文字區塊）────────────────────
 // 避免 /about 頁面因 DB 無資料而永遠卡在「載入中...」
 async function seedSiteImages(pool: Pool) {
@@ -136,6 +157,7 @@ export async function autoSeed() {
     await ensureDefaultPasswords(pool);
     await deduplicateAndSeedMenu(pool);
     await seedSystemSettings(pool);
+    await seedPageContents(pool);  // 聯絡資訊、服務條款、隱私權政策預設資料
     await seedSiteImages(pool);
 
     const { rows } = await pool.query('SELECT count(*)::int as cnt FROM users WHERE role != $1', ['MEMBER']);
