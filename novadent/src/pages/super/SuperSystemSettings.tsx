@@ -27,8 +27,8 @@ const SETTING_GROUPS = [
     icon: <Settings size={20} />,
     keys: [
       { key: 'site_name', label: '網站名稱', placeholder: 'Novadent 諾星' },
-      { key: 'support_email', label: '客服信箱', placeholder: 'support@novadent.com' },
-      { key: 'support_phone', label: '客服電話', placeholder: '02-12345678' },
+      // 注意：前台 Footer 顯示的聯絡電話/信箱/地址請至下方「聯絡資訊」設定
+      // support_email / support_phone 為後台系統預留欄位，不顯示於前台，已移除避免混淆
     ],
   },
 ];
@@ -107,10 +107,17 @@ export function SuperSystemSettings() {
       const entries = Object.entries(pageContents);
       for (const [key, value] of entries) {
         const contentType = ['TERMS', 'PRIVACY'].includes(key) ? 'RICHTEXT' : 'TEXT';
-        await apiFetch(`/admin/page-contents/${key}`, {
+        const res = await apiFetch(`/admin/page-contents/${key}`, {
           method: 'PUT',
           body: JSON.stringify({ value, contentType }),
         });
+        // 必須逐筆檢查 res.ok，否則 401/403 不拋例外，會錯誤顯示「已儲存」
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          setContentMessage(`儲存失敗（${errData.message || res.status}）`);
+          setSavingContents(false);
+          return;
+        }
       }
       setContentMessage('頁面內容已儲存');
       setTimeout(() => setContentMessage(''), 3000);
