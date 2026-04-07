@@ -185,14 +185,17 @@ export const articles = pgTable('articles', {
 
 // ── menu_config（選單管理）──────────────────────────────────
 export const menuConfig = pgTable('menu_config', {
-  id:      uuid('id').primaryKey().defaultRandom(),
-  label:   varchar('label', { length: 100 }).notNull(),
-  path:    varchar('path', { length: 200 }).notNull(),
-  roles:   text('roles').array().notNull(),
-  order:   integer('order').notNull().default(0),
-  visible: boolean('visible').notNull().default(true),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  updatedBy: uuid('updated_by').references(() => users.id),
+  id:           uuid('id').primaryKey().defaultRandom(),
+  label:        varchar('label', { length: 100 }).notNull(),
+  path:         varchar('path', { length: 200 }).notNull().default(''), // 父群組項目 path 為空字串
+  roles:        text('roles').array().notNull().default([]),
+  order:        integer('order').notNull().default(0),
+  visible:      boolean('visible').notNull().default(true),
+  menuType:     varchar('menu_type', { length: 20 }).notNull().default('PUBLIC'), // 'PUBLIC'=前台 | 'ADMIN'=後台
+  parentId:     uuid('parent_id'),           // null=頂層，有值=子項目（父為群組）
+  showInFooter: boolean('show_in_footer').notNull().default(false), // 是否顯示於 Footer 快速連結
+  updatedAt:    timestamp('updated_at').notNull().defaultNow(),
+  updatedBy:    uuid('updated_by').references(() => users.id),
 });
 
 // ── audit_logs（操作日誌）────────────────────────────────────

@@ -19,7 +19,7 @@ import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import { ForceChangePasswordPage } from './components/auth/ForceChangePasswordPage';
 import { RegisterPage as RegisterPageComponent } from './components/auth/RegisterPage';
-import { getCurrentUser, logout, register as authRegister, refreshAccessToken } from './services/authService';
+import { getCurrentUser, logout, register as authRegister, refreshAccessToken, apiFetch } from './services/authService';
 const authService = { register: authRegister };
 
 // ── Admin Pages ────────────────────────────────────────────
@@ -149,7 +149,10 @@ const PublicHeader = React.memo(() => {
   );
 });
 
-const PublicFooter = React.memo(({ footerContacts }: { footerContacts: Record<string, string> }) => (
+const PublicFooter = React.memo(({ footerContacts, quickLinks }: {
+  footerContacts: Record<string, string>;
+  quickLinks: { label: string; path: string }[];
+}) => (
   <footer className="bg-blue-950 text-slate-400 py-16">
     <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
       <div className="col-span-1 md:col-span-1">
@@ -162,9 +165,14 @@ const PublicFooter = React.memo(({ footerContacts }: { footerContacts: Record<st
       <div>
         <h4 className="text-white font-bold mb-6">快速連結</h4>
         <ul className="space-y-4 text-sm">
-          <li><Link to="/about" className="hover:text-blue-500">關於我們</Link></li>
-          <li><Link to="/education" className="hover:text-blue-500">衛教知識</Link></li>
-          <li><Link to="/videos" className="hover:text-blue-500">影音專區</Link></li>
+          {/* 從選單管理的 show_in_footer=true 動態讀取，無資料時顯示預設連結 */}
+          {(quickLinks.length > 0 ? quickLinks : [
+            { label: '關於我們', path: '/about' },
+            { label: '衛教中心', path: '/knowledge' },
+            { label: '影音專區', path: '/videos' },
+          ]).map((link, i) => (
+            <li key={i}><Link to={link.path} className="hover:text-blue-500">{link.label}</Link></li>
+          ))}
         </ul>
       </div>
       <div>
@@ -310,11 +318,14 @@ interface SidebarProps {
   handleSetView: (v: string) => void;
   currentUser: AuthUser | null;
   handleLogout: () => void;
+  adminMenuLabels?: Record<string, string>; // 從 DB 選單設定動態讀取的路徑→名稱對應表
 }
 
-const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen, handleSetView, currentUser, handleLogout }: SidebarProps) => {
+const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen, handleSetView, currentUser, handleLogout, adminMenuLabels = {} }: SidebarProps) => {
   const setViewAndClose = (v: string) => { handleSetView(v); setIsMobileMenuOpen(false); };
   const goHome = () => { setIsMobileMenuOpen(false); };
+  // ml(path, fallback) — 從 DB 選單名稱取得顯示標籤，若尚未載入則使用預設值
+  const ml = (path: string, fallback: string) => adminMenuLabels[path] || fallback;
 
   return (
     <>
@@ -369,26 +380,33 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
           )}
           {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
             <>
-              <NavItem icon={<LayoutDashboard size={20} />} label="統計儀表板" active={view === 'ADMIN_DASHBOARD'} onClick={() => setViewAndClose('ADMIN_DASHBOARD')} />
-              <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ADMIN_USERS'} onClick={() => setViewAndClose('ADMIN_USERS')} />
-              <NavItem icon={<Building2 size={20} />} label="診所管理" active={view === 'ADMIN_CLINICS'} onClick={() => setViewAndClose('ADMIN_CLINICS')} />
-              <NavItem icon={<Microscope size={20} />} label="牙技所管理" active={view === 'ADMIN_LABS'} onClick={() => setViewAndClose('ADMIN_LABS')} />
-              <NavItem icon={<Activity size={20} />} label="合作連結" active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => setViewAndClose('ADMIN_PARTNER_LINKS')} />
-              <NavGroup icon={<FileText size={20} />} label="內容管理" active={['ADMIN_ARTICLES','ADMIN_NOTIFICATION_CMS','ADMIN_SITE_IMAGES','ADMIN_VIDEOS'].includes(view)}>
-                <NavItem icon={<FileText size={18} />} label="文章管理" active={view === 'ADMIN_ARTICLES'} onClick={() => setViewAndClose('ADMIN_ARTICLES')} />
-                <NavItem icon={<Bell size={18} />} label="通知廣播" active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => setViewAndClose('ADMIN_NOTIFICATION_CMS')} />
-                <NavItem icon={<Image size={18} />} label="圖片管理" active={view === 'ADMIN_SITE_IMAGES'} onClick={() => setViewAndClose('ADMIN_SITE_IMAGES')} />
-                <NavItem icon={<VideoIcon size={18} />} label="影音管理" active={view === 'ADMIN_VIDEOS'} onClick={() => setViewAndClose('ADMIN_VIDEOS')} />
+              <NavItem icon={<LayoutDashboard size={20} />} label={ml('/admin/dashboard', '統計儀表板')} active={view === 'ADMIN_DASHBOARD'} onClick={() => setViewAndClose('ADMIN_DASHBOARD')} />
+              <NavItem icon={<Users size={20} />} label={ml('/admin/users', '帳號管理')} active={view === 'ADMIN_USERS'} onClick={() => setViewAndClose('ADMIN_USERS')} />
+              <NavItem icon={<Building2 size={20} />} label={ml('/admin/clinics', '診所管理')} active={view === 'ADMIN_CLINICS'} onClick={() => setViewAndClose('ADMIN_CLINICS')} />
+              <NavItem icon={<Microscope size={20} />} label={ml('/admin/labs', '牙技所管理')} active={view === 'ADMIN_LABS'} onClick={() => setViewAndClose('ADMIN_LABS')} />
+              <NavItem icon={<Activity size={20} />} label={ml('/admin/partner-links', '合作連結')} active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => setViewAndClose('ADMIN_PARTNER_LINKS')} />
+              {/* 內容管理群組：標籤從 DB 讀取，子項目各自對應路徑 */}
+              <NavGroup icon={<FileText size={20} />} label={ml('/admin/content', '內容管理')} active={['ADMIN_ARTICLES','ADMIN_NOTIFICATION_CMS','ADMIN_SITE_IMAGES','ADMIN_VIDEOS'].includes(view)}>
+                <NavItem icon={<FileText size={18} />} label={ml('/admin/articles', '文章管理')} active={view === 'ADMIN_ARTICLES'} onClick={() => setViewAndClose('ADMIN_ARTICLES')} />
+                <NavItem icon={<Bell size={18} />} label={ml('/admin/notifications', '通知廣播')} active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => setViewAndClose('ADMIN_NOTIFICATION_CMS')} />
+                <NavItem icon={<Image size={18} />} label={ml('/admin/site-images', '圖片管理')} active={view === 'ADMIN_SITE_IMAGES'} onClick={() => setViewAndClose('ADMIN_SITE_IMAGES')} />
+                <NavItem icon={<VideoIcon size={18} />} label={ml('/admin/videos', '影音管理')} active={view === 'ADMIN_VIDEOS'} onClick={() => setViewAndClose('ADMIN_VIDEOS')} />
               </NavGroup>
             </>
           )}
           {role === 'SUPER_ADMIN' && (
             <>
-              <NavItem icon={<Settings size={20} />} label="系統設定" active={view === 'SUPER_SYSTEM_SETTINGS'} onClick={() => setViewAndClose('SUPER_SYSTEM_SETTINGS')} />
-              <NavItem icon={<Settings size={20} />} label="選單管理" active={view === 'SUPER_MENU'} onClick={() => setViewAndClose('SUPER_MENU')} />
-              <NavItem icon={<ClipboardList size={20} />} label="QA問卷管理" active={view === 'SUPER_QA_QUESTIONS'} onClick={() => setViewAndClose('SUPER_QA_QUESTIONS')} />
-              <NavItem icon={<CheckCircle2 size={20} />} label="製程模板" active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => setViewAndClose('SUPER_MFG_TEMPLATES')} />
-              <NavItem icon={<ShieldCheck size={20} />} label="稽核日誌" active={view === 'SUPER_AUDIT_LOGS'} onClick={() => setViewAndClose('SUPER_AUDIT_LOGS')} />
+              {/* 系統管理群組：系統設定 + 選單管理 + 稽核日誌 */}
+              <NavGroup icon={<Settings size={20} />} label={ml('/super/system', '系統管理')} active={['SUPER_SYSTEM_SETTINGS','SUPER_MENU','SUPER_AUDIT_LOGS'].includes(view)}>
+                <NavItem icon={<Settings size={18} />} label={ml('/super/settings', '系統設定')} active={view === 'SUPER_SYSTEM_SETTINGS'} onClick={() => setViewAndClose('SUPER_SYSTEM_SETTINGS')} />
+                <NavItem icon={<Settings size={18} />} label={ml('/super/menu', '選單管理')} active={view === 'SUPER_MENU'} onClick={() => setViewAndClose('SUPER_MENU')} />
+                <NavItem icon={<ShieldCheck size={18} />} label={ml('/super/audit-logs', '稽核日誌')} active={view === 'SUPER_AUDIT_LOGS'} onClick={() => setViewAndClose('SUPER_AUDIT_LOGS')} />
+              </NavGroup>
+              {/* 進階設定群組：QA問卷 + 製程模板 */}
+              <NavGroup icon={<ClipboardList size={20} />} label={ml('/super/advanced', '進階設定')} active={['SUPER_QA_QUESTIONS','SUPER_MFG_TEMPLATES'].includes(view)}>
+                <NavItem icon={<ClipboardList size={18} />} label={ml('/super/qa-questions', 'QA問卷管理')} active={view === 'SUPER_QA_QUESTIONS'} onClick={() => setViewAndClose('SUPER_QA_QUESTIONS')} />
+                <NavItem icon={<CheckCircle2 size={18} />} label={ml('/super/mfg-templates', '製程模板')} active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => setViewAndClose('SUPER_MFG_TEMPLATES')} />
+              </NavGroup>
             </>
           )}
           {role !== 'GUEST' && (
@@ -819,6 +837,33 @@ function AppContent() {
       }).catch(() => {});
   }, []);
 
+  // Footer 快速連結：從 PUBLIC 選單中 showInFooter=true 的項目動態讀取
+  const [quickLinks, setQuickLinks] = useState<{label:string;path:string}[]>([]);
+  useEffect(() => {
+    fetch('/api/admin/menu-public')
+      .then(r => r.ok ? r.json() : [])
+      .then((items: any[]) => {
+        setQuickLinks(
+          items
+            .filter((i: any) => i.showInFooter || i.show_in_footer)
+            .map((i: any) => ({ label: i.label, path: i.path }))
+        );
+      }).catch(() => {});
+  }, []);
+
+  // 後台選單標籤：ADMIN/SUPER_ADMIN 登入後讀取，讓左側選單名稱與 DB 同步
+  const [adminMenuLabels, setAdminMenuLabels] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') return;
+    apiFetch('/api/admin/menu-config')
+      .then(r => r.ok ? r.json() : [])
+      .then((items: any[]) => {
+        const map: Record<string, string> = {};
+        items.forEach((i: any) => { if (i.path) map[i.path] = i.label; });
+        setAdminMenuLabels(map);
+      }).catch(() => {});
+  }, [role]);
+
 
 
 
@@ -847,7 +892,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans antialiased text-slate-900">
       {!isPublicView && <MobileHeader handleLogout={handleLogout} setIsMobileMenuOpen={setIsMobileMenuOpen} />}
-      {!isPublicView && <Sidebar role={role} view={view} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} handleSetView={handleSetView} currentUser={currentUser} handleLogout={handleLogout} />}
+      {!isPublicView && <Sidebar role={role} view={view} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} handleSetView={handleSetView} currentUser={currentUser} handleLogout={handleLogout} adminMenuLabels={adminMenuLabels} />}
       <main className="flex-1 overflow-y-auto">
         {isPublicView && <PublicHeader />}
         <AnimatePresence mode="wait">
@@ -910,7 +955,7 @@ function AppContent() {
             {view === 'NOTIFICATIONS' && <NotificationsPage />}
           </motion.div>
         </AnimatePresence>
-        {isPublicView && <PublicFooter footerContacts={footerContacts} />}
+        {isPublicView && <PublicFooter footerContacts={footerContacts} quickLinks={quickLinks} />}
       </main>
     </div>
   );
