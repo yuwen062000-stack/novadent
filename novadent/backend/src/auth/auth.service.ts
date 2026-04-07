@@ -285,4 +285,38 @@ export class AuthService {
     console.log('✅ SuperAdmin 建立完成：superadmin@novadent.com / SuperAdmin123!');
     return { message: 'SuperAdmin 建立成功，請立即修改密碼' };
   }
+
+  // ── 臨時端點：緊急重設所有測試帳號密碼為 admin@123 ─────────
+  // ⚠️ 僅供開發測試使用，確認正常後請移除此方法
+  async devResetSeedPasswords() {
+    const SEED_SALT = 8; // 低強度，加快速度
+    const TEST_PW   = 'admin@123';
+    const hash      = await bcrypt.hash(TEST_PW, SEED_SALT); // 只算一次
+
+    const seedEmails = [
+      'superadmin@novadent.com',
+      'admin@novadent.com',
+      'taipei-clinic@novadent.com',
+      'taichung-clinic@novadent.com',
+      'kaohsiung-clinic@novadent.com',
+      'precision-lab@novadent.com',
+      'artisan-lab@novadent.com',
+      'member1@test.com',
+    ];
+
+    const results: Record<string, string> = {};
+    for (const email of seedEmails) {
+      try {
+        const result = await this.db.update(users)
+          .set({ passwordHash: hash, forceChangePassword: false } as any)
+          .where(eq(users.email, email));
+        results[email] = 'updated';
+      } catch (e: any) {
+        results[email] = 'error: ' + e.message;
+      }
+    }
+
+    console.log('[DevReset] Seed passwords reset to admin@123:', results);
+    return { success: true, message: '所有測試帳號密碼已重設為 admin@123', results };
+  }
 }
