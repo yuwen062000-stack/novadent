@@ -1033,6 +1033,30 @@ function AppContent() {
       }).catch(() => {});
   }, []);
 
+  // ── SEO：啟動時從後台讀取 meta 設定，動態更新 <head> ────────
+  // 讓 SuperAdmin 後台改完即生效，不需重新部署
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then(r => r.ok ? r.json() : {})
+      .then((seo: Record<string, string>) => {
+        if (seo.seo_title)          document.title = seo.seo_title;
+        const setMeta = (sel: string, val: string) => {
+          let el = document.querySelector(sel) as HTMLMetaElement | null;
+          if (!el) {
+            el = document.createElement('meta');
+            const attr = sel.includes('property=') ? 'property' : 'name';
+            el.setAttribute(attr, sel.match(/["']([^"']+)["']/)?.[1] || '');
+            document.head.appendChild(el);
+          }
+          el.setAttribute('content', val);
+        };
+        if (seo.seo_description)    setMeta('meta[name="description"]',          seo.seo_description);
+        if (seo.seo_og_title)       setMeta('meta[property="og:title"]',          seo.seo_og_title);
+        if (seo.seo_og_description) setMeta('meta[property="og:description"]',    seo.seo_og_description);
+        if (seo.seo_og_url)         setMeta('meta[property="og:url"]',            seo.seo_og_url);
+      }).catch(() => {});
+  }, []);
+
   // Footer 快速連結：從 PUBLIC 選單中 showInFooter=true 的項目動態讀取
   const [quickLinks, setQuickLinks] = useState<{label:string;path:string}[]>([]);
   useEffect(() => {
