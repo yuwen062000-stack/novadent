@@ -61,32 +61,8 @@ export class LabsUserController {
       this.labsService.update(lab.id, { ...dto, internalNotes: undefined }, user.id)
     );
   }
-
-  // GET /api/labs — Admin 取全部牙技所列表
-  @Get()
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  findAll(
-    @Query('status')   status?: string,
-    @Query('city')     city?: string,
-    @Query('search')   search?: string,
-    @Query('page')     page?: string,
-    @Query('pageSize') pageSize?: string,
-  ) {
-    return this.labsService.findAll({
-      status,
-      city,
-      search,
-      page:     page     ? Number(page)     : undefined,
-      pageSize: pageSize ? Number(pageSize) : undefined,
-    });
-  }
-
-  // GET /api/labs/:id — Admin 取單一牙技所
-  @Get(':id')
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.labsService.findById(id, true);
-  }
+  // 注意：GET /api/labs 與 GET /api/labs/:id 由 LabsPublicController（@Public）及
+  // LabsAdminController（/api/admin/labs）負責，避免路由衝突
 }
 
 // ── Admin 路由（/api/admin/labs）──────────────────────────────

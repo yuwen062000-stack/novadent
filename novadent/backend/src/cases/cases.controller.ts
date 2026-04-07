@@ -136,14 +136,29 @@ export class CasesController {
   }
 
   // ── PATCH /api/cases/:id/steps/:stepId — LAB 更新製程節點
+  // 回傳完整案件（含製程節點），供前端 LabCaseDetail 直接更新畫面
   @Patch(':id/steps/:stepId')
   @Roles('LAB')
-  updateStep(
-    @Param('id',     ParseUUIDPipe) _caseId: string, // 路徑參數（保留以對應規格）
+  async updateStep(
+    @Param('id',     ParseUUIDPipe) caseId: string,
     @Param('stepId', ParseUUIDPipe) stepId: string,
     @Body() dto: UpdateMfgStepDto,
     @CurrentUser() user: any,
   ) {
-    return this.mfgStepsService.updateStep(stepId, user.id, dto);
+    await this.mfgStepsService.updateStep(stepId, user.id, dto);
+    // updateStep 已重算 progress，此處再取完整案件回傳
+    return this.casesService.findById(caseId, user.id, user.role);
+  }
+
+  // ── POST /api/cases/:id/mfg-steps — LAB 新增製程節點 ─────
+  // Fix #3：前端 LabCaseDetail handleAddStep 呼叫此端點
+  @Post(':id/mfg-steps')
+  @Roles('LAB', 'CLINIC', 'ADMIN', 'SUPER_ADMIN')
+  addMfgStep(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: { name: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.casesService.addMfgStep(id, dto, user.id);
   }
 }
