@@ -38,7 +38,7 @@ export class SitemapController {
       const [activeClinics, activeLabs, publishedArticles] = await Promise.all([
         this.db.select({ id: clinics.id }).from(clinics).where(eq(clinics.status, 'ACTIVE')),
         this.db.select({ id: labs.id }).from(labs).where(eq(labs.status, 'ACTIVE')),
-        this.db.select({ id: articles.id }).from(articles).where(eq(articles.status, 'PUBLISHED' as any)),
+        this.db.select({ id: articles.id }).from(articles).where(eq((articles as any).status, 'PUBLISHED')),
       ]);
 
       dynamicUrls = [
