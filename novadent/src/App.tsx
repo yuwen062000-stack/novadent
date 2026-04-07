@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
+import { marked } from 'marked'; // Markdown → HTML 轉換（用於服務條款、隱私權政策）
 import {
   Activity, Plus, ClipboardList, CheckCircle2, Clock, Building2, Microscope, Settings,
   ChevronRight, Camera, MapPin, Search, ArrowRight, ShieldCheck, FileText, Users,
@@ -1130,7 +1131,7 @@ function TermsPage() {
         <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-8">服務條款</h1>
         <div className="prose prose-slate max-w-none">
           {loading ? <p className="text-slate-400">載入中...</p>
-            : content ? <div className="text-slate-700 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
+            : content ? <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(content) as string) }} />
             : <p className="text-lg text-slate-600 leading-relaxed">內容建置中，敬請期待。</p>}
         </div>
       </div>
@@ -1152,7 +1153,7 @@ function PrivacyPage() {
         <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-8">隱私權政策</h1>
         <div className="prose prose-slate max-w-none">
           {loading ? <p className="text-slate-400">載入中...</p>
-            : content ? <div className="text-slate-700 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
+            : content ? <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(content) as string) }} />
             : <p className="text-lg text-slate-600 leading-relaxed">內容建置中，敬請期待。</p>}
         </div>
       </div>
