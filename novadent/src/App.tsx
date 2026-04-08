@@ -850,7 +850,9 @@ function AppContent() {
         setCurrentUser(user);
         setRole(user.role);
         const p = location.pathname;
-        if (p === '/' || p === '' || p === '/admin' || p === '/clinic' || p === '/lab' || p === '/member' || p === '/super') {
+        // 注意：'/' 刻意不在條件內 — 登入後仍可瀏覽首頁，不強制跳轉
+        // 只有在直接輸入角色根路徑（/admin、/clinic...）時才自動跳到對應首頁
+        if (p === '/admin' || p === '/clinic' || p === '/lab' || p === '/member' || p === '/super') {
           switch (user.role) {
             case 'SUPER_ADMIN':
             case 'ADMIN':    navigate('/admin/dashboard', { replace: true }); break;
