@@ -162,12 +162,24 @@ export class AdminService {
     return { success: true };
   }
 
+  // ── 子帳號解析：若 userId 無直接對應的診所/牙技所，查 parentId ──
+  private async resolveEffectiveUserId(userId: string): Promise<string> {
+    const [user] = await this.db
+      .select({ parentId: users.parentId })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return user?.parentId ?? userId;
+  }
+
   // ── 診所/牙技所查詢自己的合作清單 ───────────────────────────
   // CLINIC → 回傳合作牙技所清單；LAB → 回傳合作診所清單
+  // 支援子帳號：若子帳號登入，自動映射到父帳號的診所/牙技所
   async getMyPartnerLinks(userId: string, role: string) {
+    const effectiveId = await this.resolveEffectiveUserId(userId);
     if (role === 'CLINIC') {
       const [clinic] = await this.db.select({ id: clinics.id })
-        .from(clinics).where(eq(clinics.userId, userId)).limit(1);
+        .from(clinics).where(eq(clinics.userId, effectiveId)).limit(1);
       if (!clinic) return [];
       return this.db
         .select({
@@ -185,7 +197,7 @@ export class AdminService {
         .orderBy(desc(partnerLinks.createdAt));
     } else if (role === 'LAB') {
       const [lab] = await this.db.select({ id: labs.id })
-        .from(labs).where(eq(labs.userId, userId)).limit(1);
+        .from(labs).where(eq(labs.userId, effectiveId)).limit(1);
       if (!lab) return [];
       return this.db
         .select({
@@ -207,16 +219,18 @@ export class AdminService {
 
   // ── 診所自行建立合作連結 ──────────────────────────────────
   async createMyPartnerLink(clinicUserId: string, labId: string) {
+    const effectiveId = await this.resolveEffectiveUserId(clinicUserId);
     const [clinic] = await this.db.select({ id: clinics.id, name: clinics.name })
-      .from(clinics).where(eq(clinics.userId, clinicUserId)).limit(1);
+      .from(clinics).where(eq(clinics.userId, effectiveId)).limit(1);
     if (!clinic) throw new NotFoundException('診所不存在');
     return this.createPartnerLink(clinic.id, labId, clinicUserId);
   }
 
   // ── 診所刪除自己的合作連結（驗證歸屬）──────────────────────
   async deleteMyPartnerLink(clinicUserId: string, linkId: string) {
+    const effectiveId = await this.resolveEffectiveUserId(clinicUserId);
     const [clinic] = await this.db.select({ id: clinics.id })
-      .from(clinics).where(eq(clinics.userId, clinicUserId)).limit(1);
+      .from(clinics).where(eq(clinics.userId, effectiveId)).limit(1);
     if (!clinic) throw new NotFoundException('診所不存在');
 
     const [link] = await this.db.select()

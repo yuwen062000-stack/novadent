@@ -6,7 +6,7 @@ import { eq, and, ilike, sql, desc } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import {
-  cases, clinics, labs, partnerLinks, auditLogs, mfgSteps
+  cases, clinics, labs, partnerLinks, auditLogs, mfgSteps, users
 } from '../database/schema';
 import { CreateCaseDto, AssignLabDto } from './dto/case.dto';
 import { MfgStepsService } from './mfg-steps.service';
@@ -45,23 +45,57 @@ export class CasesService {
   }
 
   // ── 取診所 ID（by userId）────────────────────────────────
+  // 支援子帳號：先查直接對應，找不到再用 parentId 查父帳號的診所
   private async getClinicByUserId(userId: string) {
-    const [clinic] = await this.db
+    let [clinic] = await this.db
       .select({ id: clinics.id })
       .from(clinics)
       .where(eq(clinics.userId, userId))
       .limit(1);
+
+    if (!clinic) {
+      const [user] = await this.db
+        .select({ parentId: users.parentId })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      if (user?.parentId) {
+        [clinic] = await this.db
+          .select({ id: clinics.id })
+          .from(clinics)
+          .where(eq(clinics.userId, user.parentId))
+          .limit(1);
+      }
+    }
+
     if (!clinic) throw new ForbiddenException('找不到對應的診所資料');
     return clinic;
   }
 
   // ── 取牙技所 ID（by userId）──────────────────────────────
+  // 支援子帳號：先查直接對應，找不到再用 parentId 查父帳號的牙技所
   private async getLabByUserId(userId: string) {
-    const [lab] = await this.db
+    let [lab] = await this.db
       .select({ id: labs.id })
       .from(labs)
       .where(eq(labs.userId, userId))
       .limit(1);
+
+    if (!lab) {
+      const [user] = await this.db
+        .select({ parentId: users.parentId })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      if (user?.parentId) {
+        [lab] = await this.db
+          .select({ id: labs.id })
+          .from(labs)
+          .where(eq(labs.userId, user.parentId))
+          .limit(1);
+      }
+    }
+
     if (!lab) throw new ForbiddenException('找不到對應的牙技所資料');
     return lab;
   }
