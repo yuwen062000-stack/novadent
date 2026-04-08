@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked'; // Markdown → HTML 轉換（用於服務條款、隱私權政策）
 import {
@@ -1075,7 +1075,7 @@ function AppContent() {
 
   // 後台選單標籤：ADMIN/SUPER_ADMIN 登入後讀取，讓左側選單名稱與 DB 同步
   const [adminMenuLabels, setAdminMenuLabels] = useState<Record<string, string>>({});
-  useEffect(() => {
+  const fetchAdminMenuLabels = useCallback(() => {
     if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') return;
     apiFetch('/admin/menu-config')
       .then(r => r.ok ? r.json() : [])
@@ -1085,6 +1085,13 @@ function AppContent() {
         setAdminMenuLabels(map);
       }).catch(() => {});
   }, [role]);
+  // 登入時載入一次
+  useEffect(() => { fetchAdminMenuLabels(); }, [fetchAdminMenuLabels]);
+  // 選單管理儲存後，SuperMenuManager 發出此事件 → 即時更新側邊欄，不需重整頁面
+  useEffect(() => {
+    window.addEventListener('menu-config-updated', fetchAdminMenuLabels);
+    return () => window.removeEventListener('menu-config-updated', fetchAdminMenuLabels);
+  }, [fetchAdminMenuLabels]);
 
 
 
