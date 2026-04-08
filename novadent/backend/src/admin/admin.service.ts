@@ -229,6 +229,9 @@ export class AdminService {
 
     const rows = await this.db.insert(menuConfig).values(
       dedupedItems.map((item) => ({
+        // ⚠️ 重要：保留現有 id，確保 parentId 外鍵在 DELETE→INSERT 後仍有效
+        // 新增項目（id 為 undefined）由 DB 自動產生 UUID
+        ...(item.id ? { id: item.id } : {}),
         label:        item.label,
         path:         item.path,
         roles:        item.roles,
