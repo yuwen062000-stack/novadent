@@ -15,11 +15,11 @@ import { CreateLabDto, UpdateLabDto, UpdateLabStatusDto } from './dto/lab.dto';
 export class LabsPublicController {
   constructor(private readonly labsService: LabsService) {}
 
-  // GET /api/labs — 公開列表（只回傳 ACTIVE，不需登入）
+  // GET /api/labs — 公開列表（只回傳 ACTIVE，不需登入，city 支援多選）
   @Public()
   @Get()
   findAll(
-    @Query('city')     city?: string,
+    @Query('city')     city?: string | string[],
     @Query('search')   search?: string,
     @Query('page')     page?: string,
     @Query('pageSize') pageSize?: string,

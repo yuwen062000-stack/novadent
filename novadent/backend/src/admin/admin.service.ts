@@ -102,8 +102,23 @@ export class AdminService {
       where = eq(partnerLinks.labId, query.labId);
     }
 
+    // JOIN clinics / labs 以直接回傳名稱，避免前端找不到 PENDING 診所而顯示 UUID
+    const c = clinics;
+    const l = labs;
     const [rows, countResult] = await Promise.all([
-      this.db.select().from(partnerLinks)
+      this.db
+        .select({
+          id:        partnerLinks.id,
+          clinicId:  partnerLinks.clinicId,
+          labId:     partnerLinks.labId,
+          status:    partnerLinks.status,
+          createdAt: partnerLinks.createdAt,
+          clinicName: c.name,
+          labName:    l.name,
+        })
+        .from(partnerLinks)
+        .leftJoin(c, eq(c.id, partnerLinks.clinicId))
+        .leftJoin(l, eq(l.id, partnerLinks.labId))
         .where(where)
         .orderBy(desc(partnerLinks.createdAt))
         .limit(pageSize)

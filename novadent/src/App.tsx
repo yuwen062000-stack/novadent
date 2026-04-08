@@ -474,35 +474,90 @@ const AboutPage = React.memo(({ aboutBlocks, aboutLoaded }: { aboutBlocks: any[]
   </div>
 ));
 
+// ── 台灣完整縣市清單（前台篩選用，與後台 AdminClinics 共用相同邏輯）────
+const TAIWAN_CITIES_PUBLIC = [
+  '台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市',
+  '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣',
+  '雲林縣', '嘉義市', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣',
+  '台東縣', '澎湖縣', '金門縣', '連江縣',
+];
+
+// ── 縣市多複選下拉元件 ────────────────────────────────────────
+function CityMultiSelect({ selected, onChange }: { selected: string[]; onChange: (v: string[]) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  // 點外部關閉
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggle = (city: string) =>
+    onChange(selected.includes(city) ? selected.filter(c => c !== city) : [...selected, city]);
+
+  const label = selected.length === 0 ? '全部縣市' : selected.length === 1 ? selected[0] : `${selected[0]} 等 ${selected.length} 個縣市`;
+
+  return (
+    <div ref={ref} className="relative min-w-[160px]">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 text-left"
+      >
+        <span className={selected.length > 0 ? 'text-blue-800 font-medium' : 'text-slate-500'}>{label}</span>
+        <ChevronDown size={14} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-30 max-h-64 overflow-y-auto p-2">
+          {selected.length > 0 && (
+            <button onClick={() => onChange([])} className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg mb-1">
+              清除篩選
+            </button>
+          )}
+          {TAIWAN_CITIES_PUBLIC.map(city => (
+            <label key={city} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selected.includes(city)}
+                onChange={() => toggle(city)}
+                className="w-3.5 h-3.5 rounded"
+              />
+              <span className="text-sm text-slate-700">{city}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 合作診所公開頁 (/clinics) ─────────────────────────────────
 const ClinicsPublicPage = React.memo(() => {
   const [clinics, setClinics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [city, setCity] = useState('');
+  const [cities, setCities] = useState<string[]>([]); // 多複選縣市
 
   useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.set('search', search);
-    if (city) params.set('city', city);
+    // 後端 city 參數支援單值；多選時用逗號串接，後端 LIKE 查詢各別匹配
+    cities.forEach(c => params.append('city', c));
     fetch(`/api/clinics?${params}`)
       .then(r => r.ok ? r.json() : { data: [] })
       .then(res => { setClinics(res.data ?? res); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [search, city]);
-
-  const cities = ['台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市', '其他'];
+  }, [search, cities]);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* 頁首 Banner */}
       <div className="bg-blue-950 text-white py-16 px-6 text-center">
         <Building2 className="mx-auto mb-4 text-blue-400" size={48} />
         <h1 className="text-4xl font-black mb-3">合作診所</h1>
         <p className="text-blue-200 text-lg">嚴選合作牙科診所，提供透明、高品質的假牙製作服務</p>
       </div>
-      {/* 篩選列 */}
       <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -513,16 +568,8 @@ const ClinicsPublicPage = React.memo(() => {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-          value={city}
-          onChange={e => setCity(e.target.value)}
-        >
-          <option value="">全部縣市</option>
-          {cities.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <CityMultiSelect selected={cities} onChange={setCities} />
       </div>
-      {/* 診所卡片列表 */}
       <div className="max-w-6xl mx-auto px-6 pb-16">
         {loading ? (
           <div className="flex justify-center py-20">
@@ -551,9 +598,9 @@ const ClinicsPublicPage = React.memo(() => {
                 {clinic.phone && (
                   <p className="text-sm text-slate-600 flex items-center gap-2"><Phone size={14} className="text-blue-600" />{clinic.phone}</p>
                 )}
-                {(clinic.specialties?.length > 0 || clinic.acceptedCaseTypes?.length > 0) && (
+                {(clinic.services?.length > 0 || clinic.specialties?.length > 0) && (
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(clinic.specialties ?? clinic.acceptedCaseTypes ?? []).slice(0, 4).map((s: string, i: number) => (
+                    {(clinic.services ?? clinic.specialties ?? []).slice(0, 4).map((s: string, i: number) => (
                       <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium">{s}</span>
                     ))}
                   </div>
@@ -572,30 +619,26 @@ const LabsPublicPage = React.memo(() => {
   const [labs, setLabs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [city, setCity] = useState('');
+  const [cities, setCities] = useState<string[]>([]);
 
   useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.set('search', search);
-    if (city) params.set('city', city);
+    cities.forEach(c => params.append('city', c));
     fetch(`/api/labs?${params}`)
       .then(r => r.ok ? r.json() : { data: [] })
       .then(res => { setLabs(res.data ?? res); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [search, city]);
-
-  const cities = ['台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市', '其他'];
+  }, [search, cities]);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* 頁首 Banner */}
       <div className="bg-blue-950 text-white py-16 px-6 text-center">
         <Microscope className="mx-auto mb-4 text-blue-400" size={48} />
         <h1 className="text-4xl font-black mb-3">合作牙技所</h1>
         <p className="text-blue-200 text-lg">專業假牙製作技術團隊，確保每一件作品的精準品質</p>
       </div>
-      {/* 篩選列 */}
       <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -606,16 +649,8 @@ const LabsPublicPage = React.memo(() => {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-          value={city}
-          onChange={e => setCity(e.target.value)}
-        >
-          <option value="">全部縣市</option>
-          {cities.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <CityMultiSelect selected={cities} onChange={setCities} />
       </div>
-      {/* 牙技所卡片列表 */}
       <div className="max-w-6xl mx-auto px-6 pb-16">
         {loading ? (
           <div className="flex justify-center py-20">
