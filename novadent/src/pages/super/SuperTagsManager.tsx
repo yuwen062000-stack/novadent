@@ -6,13 +6,13 @@ import { apiFetch } from '../../services/authService';
 
 // 適用對象選項
 const TARGET_OPTIONS = [
-  { value: 'ALL',    label: '通用',   color: 'bg-blue-100 text-blue-700' },
-  { value: 'CLINIC', label: '診所',   color: 'bg-green-100 text-green-700' },
-  { value: 'LAB',    label: '牙技所', color: 'bg-purple-100 text-purple-700' },
+  { value: 'ALL',    label: '通用' },
+  { value: 'CLINIC', label: '診所' },
+  { value: 'LAB',    label: '牙技所' },
 ] as const;
 
-function getTargetStyle(t: string) {
-  return TARGET_OPTIONS.find(o => o.value === t) ?? TARGET_OPTIONS[0];
+function getTargetLabel(t: string) {
+  return TARGET_OPTIONS.find(o => o.value === t)?.label ?? '通用';
 }
 
 interface Tag {
@@ -156,7 +156,7 @@ export function SuperTagsManager() {
             </thead>
             <tbody>
               {tags.map(tag => {
-                const targetInfo = getTargetStyle(tag.targetType);
+                const targetLabel = getTargetLabel(tag.targetType);
                 return (
                   <tr key={tag.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
                     <td className="px-5 py-3.5">
@@ -188,8 +188,8 @@ export function SuperTagsManager() {
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-center">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${targetInfo.color}`}>
-                        {targetInfo.label}
+                      <span className="text-xs text-slate-600">
+                        {targetLabel}
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-center">
