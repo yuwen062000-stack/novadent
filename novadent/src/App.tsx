@@ -736,7 +736,6 @@ const LabsPublicPage = React.memo(() => {
                   <p className="text-sm text-slate-600 flex items-center gap-2"><Phone size={14} className="text-indigo-600" />{lab.phone}</p>
                 )}
                 <ExpandableTags tags={lab.specialties ?? lab.acceptedCaseTypes ?? []} colorCls="bg-indigo-50 text-indigo-700" />
-                )}
               </div>
             ))}
           </div>
