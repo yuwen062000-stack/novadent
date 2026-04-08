@@ -501,8 +501,14 @@ export function SuperMenuManager() {
       body: JSON.stringify({ items: itemsToSave }),
     });
     setSaving(false);
-    if (res.ok) { showToast('✅ 選單設定已儲存', true); load(); }
-    else showToast('❌ 儲存失敗，請重試', false);
+    if (res.ok) {
+      showToast('✅ 選單設定已儲存', true);
+      load();
+      // 通知 App.tsx 重新抓取側邊欄標籤，不需重整頁面即可看到新名稱
+      window.dispatchEvent(new Event('menu-config-updated'));
+    } else {
+      showToast('❌ 儲存失敗，請重試', false);
+    }
   };
 
   // ── 渲染 ─────────────────────────────────────────────────
