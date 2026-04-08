@@ -11,12 +11,10 @@ import { CreateUserDto, UpdateUserDto, CreateSubAccountDto } from './dto/user.dt
 
 const SALT_ROUNDS = 12;
 
-// 產生臨時密碼：4位大寫字母 + 4位數字（e.g. ABCD1234）
+// 產生臨時密碼：nova + 4位數字（e.g. nova8372），方便電話口述給用戶
 function generateTempPassword(): string {
-  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // 排除易混淆字元
-  const digits  = '0123456789';
-  let pass = '';
-  for (let i = 0; i < 4; i++) pass += letters[Math.floor(Math.random() * letters.length)];
+  const digits = '0123456789';
+  let pass = 'nova';
   for (let i = 0; i < 4; i++) pass += digits[Math.floor(Math.random() * digits.length)];
   return pass;
 }

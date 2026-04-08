@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw, Pencil, Eye, EyeOff } from 'lucide-react';
+import { Plus, Search, RefreshCw, Pencil } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface User {
@@ -25,9 +25,8 @@ export function AdminUsers() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ name: '', phone: '' });
-  const [form, setForm] = useState({ name: '', email: '', role: 'CLINIC', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', role: 'CLINIC' });
   const [submitting, setSubmitting] = useState(false);
-  const [showPw, setShowPw] = useState(false); // 新增帳號密碼欄位顯示切換
   // 診所/牙技所基本資料（角色為 CLINIC 或 LAB 時才需填）
   const [clinicForm, setClinicForm] = useState({ name: '', phone: '', city: '', leadDoctorName: '' });
   const [labForm, setLabForm]       = useState({ name: '', phone: '', city: '', leadTechnicianName: '' });
@@ -46,7 +45,7 @@ export function AdminUsers() {
   useEffect(() => { load(); }, []);
 
   const handleCreate = async () => {
-    if (!form.name || !form.email || !form.password) return alert('請填入所有欄位');
+    if (!form.name || !form.email) return alert('請填入姓名與 Email');
     // 診所/牙技所角色必須填名稱與電話
     if (form.role === 'CLINIC' && (!clinicForm.name.trim() || !clinicForm.phone.trim())) {
       return alert('請填入診所名稱與電話');
