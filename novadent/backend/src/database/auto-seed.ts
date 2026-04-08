@@ -84,13 +84,17 @@ async function deduplicateAndSeedMenu(pool: Pool) {
     '數位掃描','全口重建','牙橋','分期付款','週末看診',
     '夜間門診','中文服務','英文服務','兒童牙科',
   ];
+  const { rows: existingTags } = await pool.query(`SELECT count(*)::int as cnt FROM clinic_tags`);
+  console.log(`[AutoSeed] clinic_tags existing count: ${existingTags[0].cnt}`);
+  let inserted = 0;
   for (let i = 0; i < defaultTags.length; i++) {
-    await pool.query(
+    const { rowCount } = await pool.query(
       `INSERT INTO clinic_tags (name, sort_order) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING`,
       [defaultTags[i], i]
     );
+    if (rowCount && rowCount > 0) inserted++;
   }
-  console.log('[AutoSeed] clinic_tags table ready');
+  console.log(`[AutoSeed] clinic_tags table ready (inserted ${inserted} new default tags)`);
 
   // ── 遷移：確保新欄位存在（舊站升級不需手動跑 migration）───────
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS menu_type VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'`);
