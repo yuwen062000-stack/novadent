@@ -27,7 +27,7 @@ export function LabCaseList({ setView, setSelectedCaseId }: Props) {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   useEffect(() => {
-    apiFetch('/cases')
+    apiFetch('/cases/lab')
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : data.data ?? [];
