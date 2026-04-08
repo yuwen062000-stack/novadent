@@ -2,21 +2,16 @@
 import {
   Injectable, Inject, NotFoundException, ForbiddenException
 } from '@nestjs/common';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, asc, sql } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
-import { mfgSteps, cases, auditLogs } from '../database/schema';
+import { mfgSteps, mfgStepTemplates, cases, auditLogs } from '../database/schema';
 import { UpdateMfgStepDto } from './dto/case.dto';
 
-// 預設 7 個製程節點（placeholder，待確認後可調整）
-const DEFAULT_STEPS = [
-  '資料取得',
-  '模型建立',
-  '設計階段',
-  '結構製作',
-  '美學與調整',
-  '試戴與修正',
-  '完成與交付',
+// 當模板表無資料時的 fallback（避免建案後完全沒有節點）
+const FALLBACK_STEPS = [
+  '資料取得', '模型建立', '設計階段', '結構製作',
+  '美學與調整', '試戴與修正', '完成與交付',
 ];
 
 @Injectable()
@@ -48,9 +43,25 @@ export class MfgStepsService {
       .orderBy(mfgSteps.order);
   }
 
-  // ── 建案時自動建立 7 個預設節點 ──────────────────────────
+  // ── 建案時自動建立預設製程節點（從 mfg_step_templates 動態讀取）──
+  // SuperAdmin 在「進階設定 → 製程模板」管理的模板會自動套用到新案件
   async initDefaultSteps(caseId: string) {
-    const values = DEFAULT_STEPS.map((name, index) => ({
+    // 從模板表讀取 isActive=true & isDefault=true 的節點，依 orderIndex 排序
+    const templates = await this.db
+      .select({ name: mfgStepTemplates.name, orderIndex: mfgStepTemplates.orderIndex })
+      .from(mfgStepTemplates)
+      .where(and(
+        eq(mfgStepTemplates.isActive, true),
+        eq(mfgStepTemplates.isDefault, true),
+      ))
+      .orderBy(asc(mfgStepTemplates.orderIndex));
+
+    // 有模板就用模板，沒有就用 fallback（避免新案件完全沒節點）
+    const stepNames = templates.length > 0
+      ? templates.map(t => t.name)
+      : FALLBACK_STEPS;
+
+    const values = stepNames.map((name, index) => ({
       caseId,
       name,
       order:  index + 1,

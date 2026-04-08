@@ -5,11 +5,7 @@ import { Plus, Search, RefreshCw, CheckCircle2, XCircle, Upload, X, Image, Check
 import { apiFetch } from '../../services/authService';
 import { TAIWAN_CITIES } from './AdminClinics';
 
-// 牙技所專長 / 接案類型選項
-const SPECIALTY_OPTIONS = [
-  '全瓷冠', '鋯瓷假牙', '植牙上部結構', '金屬烤瓷冠',
-  '活動假牙', '全口重建', '固定式假牙', '牙橋', '數位義齒',
-];
+// 牙技所專長選項：從 clinic_tags 動態讀取（SuperAdmin 在 Tag 管理設定）
 
 interface Lab {
   id: string;
@@ -48,7 +44,17 @@ export function AdminLabs() {
   const [submitting, setSubmitting] = useState(false);
   const [toggling, setToggling]     = useState<string | null>(null);
   const [uploading, setUploading]   = useState(false);
+  // 從 clinic_tags 動態讀取（SuperAdmin Tag 管理設定的 tag 清單）
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 載入 tag 清單（公開端點，無需 auth）
+  useEffect(() => {
+    fetch('/api/tags')
+      .then(r => r.json())
+      .then(data => setAvailableTags(Array.isArray(data) ? data.map((t: any) => t.name) : []))
+      .catch(() => {});
+  }, []);
 
   // 使用 /admin/labs 端點，可取得所有狀態（含 PENDING）的牙技所
   const load = () => {
@@ -276,7 +282,7 @@ export function AdminLabs() {
               <div>
                 <OptionalLabel>專長項目（卡片標籤）</OptionalLabel>
                 <div className="flex flex-wrap gap-2">
-                  {SPECIALTY_OPTIONS.map(s => (
+                  {availableTags.map(s => (
                     <button key={s} type="button" onClick={() => toggleSpecialty(s)}
                       className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                         form.specialties.includes(s)
@@ -287,6 +293,9 @@ export function AdminLabs() {
                       {s}
                     </button>
                   ))}
+                  {availableTags.length === 0 && (
+                    <span className="text-xs text-slate-400">尚無 tag，請 SuperAdmin 至進階設定 → Tag 管理新增</span>
+                  )}
                 </div>
               </div>
             </div>
