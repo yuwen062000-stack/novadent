@@ -60,7 +60,7 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
 // ── clinics ──────────────────────────────────────────────────
 export const clinics = pgTable('clinics', {
   id:                 uuid('id').primaryKey().defaultRandom(),
-  userId:             uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId:             uuid('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
   name:               varchar('name', { length: 100 }).notNull(),
   leadDoctorName:     varchar('lead_doctor_name', { length: 100 }).notNull(),
   phone:              varchar('phone', { length: 20 }).notNull(),
@@ -84,7 +84,7 @@ export const clinics = pgTable('clinics', {
 // ── labs ────────────────────────────────────────────────────
 export const labs = pgTable('labs', {
   id:                uuid('id').primaryKey().defaultRandom(),
-  userId:            uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId:            uuid('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
   name:              varchar('name', { length: 100 }).notNull(),
   leadTechnicianName: varchar('lead_technician_name', { length: 100 }).notNull(),
   phone:             varchar('phone', { length: 20 }).notNull(),
