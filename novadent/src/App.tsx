@@ -104,9 +104,38 @@ const FeatureCard = React.memo(({ icon, title, desc }: any) => (
   </div>
 ));
 
+// 前台 Header 預設選單（API 讀取失敗時的 fallback）
+const DEFAULT_NAV_ITEMS = [
+  { label: '首頁',        path: '/' },
+  { label: '關於我們與服務', path: '/about' },
+  { label: '衛教中心',    path: '/education' },
+  { label: '影音專區',    path: '/videos' },
+  { label: '合作診所',    path: '/clinics' },
+  { label: '合作牙技所',  path: '/labs' },
+];
+
 const PublicHeader = React.memo(() => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // 從後台選單管理動態讀取（menuType='PUBLIC'，showInNav=true 或無此欄位時預設顯示）
+  const [navItems, setNavItems] = useState<{label:string;path:string}[]>(DEFAULT_NAV_ITEMS);
+
+  useEffect(() => {
+    fetch('/api/admin/menu-public')
+      .then(r => r.ok ? r.json() : null)
+      .then((items: any[] | null) => {
+        if (!Array.isArray(items) || items.length === 0) return; // API 無資料時保留預設
+        // showInNav 欄位不存在時視為 true（向後相容）
+        const navList = items
+          .filter((i: any) => i.showInNav !== false && i.show_in_nav !== false)
+          .map((i: any) => ({ label: i.label, path: i.path }));
+        if (navList.length > 0) setNavItems(navList);
+      })
+      .catch(() => {}); // 失敗時保留預設選單
+  }, []);
+
+  const linkCls = (path: string) =>
+    `text-sm font-bold ${location.pathname === path ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`;
 
   return (
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
@@ -117,13 +146,11 @@ const PublicHeader = React.memo(() => {
           </div>
           <span className="font-bold text-xl sm:text-2xl text-slate-900 tracking-tight">Novadent</span>
         </Link>
+        {/* 桌機導覽列：從後台選單管理動態讀取 */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className={`text-sm font-bold ${location.pathname === '/' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>首頁</Link>
-          <Link to="/about" className={`text-sm font-bold ${location.pathname === '/about' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>關於我們與服務</Link>
-          <Link to="/education" className={`text-sm font-bold ${location.pathname === '/education' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>衛教中心</Link>
-          <Link to="/videos" className={`text-sm font-bold ${location.pathname === '/videos' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>影音專區</Link>
-          <Link to="/clinics" className={`text-sm font-bold ${location.pathname === '/clinics' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>合作診所</Link>
-          <Link to="/labs" className={`text-sm font-bold ${location.pathname === '/labs' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`}>合作牙技所</Link>
+          {navItems.map((item, i) => (
+            <Link key={i} to={item.path} className={linkCls(item.path)}>{item.label}</Link>
+          ))}
         </nav>
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="hidden sm:flex items-center gap-2">
@@ -139,12 +166,13 @@ const PublicHeader = React.memo(() => {
         {isMenuOpen && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white border-b border-slate-100 overflow-hidden">
             <div className="px-4 py-6 space-y-4">
-              <Link to="/" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">首頁</Link>
-              <Link to="/about" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">關於我們與服務</Link>
-              <Link to="/education" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">衛教中心</Link>
-              <Link to="/videos" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">影音專區</Link>
-              <Link to="/clinics" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">合作診所</Link>
-              <Link to="/labs" onClick={() => setIsMenuOpen(false)} className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">合作牙技所</Link>
+              {/* 手機漢堡選單：同樣動態讀取 */}
+              {navItems.map((item, i) => (
+                <Link key={i} to={item.path} onClick={() => setIsMenuOpen(false)}
+                  className="block w-full text-left px-4 py-2 text-base font-bold text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all">
+                  {item.label}
+                </Link>
+              ))}
               <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
                 <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-sm font-bold text-blue-800 border border-blue-100 rounded-xl hover:bg-blue-50 transition-all">登入</Link>
                 <Link to="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-sm font-bold text-white bg-navy-700 rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-950 transition-all">立即註冊</Link>
@@ -932,7 +960,11 @@ function AppContent() {
   const handleLogin = (user: AuthUser) => {
     setCurrentUser(user);
     setRole(user.role);
-    if (user.forceChangePassword) return;
+    // forceChangePassword=true 時（子帳號/Admin 重設密碼後）強制導向改密碼頁
+    if (user.forceChangePassword) {
+      navigate('/force-change-password', { replace: true });
+      return;
+    }
     switch (user.role) {
       case 'SUPER_ADMIN':
       case 'ADMIN':    navigate('/admin/dashboard', { replace: true }); break;
@@ -1275,14 +1307,14 @@ function ClinicProfilePage() {
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
 
   useEffect(() => {
-    Promise.all([
-      apiFetch('/clinics/me').then(r => r.json()),
-      apiFetch('/tags').then(r => r.json()),
-    ]).then(([clinicData, tagsData]) => {
-      setForm(clinicData || {});
-      setAvailableTags(Array.isArray(tagsData) ? tagsData : []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // 分開載入，避免其中一個失敗導致另一個也拿不到
+    apiFetch('/clinics/me').then(r => r.json())
+      .then(data => setForm(data || {}))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    apiFetch('/tags').then(r => r.json())
+      .then(data => setAvailableTags(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, []);
 
   // 點擊 tag：toggle 選取（存於 form.services 陣列）

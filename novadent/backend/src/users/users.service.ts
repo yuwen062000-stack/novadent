@@ -216,7 +216,7 @@ export class UsersService {
   async adminResetPassword(id: string, adminUserId: string) {
     await this.findById(id); // 確認用戶存在
 
-    const tempPassword = generateTempPassword();
+    const tempPassword = generateTempPassword(); // 統一自動產生 nova#### 臨時密碼
     const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
     await this.db.update(users)
