@@ -123,15 +123,10 @@ export class UsersController {
     return this.usersService.toggleStatus(id, user.id);
   }
 
-  // ── POST /api/users/:id/reset-password — Admin 重設密碼
-  // body.newPassword 若有傳入則直接設定，否則自動產生臨時密碼
+  // ── POST /api/users/:id/reset-password — Admin 重設密碼（自動產生 nova#### 臨時密碼）
   @Post(':id/reset-password')
   @Roles('ADMIN', 'SUPER_ADMIN')
-  resetPassword(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: any,
-    @Body() body: { newPassword?: string },
-  ) {
-    return this.usersService.adminResetPassword(id, user.id, body?.newPassword);
+  resetPassword(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.usersService.adminResetPassword(id, user.id);
   }
 }

@@ -213,11 +213,10 @@ export class UsersService {
   }
 
   // ── Admin 重設密碼（產生臨時密碼，只顯示一次）─────────────
-  async adminResetPassword(id: string, adminUserId: string, newPassword?: string) {
+  async adminResetPassword(id: string, adminUserId: string) {
     await this.findById(id); // 確認用戶存在
 
-    // 有提供密碼就用傳入的，否則自動產生臨時密碼
-    const tempPassword = newPassword?.trim() || generateTempPassword();
+    const tempPassword = generateTempPassword(); // 統一自動產生 nova#### 臨時密碼
     const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
     await this.db.update(users)
