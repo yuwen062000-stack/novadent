@@ -1,6 +1,6 @@
 // M-01 Auth Controller
 import {
-  Controller, Post, Get, Body, Req, Res, HttpCode, HttpStatus, UseGuards, Ip, Query
+  Controller, Post, Get, Body, Req, Res, HttpCode, HttpStatus, UseGuards, Ip
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
@@ -141,16 +141,4 @@ export class AuthController {
     return this.authService.initSuperAdmin();
   }
 
-  // GET /api/auth/dev-reset-passwords?key=novadent-reset-2026
-  // 臨時端點：緊急重設所有測試帳號密碼為 admin@123
-  // 用法：瀏覽器直接開啟 URL，回傳 JSON 確認結果
-  // ⚠️ 完成測試後請刪除此端點
-  @Public()
-  @Get('dev-reset-passwords')
-  async devResetPasswords(@Query('key') key: string) {
-    if (key !== 'novadent-reset-2026') {
-      return { success: false, message: '無效的金鑰' };
-    }
-    return this.authService.devResetSeedPasswords();
-  }
 }
