@@ -58,16 +58,22 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   console.log('[AutoSeed] Deduplicated qa_questions');
 
   // ── 遷移：clinics/labs 去重（每個 user_id 只保留最早的一筆）───────
-  // 注意：不加 UNIQUE constraint，避免與 Replit deployment migration 衝突
-  await pool.query(`
-    DELETE FROM clinics a USING clinics b
-    WHERE a.user_id = b.user_id AND a.created_at > b.created_at
-  `);
-  await pool.query(`
-    DELETE FROM labs a USING labs b
-    WHERE a.user_id = b.user_id AND a.created_at > b.created_at
-  `);
-  console.log('[AutoSeed] Deduplicated clinics/labs (kept oldest per user_id)');
+  // 注意：排除被 cases 引用的 clinics/labs，避免外鍵約束錯誤
+  try {
+    await pool.query(`
+      DELETE FROM clinics a USING clinics b
+      WHERE a.user_id = b.user_id AND a.created_at > b.created_at
+        AND a.id NOT IN (SELECT DISTINCT clinic_id FROM cases WHERE clinic_id IS NOT NULL)
+    `);
+    await pool.query(`
+      DELETE FROM labs a USING labs b
+      WHERE a.user_id = b.user_id AND a.created_at > b.created_at
+        AND a.id NOT IN (SELECT DISTINCT lab_id FROM cases WHERE lab_id IS NOT NULL)
+    `);
+    console.log('[AutoSeed] Deduplicated clinics/labs (kept oldest per user_id)');
+  } catch (e: any) {
+    console.warn('[AutoSeed] clinics/labs dedup skipped:', e.message);
+  }
 
   // ── 遷移：建立 clinic_tags 表並塞入預設 tag ─────────────────
   await pool.query(`
