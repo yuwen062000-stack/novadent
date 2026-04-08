@@ -57,6 +57,31 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   // 注意：不強制重置 is_active，保留管理員已手動停用的 QA 問題（Fix #8）
   console.log('[AutoSeed] Deduplicated qa_questions');
 
+  // ── 遷移：clinics/labs 去重 + 加 UNIQUE 約束（防止 seed 重複建立）───
+  // 先刪除重複記錄，每個 user_id 只保留最早的那筆
+  await pool.query(`
+    DELETE FROM clinics a USING clinics b
+    WHERE a.user_id = b.user_id AND a.created_at > b.created_at
+  `);
+  await pool.query(`
+    DELETE FROM labs a USING labs b
+    WHERE a.user_id = b.user_id AND a.created_at > b.created_at
+  `);
+  // 加 UNIQUE 約束（已存在則跳過）
+  await pool.query(`
+    DO $$ BEGIN
+      ALTER TABLE clinics ADD CONSTRAINT clinics_user_id_unique UNIQUE (user_id);
+    EXCEPTION WHEN duplicate_table THEN NULL;
+    END $$;
+  `);
+  await pool.query(`
+    DO $$ BEGIN
+      ALTER TABLE labs ADD CONSTRAINT labs_user_id_unique UNIQUE (user_id);
+    EXCEPTION WHEN duplicate_table THEN NULL;
+    END $$;
+  `);
+  console.log('[AutoSeed] Deduplicated clinics/labs + added UNIQUE constraint on user_id');
+
   // ── 遷移：確保新欄位存在（舊站升級不需手動跑 migration）───────
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS menu_type VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'`);
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS parent_id UUID`);

@@ -68,7 +68,7 @@ export function AdminUsers() {
       if (res.ok) {
         const data = await res.json();
         setShowModal(false);
-        setForm({ name: '', email: '', role: 'CLINIC', password: '' });
+        setForm({ name: '', email: '', role: 'CLINIC' });
         setClinicForm({ name: '', phone: '', city: '', leadDoctorName: '' });
         setLabForm({ name: '', phone: '', city: '', leadTechnicianName: '' });
         load();
@@ -231,20 +231,6 @@ export function AdminUsers() {
                 </label>
                 <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" required />
-              </div>
-              {/* 初始密碼（必填）+ 顯示/隱藏切換 */}
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">
-                  初始密碼 <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input type={showPw ? 'text' : 'password'} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                    className="w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" required />
-                  <button type="button" onClick={() => setShowPw(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">角色</label>

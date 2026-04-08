@@ -56,7 +56,7 @@ async function main() {
     const rows = await q(
       `INSERT INTO clinics (user_id, name, lead_doctor_name, phone, email, city, district, detailed_address, treatment_types, services, accepting_referrals, rating, description, doctor_team, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11,$12,$13,'ACTIVE')
-       ON CONFLICT DO NOTHING RETURNING id`,
+       ON CONFLICT (user_id) DO NOTHING RETURNING id`,
       [userId, name, leadDoctorName, phone, email, city, district, address, types, services, rating, description, doctors]
     );
     return rows[0]?.id as string;
@@ -75,7 +75,7 @@ async function main() {
     const rows = await q(
       `INSERT INTO labs (user_id, name, lead_technician_name, phone, email, city, detailed_address, accepted_case_types, specialties, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE')
-       ON CONFLICT DO NOTHING RETURNING id`,
+       ON CONFLICT (user_id) DO NOTHING RETURNING id`,
       [userId, name, techName, phone, email, city, address, types, specialties]
     );
     return rows[0]?.id as string;
