@@ -845,8 +845,16 @@ function AppContent() {
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
+    // F5 重整時，先從 sessionStorage 恢復使用者狀態，避免 refresh 短暫失敗就變成 GUEST
+    const storedUser = getCurrentUser();
+    if (storedUser) {
+      setCurrentUser(storedUser);
+      setRole(storedUser.role as UserRole);
+    }
+
     refreshAccessToken().then(user => {
       if (user) {
+        // Refresh 成功：更新為後端最新的使用者資訊
         setCurrentUser(user);
         setRole(user.role);
         const p = location.pathname;
@@ -861,13 +869,17 @@ function AppContent() {
             case 'MEMBER':   navigate('/member/cases', { replace: true }); break;
           }
         }
-      } else {
+      } else if (!storedUser) {
+        // Refresh 失敗 且 sessionStorage 也無使用者 → 確定是訪客
         setCurrentUser(null);
         setRole('GUEST');
       }
+      // Refresh 失敗但 sessionStorage 有使用者：保留現有狀態。
+      // 下次 API 呼叫若仍 401，authService 會清除 session，再導向登入。
+      // 這可防止 Replit 暫時性網路波動或 server 重啟造成的「假性登出」。
       setAuthReady(true);
     });
-  }, []);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const handleLogin = (user: AuthUser) => {
