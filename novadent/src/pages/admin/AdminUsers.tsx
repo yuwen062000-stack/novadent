@@ -119,14 +119,19 @@ export function AdminUsers() {
   };
 
   const handleResetPwd = async (userId: string) => {
-    const newPwd = prompt('輸入新密碼（留空取消）');
-    if (!newPwd) return;
+    const newPwd = prompt('輸入新密碼（留空則自動產生臨時密碼）');
+    if (newPwd === null) return; // 按取消
     const res = await apiFetch(`/admin/users/${userId}/reset-password`, {
       method: 'POST',
-      body: JSON.stringify({ newPassword: newPwd }),
+      body: JSON.stringify({ newPassword: newPwd || undefined }),
     });
-    if (res.ok) alert('密碼已重設');
-    else alert('重設失敗');
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      // 顯示實際設定的密碼（前端輸入或系統產生的都要顯示）
+      alert(`✅ 密碼已重設！\n\n新密碼：${data.tempPassword || newPwd}\n\n請立即通知用戶，登入後需強制修改密碼。`);
+    } else {
+      alert('重設失敗');
+    }
   };
 
   return (

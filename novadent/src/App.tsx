@@ -960,7 +960,11 @@ function AppContent() {
   const handleLogin = (user: AuthUser) => {
     setCurrentUser(user);
     setRole(user.role);
-    if (user.forceChangePassword) return;
+    // forceChangePassword=true 時（子帳號/Admin 重設密碼後）強制導向改密碼頁
+    if (user.forceChangePassword) {
+      navigate('/force-change-password', { replace: true });
+      return;
+    }
     switch (user.role) {
       case 'SUPER_ADMIN':
       case 'ADMIN':    navigate('/admin/dashboard', { replace: true }); break;
