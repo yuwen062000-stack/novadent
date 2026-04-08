@@ -643,6 +643,9 @@ const ClinicsPublicPage = React.memo(() => {
                     {(clinic.services ?? clinic.specialties ?? []).slice(0, 4).map((s: string, i: number) => (
                       <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium">{s}</span>
                     ))}
+                    {(clinic.services ?? clinic.specialties ?? []).length > 4 && (
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded-full font-medium">+{(clinic.services ?? clinic.specialties ?? []).length - 4} 更多</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -725,6 +728,9 @@ const LabsPublicPage = React.memo(() => {
                     {(lab.specialties ?? lab.acceptedCaseTypes ?? []).slice(0, 4).map((s: string, i: number) => (
                       <span key={i} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">{s}</span>
                     ))}
+                    {(lab.specialties ?? lab.acceptedCaseTypes ?? []).length > 4 && (
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded-full font-medium">+{(lab.specialties ?? lab.acceptedCaseTypes ?? []).length - 4} 更多</span>
+                    )}
                   </div>
                 )}
               </div>
