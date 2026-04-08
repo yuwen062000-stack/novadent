@@ -33,11 +33,20 @@ export function ClinicCreateCase({ setView }: Props) {
     labId: '',
   });
 
+  // 只載入「已合作牙技所」作為案件指定選項
+  // /partner-links/my 回傳 [{ labId, labName, labCity, ... }]，需轉成 Lab 格式
   useEffect(() => {
-    apiFetch('/labs?status=ACTIVE')
+    apiFetch('/partner-links/my')
       .then(r => r.json())
-      .then(data => {
-        const list = Array.isArray(data) ? data : data.data ?? [];
+      .then((data: any[]) => {
+        const list = Array.isArray(data)
+          ? data.map(pl => ({
+              id:         pl.labId,
+              name:       pl.labName,
+              city:       pl.labCity ?? '',
+              specialties: [],
+            }))
+          : [];
         setLabs(list);
         setLoadingLabs(false);
       })
