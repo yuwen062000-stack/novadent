@@ -217,15 +217,16 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   } else {
     // ── 現有安裝修復流程 ─────────────────────────────────────────
 
-    // Step 1：去除所有重複路徑（保留 created_at 最早的那筆）
+    // Step 1：去除所有重複路徑（保留 id 最小的那筆）
+    // 注意：menu_config 沒有 created_at 欄位，必須用 id 排序
     await pool.query(`
       DELETE FROM menu_config
       WHERE id IN (
         SELECT id FROM (
           SELECT id,
-            ROW_NUMBER() OVER (PARTITION BY path ORDER BY created_at, id) AS rn
+            ROW_NUMBER() OVER (PARTITION BY path ORDER BY id) AS rn
           FROM menu_config
-          WHERE path <> ''
+          WHERE path <> '' AND path IS NOT NULL
         ) t WHERE rn > 1
       )
     `);

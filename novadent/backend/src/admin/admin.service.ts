@@ -214,12 +214,21 @@ export class AdminService {
     adminUserId: string,
   ) {
     // 清除舊有設定，重新寫入（整批替換）
+    // 先按 path 去重：path 非空時同路徑只保留第一筆，避免前端傳入重複項目
+    const seen = new Set<string>();
+    const dedupedItems = items.filter(item => {
+      if (!item.path || item.path.trim() === '') return true; // 父群組（空路徑）不去重
+      if (seen.has(item.path)) return false;
+      seen.add(item.path);
+      return true;
+    });
+
     await this.db.delete(menuConfig);
 
-    if (items.length === 0) return [];
+    if (dedupedItems.length === 0) return [];
 
     const rows = await this.db.insert(menuConfig).values(
-      items.map((item) => ({
+      dedupedItems.map((item) => ({
         label:        item.label,
         path:         item.path,
         roles:        item.roles,
