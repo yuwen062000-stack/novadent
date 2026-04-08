@@ -157,7 +157,16 @@ export function AdminUsers() {
                 <tr><td colSpan={5} className="text-center py-12 text-slate-400">無資料</td></tr>
               ) : users.map(u => (
                 <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-slate-900">{u.name}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    {u.name}
+                    <div
+                      className="text-[10px] text-slate-300 font-mono cursor-pointer hover:text-slate-500 mt-0.5 truncate max-w-[120px]"
+                      title="點擊複製 ID"
+                      onClick={() => navigator.clipboard.writeText(u.id)}
+                    >
+                      {u.id}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-slate-600 text-sm">{u.email}</td>
                   <td className="px-4 py-3"><span className="px-2 py-1 bg-blue-50 text-blue-800 rounded-lg text-xs font-bold">{ROLE_LABELS[u.role] || u.role}</span></td>
                   <td className="px-4 py-3">

@@ -43,6 +43,7 @@ export function AdminLabs() {
   const [form, setForm]             = useState({
     name: '', leadTechnicianName: '', phone: '', email: '',
     city: '', detailedAddress: '', coverPhotoUrl: '', specialties: [] as string[],
+    userId: '', // 關聯的 LAB 帳號 userId（新增時必須填入，用戶管理頁可查詢）
   });
   const [submitting, setSubmitting] = useState(false);
   const [toggling, setToggling]     = useState<string | null>(null);
@@ -64,12 +65,12 @@ export function AdminLabs() {
 
   const openCreate = () => {
     setEditTarget(null);
-    setForm({ name: '', leadTechnicianName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '', specialties: [] });
+    setForm({ name: '', leadTechnicianName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '', specialties: [], userId: '' });
     setShowModal(true);
   };
   const openEdit = (l: Lab) => {
     setEditTarget(l);
-    setForm({ name: l.name, leadTechnicianName: l.leadTechnicianName || '', phone: l.phone, email: l.email || '', city: l.city || '', detailedAddress: '', coverPhotoUrl: l.coverPhotoUrl || '', specialties: l.specialties || [] });
+    setForm({ name: l.name, leadTechnicianName: l.leadTechnicianName || '', phone: l.phone, email: l.email || '', city: l.city || '', detailedAddress: '', coverPhotoUrl: l.coverPhotoUrl || '', specialties: l.specialties || [], userId: '' });
     setShowModal(true);
   };
 
@@ -258,6 +259,17 @@ export function AdminLabs() {
                   <input value={form.detailedAddress} onChange={e => setForm(p => ({ ...p, detailedAddress: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
                 </div>
+                {/* 關聯帳號 ID（新增時才顯示） */}
+                {!editTarget && (
+                  <div className="col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      關聯牙技所帳號 ID <span className="font-normal text-slate-400">（填入對應的 LAB 帳號 userId，可於「用戶管理」查詢）</span>
+                    </label>
+                    <input value={form.userId} onChange={e => setForm(p => ({ ...p, userId: e.target.value }))}
+                      placeholder="e.g. xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 font-mono" />
+                  </div>
+                )}
               </div>
 
               {/* 專長標籤（多選） */}

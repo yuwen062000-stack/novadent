@@ -13,6 +13,8 @@ export class CreateLabDto {
   @IsArray() @IsOptional() specialties?: string[];
   @IsString() @IsOptional() coverPhotoUrl?: string;
   @IsString() @IsOptional() internalNotes?: string;
+  // 關聯的牙技所帳號 userId（Admin 建立時指定，不填則暫存 admin 自己的 ID）
+  @IsString() @IsOptional() userId?: string;
 }
 
 // ── 牙技所資料更新（Lab 角色或 Admin 皆可用）──────────────────

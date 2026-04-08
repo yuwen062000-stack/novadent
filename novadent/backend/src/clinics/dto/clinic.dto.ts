@@ -17,6 +17,8 @@ export class CreateClinicDto {
   @IsArray() @IsOptional() doctorTeam?: string[];
   @IsString() @IsOptional() coverPhotoUrl?: string;
   @IsString() @IsOptional() internalNotes?: string;
+  // 關聯的診所帳號 userId（Admin 建立時指定，不填則暫存 admin 自己的 ID）
+  @IsString() @IsOptional() userId?: string;
 }
 
 // ── 診所公開資料更新（Clinic 角色或 Admin 皆可用）────────────

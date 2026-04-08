@@ -51,6 +51,7 @@ export function AdminClinics() {
   const [form, setForm]               = useState({
     name: '', leadDoctorName: '', phone: '', email: '',
     city: '', detailedAddress: '', coverPhotoUrl: '', services: [] as string[],
+    userId: '', // 關聯的 CLINIC 帳號 userId（新增時必須填入，用戶管理頁可查詢）
   });
   const [submitting, setSubmitting]   = useState(false);
   const [toggling, setToggling]       = useState<string | null>(null);
@@ -71,12 +72,12 @@ export function AdminClinics() {
 
   const openCreate = () => {
     setEditTarget(null);
-    setForm({ name: '', leadDoctorName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '', services: [] });
+    setForm({ name: '', leadDoctorName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '', services: [], userId: '' });
     setShowModal(true);
   };
   const openEdit = (c: Clinic) => {
     setEditTarget(c);
-    setForm({ name: c.name, leadDoctorName: c.leadDoctorName || '', phone: c.phone, email: c.email || '', city: c.city, detailedAddress: '', coverPhotoUrl: c.coverPhotoUrl || '', services: c.services || [] });
+    setForm({ name: c.name, leadDoctorName: c.leadDoctorName || '', phone: c.phone, email: c.email || '', city: c.city, detailedAddress: '', coverPhotoUrl: c.coverPhotoUrl || '', services: c.services || [], userId: '' });
     setShowModal(true);
   };
 
@@ -295,6 +296,18 @@ export function AdminClinics() {
                   <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
                 </div>
+
+                {/* 關聯帳號 ID（新增時才顯示） */}
+                {!editTarget && (
+                  <div className="col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      關聯診所帳號 ID <span className="font-normal text-slate-400">（填入對應的 CLINIC 帳號 userId，可於「用戶管理」查詢）</span>
+                    </label>
+                    <input value={form.userId} onChange={e => setForm(p => ({ ...p, userId: e.target.value }))}
+                      placeholder="e.g. xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 font-mono" />
+                  </div>
+                )}
 
                 {/* 詳細地址 */}
                 <div className="col-span-2">

@@ -5,7 +5,7 @@ import {
 import { eq, ilike, and, sql, inArray } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
-import { labs, auditLogs } from '../database/schema';
+import { labs, auditLogs, users } from '../database/schema';
 import { CreateLabDto, UpdateLabDto, UpdateLabStatusDto } from './dto/lab.dto';
 
 // 牙技所公開欄位（不含 internalNotes）
@@ -141,22 +141,42 @@ export class LabsService {
   }
 
   // ── 牙技所用戶取自己的資料 ───────────────────────────────
+  // 支援子帳號：若 userId 找不到對應牙技所，查詢 parentId 再試一次
   async findByUserId(userId: string) {
-    const [lab] = await this.db
+    let [lab] = await this.db
       .select(ADMIN_FIELDS as any)
       .from(labs)
       .where(eq(labs.userId, userId))
       .limit(1);
+
+    if (!lab) {
+      // 子帳號場景：用 parentId 查父帳號的牙技所
+      const [user] = await this.db
+        .select({ parentId: users.parentId })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (user?.parentId) {
+        [lab] = await this.db
+          .select(ADMIN_FIELDS as any)
+          .from(labs)
+          .where(eq(labs.userId, user.parentId))
+          .limit(1);
+      }
+    }
 
     if (!lab) throw new NotFoundException('找不到對應的牙技所資料');
     return lab;
   }
 
   // ── Admin 新增牙技所 ───────────────────────────────────────
+  // 若 dto.userId 有填入（對應的 LAB 帳號 ID），優先使用；否則退回 adminId
   async adminCreate(dto: CreateLabDto, adminId: string) {
+    const { userId: dtoUserId, ...rest } = dto as any;
     const [created] = await this.db.insert(labs).values({
-      ...dto,
-      userId: adminId,
+      ...rest,
+      userId: dtoUserId || adminId,
       status: 'ACTIVE',
     } as any).returning();
 

@@ -5,7 +5,7 @@ import {
 import { eq, ilike, and, sql, inArray } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
-import { clinics, auditLogs } from '../database/schema';
+import { clinics, auditLogs, users } from '../database/schema';
 import { CreateClinicDto, UpdateClinicDto, UpdateClinicStatusDto } from './dto/clinic.dto';
 
 // 診所公開欄位（不含 internalNotes）
@@ -122,12 +122,30 @@ export class ClinicsService {
   }
 
   // ── 診所用戶取自己的資料（含 internalNotes）──────────────
+  // 支援子帳號：若 userId 找不到對應診所，查詢 parentId 再試一次
   async findByUserId(userId: string) {
-    const [clinic] = await this.db
-      .select(ADMIN_FIELDS as any) // 自己的資料可以完整看
+    let [clinic] = await this.db
+      .select(ADMIN_FIELDS as any)
       .from(clinics)
       .where(eq(clinics.userId, userId))
       .limit(1);
+
+    if (!clinic) {
+      // 子帳號場景：用 parentId 查父帳號的診所
+      const [user] = await this.db
+        .select({ parentId: users.parentId })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (user?.parentId) {
+        [clinic] = await this.db
+          .select(ADMIN_FIELDS as any)
+          .from(clinics)
+          .where(eq(clinics.userId, user.parentId))
+          .limit(1);
+      }
+    }
 
     if (!clinic) throw new NotFoundException('找不到對應的診所資料');
     return clinic;
@@ -154,10 +172,12 @@ export class ClinicsService {
   }
 
   // ── Admin 新增診所 ─────────────────────────────────────────
+  // 若 dto.userId 有填入（對應的 CLINIC 帳號 ID），優先使用；否則退回 adminId
   async adminCreate(dto: CreateClinicDto, adminId: string) {
+    const { userId: dtoUserId, ...rest } = dto as any;
     const [created] = await this.db.insert(clinics).values({
-      ...dto,
-      userId: adminId,
+      ...rest,
+      userId: dtoUserId || adminId,
       status: 'ACTIVE',
     } as any).returning();
 
