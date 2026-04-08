@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Save, RefreshCw, Eye, EyeOff, ChevronUp, ChevronDown,
-  Bookmark, BookmarkCheck, Layers, Globe, Plus, Trash2, X, Check,
+  Bookmark, BookmarkCheck, Layers, Globe, Plus, Trash2, X,
 } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
