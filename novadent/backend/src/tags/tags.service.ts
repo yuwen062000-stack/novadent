@@ -11,12 +11,18 @@ export class TagsService {
 
   // ── 取全部 tag（isActiveOnly=true 只回傳啟用中的）──────────
   async findAll(isActiveOnly = false) {
-    const rows = await this.db
+    // 避免 .where(undefined) 可能的 Drizzle 相容性問題，拆成兩條查詢
+    if (isActiveOnly) {
+      return this.db
+        .select()
+        .from(clinicTags)
+        .where(eq(clinicTags.isActive, true))
+        .orderBy(asc(clinicTags.sortOrder), asc(clinicTags.name));
+    }
+    return this.db
       .select()
       .from(clinicTags)
-      .where(isActiveOnly ? eq(clinicTags.isActive, true) : undefined)
       .orderBy(asc(clinicTags.sortOrder), asc(clinicTags.name));
-    return rows;
   }
 
   // ── 新增 tag ───────────────────────────────────────────────

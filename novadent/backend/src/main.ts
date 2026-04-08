@@ -18,6 +18,16 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // 禁止 Replit Google CDN 快取所有 API 回應
+  // 根因：CDN 回 304 Not Modified 導致前端拿到舊資料（tag、案件列表等）
+  expressApp.use('/api', (req: any, res: any, next: any) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+    next();
+  });
+
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   const reflector = app.get(Reflector);
