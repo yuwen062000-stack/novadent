@@ -301,6 +301,16 @@ export const pageContents = pgTable('page_contents', {
   updatedBy:   uuid('updated_by').references(() => users.id),
 });
 
+// ── clinic_tags（診所服務標籤 — SuperAdmin 管理，診所自選）──
+// 診所可從清單中點選自己提供的服務，儲存於 clinics.services 欄位
+export const clinicTags = pgTable('clinic_tags', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  name:      varchar('name', { length: 50 }).notNull().unique(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive:  boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // ── mfg_step_templates（製程節點模板 — SuperAdmin 管理）────
 export const mfgStepTemplates = pgTable('mfg_step_templates', {
   id:          integer('id').primaryKey().generatedAlwaysAsIdentity(),

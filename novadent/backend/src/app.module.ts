@@ -21,6 +21,7 @@ import { MailModule } from './mail/mail.module';
 import { SiteImagesModule } from './site-images/site-images.module';
 import { VideosModule } from './videos/videos.module';
 import { PageContentsModule } from './page-contents/page-contents.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { PageContentsModule } from './page-contents/page-contents.module';
     SiteImagesModule,
     VideosModule,
     PageContentsModule,
+    TagsModule,
   ],
 })
 export class AppModule {}

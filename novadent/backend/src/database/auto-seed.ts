@@ -69,6 +69,29 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   `);
   console.log('[AutoSeed] Deduplicated clinics/labs (kept oldest per user_id)');
 
+  // ── 遷移：建立 clinic_tags 表並塞入預設 tag ─────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS clinic_tags (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name        VARCHAR(50) NOT NULL UNIQUE,
+      sort_order  INT NOT NULL DEFAULT 0,
+      is_active   BOOLEAN NOT NULL DEFAULT true,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  const defaultTags = [
+    '固定式假牙','活動假牙','植牙牙冠','全瓷冠','鋯瓷假牙',
+    '數位掃描','全口重建','牙橋','分期付款','週末看診',
+    '夜間門診','中文服務','英文服務','兒童牙科',
+  ];
+  for (let i = 0; i < defaultTags.length; i++) {
+    await pool.query(
+      `INSERT INTO clinic_tags (name, sort_order) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING`,
+      [defaultTags[i], i]
+    );
+  }
+  console.log('[AutoSeed] clinic_tags table ready');
+
   // ── 遷移：確保新欄位存在（舊站升級不需手動跑 migration）───────
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS menu_type VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'`);
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS parent_id UUID`);
