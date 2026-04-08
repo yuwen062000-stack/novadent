@@ -1318,7 +1318,7 @@ function ClinicProfilePage() {
       .then(data => setForm(data || {}))
       .catch(() => {})
       .finally(() => setLoading(false));
-    apiFetch('/tags').then(r => r.json())
+    apiFetch('/tags?target=CLINIC').then(r => r.json())
       .then(data => setAvailableTags(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, []);

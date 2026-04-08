@@ -102,6 +102,9 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   }
   console.log(`[AutoSeed] clinic_tags table ready (inserted ${inserted} new default tags)`);
 
+  // ── 遷移：clinic_tags 加 target_type 欄位（CLINIC/LAB/ALL）──
+  await pool.query(`ALTER TABLE clinic_tags ADD COLUMN IF NOT EXISTS target_type VARCHAR(10) NOT NULL DEFAULT 'ALL'`);
+
   // ── 遷移：確保新欄位存在（舊站升級不需手動跑 migration）───────
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS menu_type VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'`);
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS parent_id UUID`);
