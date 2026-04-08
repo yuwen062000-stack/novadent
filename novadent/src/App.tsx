@@ -573,6 +573,27 @@ function CityMultiSelect({ selected, onChange }: { selected: string[]; onChange:
 }
 
 // ── 合作診所公開頁 (/clinics) ─────────────────────────────────
+// 前台卡片 Tag 清單：預設顯示 4 個，超過可展開/收起
+function ExpandableTags({ tags, colorCls = 'bg-blue-50 text-blue-700' }: { tags: string[]; colorCls?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!tags || tags.length === 0) return null;
+  const shown = expanded ? tags : tags.slice(0, 4);
+  const extra = tags.length - 4;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {shown.map((s, i) => (
+        <span key={i} className={`px-2 py-0.5 ${colorCls} text-xs rounded-full font-medium`}>{s}</span>
+      ))}
+      {extra > 0 && (
+        <button type="button" onClick={() => setExpanded(!expanded)}
+          className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded-full font-medium hover:bg-slate-200 transition-colors">
+          {expanded ? '收起' : `+${extra} 更多`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 const ClinicsPublicPage = React.memo(() => {
   const [clinics, setClinics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -638,16 +659,7 @@ const ClinicsPublicPage = React.memo(() => {
                 {clinic.phone && (
                   <p className="text-sm text-slate-600 flex items-center gap-2"><Phone size={14} className="text-blue-600" />{clinic.phone}</p>
                 )}
-                {(clinic.services?.length > 0 || clinic.specialties?.length > 0) && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(clinic.services ?? clinic.specialties ?? []).slice(0, 4).map((s: string, i: number) => (
-                      <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium">{s}</span>
-                    ))}
-                    {(clinic.services ?? clinic.specialties ?? []).length > 4 && (
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded-full font-medium">+{(clinic.services ?? clinic.specialties ?? []).length - 4} 更多</span>
-                    )}
-                  </div>
-                )}
+                <ExpandableTags tags={clinic.services ?? clinic.specialties ?? []} colorCls="bg-blue-50 text-blue-700" />
               </div>
             ))}
           </div>
@@ -723,15 +735,7 @@ const LabsPublicPage = React.memo(() => {
                 {lab.phone && (
                   <p className="text-sm text-slate-600 flex items-center gap-2"><Phone size={14} className="text-indigo-600" />{lab.phone}</p>
                 )}
-                {(lab.specialties?.length > 0 || lab.acceptedCaseTypes?.length > 0) && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(lab.specialties ?? lab.acceptedCaseTypes ?? []).slice(0, 4).map((s: string, i: number) => (
-                      <span key={i} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">{s}</span>
-                    ))}
-                    {(lab.specialties ?? lab.acceptedCaseTypes ?? []).length > 4 && (
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded-full font-medium">+{(lab.specialties ?? lab.acceptedCaseTypes ?? []).length - 4} 更多</span>
-                    )}
-                  </div>
+                <ExpandableTags tags={lab.specialties ?? lab.acceptedCaseTypes ?? []} colorCls="bg-indigo-50 text-indigo-700" />
                 )}
               </div>
             ))}
@@ -1463,16 +1467,32 @@ function LabProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState('');
+  const [availableTags, setAvailableTags] = useState<{id:string;name:string}[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
 
   useEffect(() => {
-    apiFetch('/labs/me').then(r => r.json()).then(data => {
-      setForm(data || {});
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // 分開載入，避免互相影響
+    apiFetch('/labs/me').then(r => r.json())
+      .then(data => setForm(data || {}))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    apiFetch('/tags?target=LAB').then(r => r.json())
+      .then(data => setAvailableTags(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, []);
+
+  // 點擊 tag：toggle 選取（存於 form.specialties 陣列）
+  function toggleTag(tagName: string) {
+    setForm((f: any) => {
+      const current: string[] = Array.isArray(f.specialties) ? f.specialties : [];
+      const next = current.includes(tagName)
+        ? current.filter((t: string) => t !== tagName)
+        : [...current, tagName];
+      return { ...f, specialties: next };
+    });
+  }
 
   async function handlePhotoUpload(file: File) {
     setUploading(true);
@@ -1561,6 +1581,27 @@ function LabProfilePage() {
             )}
           </div>
         ))}
+        {/* 專長 Tag（點擊選取）*/}
+        {availableTags.length > 0 && (
+          <div className="space-y-2">
+            <label className={labelCls}>專長項目 <span className="text-slate-400 font-normal normal-case">（點擊選取，可複選）</span></label>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map(tag => {
+                const selected = Array.isArray(form.specialties) && form.specialties.includes(tag.name);
+                return (
+                  <button key={tag.id} type="button" onClick={() => toggleTag(tag.name)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                      selected
+                        ? 'bg-blue-800 text-white border-blue-800'
+                        : 'bg-white text-slate-600 border-slate-300 hover:border-blue-400 hover:text-blue-700'
+                    }`}>
+                    {tag.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white rounded-xl text-sm font-semibold hover:bg-blue-900 disabled:opacity-40 transition-colors">
           {saving ? '儲存中...' : '儲存'}
         </button>
