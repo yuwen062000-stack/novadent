@@ -144,26 +144,27 @@ export class UsersService {
     } as any).returning();
 
     // 依角色建立對應的 clinics / labs 記錄
+    // email 未填時自動繼承帳號 email
     if (dto.role === 'CLINIC' && dto.clinicData) {
       await this.db.insert(clinics).values({
         userId:         newUser.id,
         name:           dto.clinicData.name,
-        leadDoctorName: dto.clinicData.leadDoctorName,
-        city:           dto.clinicData.city,
+        leadDoctorName: dto.clinicData.leadDoctorName || '',
+        city:           dto.clinicData.city || '',
         phone:          dto.clinicData.phone,
-        email:          dto.clinicData.email,
+        email:          dto.clinicData.email || newUser.email,
         description:    dto.clinicData.description,
-        status:         'PENDING',
+        status:         'ACTIVE',
       } as any);
     } else if (dto.role === 'LAB' && dto.labData) {
       await this.db.insert(labs).values({
-        userId:            newUser.id,
-        name:              dto.labData.name,
-        leadTechnicianName: dto.labData.leadTechnicianName,
-        city:              dto.labData.city,
-        phone:             dto.labData.phone,
-        email:             dto.labData.email,
-        status:            'PENDING',
+        userId:             newUser.id,
+        name:               dto.labData.name,
+        leadTechnicianName: dto.labData.leadTechnicianName || '',
+        city:               dto.labData.city || '',
+        phone:              dto.labData.phone,
+        email:              dto.labData.email || newUser.email,
+        status:             'ACTIVE',
       } as any);
     }
 

@@ -1342,7 +1342,7 @@ function ClinicProfilePage() {
           </div>
         </div>
         {[
-          { key: 'name', label: '診所名稱 *', required: true },
+          { key: 'name', label: '診所名稱', required: true },
           { key: 'leadDoctorName', label: '負責醫師' },
           { key: 'phone', label: '聯絡電話' },
           { key: 'email', label: '聯絡 Email', type: 'email' },
@@ -1352,7 +1352,9 @@ function ClinicProfilePage() {
           { key: 'description', label: '診所簡介', textarea: true },
         ].map(({ key, label, required, type, textarea }: any) => (
           <div key={key} className="space-y-1.5">
-            <label className={labelCls}>{label}</label>
+            <label className={labelCls}>
+              {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+            </label>
             {textarea ? (
               <textarea rows={3} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls + ' resize-none'} />
             ) : (
@@ -1453,7 +1455,7 @@ function LabProfilePage() {
           </div>
         </div>
         {[
-          { key: 'name', label: '牙技所名稱 *', required: true },
+          { key: 'name', label: '牙技所名稱', required: true },
           { key: 'leadTechnicianName', label: '主任技師姓名' },
           { key: 'phone', label: '聯絡電話' },
           { key: 'email', label: '聯絡 Email', type: 'email' },
@@ -1461,7 +1463,9 @@ function LabProfilePage() {
           { key: 'detailedAddress', label: '詳細地址' },
         ].map(({ key, label, required, type }: any) => (
           <div key={key} className="space-y-1.5">
-            <label className={labelCls}>{label}</label>
+            <label className={labelCls}>
+              {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+            </label>
             <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls} required={required} />
           </div>
         ))}
