@@ -1275,14 +1275,14 @@ function ClinicProfilePage() {
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
 
   useEffect(() => {
-    Promise.all([
-      apiFetch('/clinics/me').then(r => r.json()),
-      apiFetch('/tags').then(r => r.json()),
-    ]).then(([clinicData, tagsData]) => {
-      setForm(clinicData || {});
-      setAvailableTags(Array.isArray(tagsData) ? tagsData : []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // 分開載入，避免其中一個失敗導致另一個也拿不到
+    apiFetch('/clinics/me').then(r => r.json())
+      .then(data => setForm(data || {}))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    apiFetch('/tags').then(r => r.json())
+      .then(data => setAvailableTags(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, []);
 
   // 點擊 tag：toggle 選取（存於 form.services 陣列）
