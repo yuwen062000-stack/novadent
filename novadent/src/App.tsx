@@ -39,6 +39,7 @@ import { SuperSystemSettings } from './pages/super/SuperSystemSettings';
 import { SuperQAQuestions } from './pages/super/SuperQAQuestions';
 import { SuperMfgTemplates } from './pages/super/SuperMfgTemplates';
 import { SuperMenuManager } from './pages/super/SuperMenuManager';
+import { SuperTagsManager } from './pages/super/SuperTagsManager';
 // ── Member Pages ───────────────────────────────────────────
 import { MemberQAWizard } from './pages/member/MemberQAWizard';
 import { MemberRecommendations } from './pages/member/MemberRecommendations';
@@ -415,9 +416,10 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
                 <NavItem icon={<ShieldCheck size={18} />} label={ml('/super/audit-logs', '稽核日誌')} active={view === 'SUPER_AUDIT_LOGS'} onClick={() => setViewAndClose('SUPER_AUDIT_LOGS')} />
               </NavGroup>
               {/* 進階設定群組：QA問卷 + 製程模板 */}
-              <NavGroup icon={<ClipboardList size={20} />} label={ml('/super/advanced', '進階設定')} active={['SUPER_QA_QUESTIONS','SUPER_MFG_TEMPLATES'].includes(view)}>
+              <NavGroup icon={<ClipboardList size={20} />} label={ml('/super/advanced', '進階設定')} active={['SUPER_QA_QUESTIONS','SUPER_MFG_TEMPLATES','SUPER_TAGS'].includes(view)}>
                 <NavItem icon={<ClipboardList size={18} />} label={ml('/super/qa-questions', 'QA問卷管理')} active={view === 'SUPER_QA_QUESTIONS'} onClick={() => setViewAndClose('SUPER_QA_QUESTIONS')} />
                 <NavItem icon={<CheckCircle2 size={18} />} label={ml('/super/mfg-templates', '製程模板')} active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => setViewAndClose('SUPER_MFG_TEMPLATES')} />
+                <NavItem icon={<Star size={18} />} label={ml('/super/tags', 'Tag 管理')} active={view === 'SUPER_TAGS'} onClick={() => setViewAndClose('SUPER_TAGS')} />
               </NavGroup>
             </>
           )}
@@ -999,6 +1001,7 @@ function AppContent() {
     SUPER_AUDIT_LOGS: '/super/audit-logs',
     SUPER_QA_QUESTIONS: '/super/qa-questions',
     SUPER_MFG_TEMPLATES: '/super/mfg-templates',
+    SUPER_TAGS:          '/super/tags',
     ARTICLE: '/article',
     QA: '/qa',
     RECOMMENDATIONS: '/recommendations',
@@ -1231,6 +1234,7 @@ function AppContent() {
             {view === 'SUPER_AUDIT_LOGS' && <SuperAuditLogs />}
             {view === 'SUPER_QA_QUESTIONS' && <SuperQAQuestions />}
             {view === 'SUPER_MFG_TEMPLATES' && <SuperMfgTemplates />}
+            {view === 'SUPER_TAGS' && <SuperTagsManager />}
             {/* ── Member Pages ─────────────────────────────── */}
             {view === 'MEMBER_QA' && <MemberQAWizard setView={handleSetView} onConsultationCreated={setConsultationId} />}
             {view === 'MEMBER_RECOMMENDATIONS' && <MemberRecommendations setView={handleSetView} consultationId={consultationId} />}
@@ -1265,16 +1269,32 @@ function ClinicProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState('');
+  const [availableTags, setAvailableTags] = useState<{id:string;name:string}[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
 
   useEffect(() => {
-    apiFetch('/clinics/me').then(r => r.json()).then(data => {
-      setForm(data || {});
+    Promise.all([
+      apiFetch('/clinics/me').then(r => r.json()),
+      apiFetch('/tags').then(r => r.json()),
+    ]).then(([clinicData, tagsData]) => {
+      setForm(clinicData || {});
+      setAvailableTags(Array.isArray(tagsData) ? tagsData : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  // 點擊 tag：toggle 選取（存於 form.services 陣列）
+  function toggleTag(tagName: string) {
+    setForm((f: any) => {
+      const current: string[] = Array.isArray(f.services) ? f.services : [];
+      const next = current.includes(tagName)
+        ? current.filter(t => t !== tagName)
+        : [...current, tagName];
+      return { ...f, services: next };
+    });
+  }
 
   async function handlePhotoUpload(file: File) {
     setUploading(true);
@@ -1367,6 +1387,28 @@ function ClinicProfilePage() {
             )}
           </div>
         ))}
+        {/* 服務 Tag（點擊選取）*/}
+        {availableTags.length > 0 && (
+          <div className="space-y-2">
+            <label className={labelCls}>服務項目 <span className="text-slate-400 font-normal normal-case">（點擊選取，可複選）</span></label>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map(tag => {
+                const selected = Array.isArray(form.services) && form.services.includes(tag.name);
+                return (
+                  <button key={tag.id} type="button" onClick={() => toggleTag(tag.name)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                      selected
+                        ? 'bg-blue-800 text-white border-blue-800'
+                        : 'bg-white text-slate-600 border-slate-300 hover:border-blue-400 hover:text-blue-700'
+                    }`}>
+                    {tag.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white rounded-xl text-sm font-semibold hover:bg-blue-900 disabled:opacity-40 transition-colors">
           {saving ? '儲存中...' : '儲存'}
         </button>
