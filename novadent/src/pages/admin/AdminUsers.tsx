@@ -28,6 +28,9 @@ export function AdminUsers() {
   const [form, setForm] = useState({ name: '', email: '', role: 'CLINIC', password: '' });
   const [submitting, setSubmitting] = useState(false);
   const [showPw, setShowPw] = useState(false); // 新增帳號密碼欄位顯示切換
+  // 診所/牙技所基本資料（角色為 CLINIC 或 LAB 時才需填）
+  const [clinicForm, setClinicForm] = useState({ name: '', phone: '', city: '', leadDoctorName: '' });
+  const [labForm, setLabForm]       = useState({ name: '', phone: '', city: '', leadTechnicianName: '' });
 
   const load = () => {
     setLoading(true);
@@ -44,17 +47,30 @@ export function AdminUsers() {
 
   const handleCreate = async () => {
     if (!form.name || !form.email || !form.password) return alert('請填入所有欄位');
+    // 診所/牙技所角色必須填名稱與電話
+    if (form.role === 'CLINIC' && (!clinicForm.name.trim() || !clinicForm.phone.trim())) {
+      return alert('請填入診所名稱與電話');
+    }
+    if (form.role === 'LAB' && (!labForm.name.trim() || !labForm.phone.trim())) {
+      return alert('請填入牙技所名稱與電話');
+    }
     setSubmitting(true);
+    // 組合 payload：診所/牙技所附上對應資料，後端會同時建立 clinics/labs 記錄
+    const payload: any = { ...form };
+    if (form.role === 'CLINIC') payload.clinicData = clinicForm;
+    if (form.role === 'LAB')    payload.labData    = labForm;
     try {
       const res = await apiFetch('/admin/users', {
         method: 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       setSubmitting(false);
       if (res.ok) {
         const data = await res.json();
         setShowModal(false);
         setForm({ name: '', email: '', role: 'CLINIC', password: '' });
+        setClinicForm({ name: '', phone: '', city: '', leadDoctorName: '' });
+        setLabForm({ name: '', phone: '', city: '', leadTechnicianName: '' });
         load();
         if (data.tempPassword) {
           alert(`✅ 帳號建立成功！\n\n臨時密碼（請立即通知用戶）：\n${data.tempPassword}\n\n用戶首次登入需強制修改密碼。`);
@@ -237,6 +253,64 @@ export function AdminUsers() {
                   {Object.entries(ROLE_LABELS).filter(([k]) => k !== 'SUPER_ADMIN').map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
+
+              {/* ── 診所基本資料（角色 = 診所時顯示）── */}
+              {form.role === 'CLINIC' && (
+                <div className="border border-blue-100 bg-blue-50/50 rounded-xl p-3 space-y-3">
+                  <p className="text-xs font-bold text-blue-700">診所基本資料</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 mb-1">診所名稱 <span className="text-red-500">*</span></label>
+                      <input value={clinicForm.name} onChange={e => setClinicForm(p => ({ ...p, name: e.target.value }))}
+                        placeholder="例：台北微笑牙醫" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">電話 <span className="text-red-500">*</span></label>
+                      <input value={clinicForm.phone} onChange={e => setClinicForm(p => ({ ...p, phone: e.target.value }))}
+                        placeholder="02-XXXXXXXX" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">城市</label>
+                      <input value={clinicForm.city} onChange={e => setClinicForm(p => ({ ...p, city: e.target.value }))}
+                        placeholder="台北市" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 mb-1">負責醫師</label>
+                      <input value={clinicForm.leadDoctorName} onChange={e => setClinicForm(p => ({ ...p, leadDoctorName: e.target.value }))}
+                        placeholder="林志明 醫師" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── 牙技所基本資料（角色 = 牙技所時顯示）── */}
+              {form.role === 'LAB' && (
+                <div className="border border-emerald-100 bg-emerald-50/50 rounded-xl p-3 space-y-3">
+                  <p className="text-xs font-bold text-emerald-700">牙技所基本資料</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 mb-1">牙技所名稱 <span className="text-red-500">*</span></label>
+                      <input value={labForm.name} onChange={e => setLabForm(p => ({ ...p, name: e.target.value }))}
+                        placeholder="例：精準牙技所" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">電話 <span className="text-red-500">*</span></label>
+                      <input value={labForm.phone} onChange={e => setLabForm(p => ({ ...p, phone: e.target.value }))}
+                        placeholder="02-XXXXXXXX" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">城市</label>
+                      <input value={labForm.city} onChange={e => setLabForm(p => ({ ...p, city: e.target.value }))}
+                        placeholder="台北市" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 mb-1">主任技師</label>
+                      <input value={labForm.leadTechnicianName} onChange={e => setLabForm(p => ({ ...p, leadTechnicianName: e.target.value }))}
+                        placeholder="王大偉 技師" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">取消</button>

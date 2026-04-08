@@ -7,19 +7,22 @@ import { Type } from 'class-transformer';
 // ── 建立診所附帶資料 ──────────────────────────────────────────
 export class ClinicDataDto {
   @IsString()
-  name: string;
+  name: string;  // 診所名稱（必填）
 
   @IsString()
-  leadDoctorName: string;
+  phone: string; // 電話（必填）
 
   @IsString()
-  city: string;
+  @IsOptional()
+  leadDoctorName?: string; // 負責醫師（選填）
 
   @IsString()
-  phone: string;
+  @IsOptional()
+  city?: string; // 城市（選填）
 
   @IsEmail()
-  email: string;
+  @IsOptional()
+  email?: string; // Email（選填，預設繼承帳號 email）
 
   @IsString()
   @IsOptional()
@@ -29,19 +32,22 @@ export class ClinicDataDto {
 // ── 建立牙技所附帶資料 ────────────────────────────────────────
 export class LabDataDto {
   @IsString()
-  name: string;
+  name: string;  // 牙技所名稱（必填）
 
   @IsString()
-  leadTechnicianName: string;
+  phone: string; // 電話（必填）
 
   @IsString()
-  city: string;
+  @IsOptional()
+  leadTechnicianName?: string; // 主任技師（選填）
 
   @IsString()
-  phone: string;
+  @IsOptional()
+  city?: string; // 城市（選填）
 
   @IsEmail()
-  email: string;
+  @IsOptional()
+  email?: string; // Email（選填）
 }
 
 // ── 建立用戶（Admin 用）──────────────────────────────────────
@@ -52,8 +58,9 @@ export class CreateUserDto {
   @IsString()
   name: string;
 
-  @IsIn(['CLINIC', 'LAB'])
-  role: 'CLINIC' | 'LAB';
+  // 允許所有角色（CLINIC/LAB/ADMIN/MEMBER/INSURER）
+  @IsString()
+  role: string;
 
   @IsString()
   @IsOptional()
