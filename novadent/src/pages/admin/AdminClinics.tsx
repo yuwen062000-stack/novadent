@@ -7,11 +7,8 @@ import { apiFetch } from '../../services/authService';
 import { TAIWAN_CITIES } from '../../constants/cities';
 export { TAIWAN_CITIES }; // 保留 re-export 供其他 admin 頁面 import
 
-// 診所服務 / 療程類型選項
-const SERVICE_OPTIONS = [
-  '固定式假牙', '活動假牙', '植牙', '全瓷冠', '鋯瓷假牙',
-  '數位掃描', '全口重建', '牙橋', '隱形矯正',
-];
+// 服務項目選項：從 clinic_tags 動態讀取（SuperAdmin 在 Tag 管理設定）
+// 這裡不再硬編碼，改為元件內 state
 
 interface Clinic {
   id: string;
@@ -51,7 +48,17 @@ export function AdminClinics() {
   const [submitting, setSubmitting]   = useState(false);
   const [toggling, setToggling]       = useState<string | null>(null);
   const [uploading, setUploading]     = useState(false);
+  // 從 clinic_tags 動態讀取（SuperAdmin Tag 管理設定的 tag 清單）
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 載入 tag 清單（公開端點，無需 auth）
+  useEffect(() => {
+    fetch('/api/tags')
+      .then(r => r.json())
+      .then(data => setAvailableTags(Array.isArray(data) ? data.map((t: any) => t.name) : []))
+      .catch(() => {});
+  }, []);
 
   const load = () => {
     setLoading(true);
@@ -316,7 +323,7 @@ export function AdminClinics() {
               <div>
                 <OptionalLabel>服務項目（卡片標籤）</OptionalLabel>
                 <div className="flex flex-wrap gap-2">
-                  {SERVICE_OPTIONS.map(s => (
+                  {availableTags.map(s => (
                     <button key={s} type="button" onClick={() => toggleService(s)}
                       className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                         form.services.includes(s)
@@ -327,6 +334,9 @@ export function AdminClinics() {
                       {s}
                     </button>
                   ))}
+                  {availableTags.length === 0 && (
+                    <span className="text-xs text-slate-400">尚無 tag，請 SuperAdmin 至進階設定 → Tag 管理新增</span>
+                  )}
                 </div>
               </div>
             </div>
