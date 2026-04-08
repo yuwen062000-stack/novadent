@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, RefreshCw, Pencil } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
+import { TAIWAN_CITIES } from '../../constants/cities';
 
 interface User {
   id: string;
@@ -270,8 +271,11 @@ export function AdminUsers() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1">城市</label>
-                      <input value={clinicForm.city} onChange={e => setClinicForm(p => ({ ...p, city: e.target.value }))}
-                        placeholder="台北市" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                      <select value={clinicForm.city} onChange={e => setClinicForm(p => ({ ...p, city: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 bg-white">
+                        <option value="">請選擇</option>
+                        {TAIWAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
                     </div>
                     <div className="col-span-2">
                       <label className="block text-xs font-bold text-slate-500 mb-1">負責醫師</label>
@@ -299,8 +303,11 @@ export function AdminUsers() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1">城市</label>
-                      <input value={labForm.city} onChange={e => setLabForm(p => ({ ...p, city: e.target.value }))}
-                        placeholder="台北市" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                      <select value={labForm.city} onChange={e => setLabForm(p => ({ ...p, city: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 bg-white">
+                        <option value="">請選擇</option>
+                        {TAIWAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
                     </div>
                     <div className="col-span-2">
                       <label className="block text-xs font-bold text-slate-500 mb-1">主任技師</label>
