@@ -2,7 +2,7 @@
 import {
   Injectable, Inject, NotFoundException, ForbiddenException, ConflictException
 } from '@nestjs/common';
-import { eq, ilike, and, sql } from 'drizzle-orm';
+import { eq, ilike, and, sql, inArray } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import { clinics, auditLogs } from '../database/schema';
@@ -60,7 +60,7 @@ export class ClinicsService {
   // ── 公開診所列表（只回傳 ACTIVE，支援 city/type 篩選）────
   async findAll(query: {
     status?: string;
-    city?: string;
+    city?: string | string[];
     search?: string;
     type?: string;
     page?: number;
@@ -76,7 +76,11 @@ export class ClinicsService {
     if (!isAdmin) conditions.push(eq(clinics.status, 'ACTIVE'));
     else if (query.status) conditions.push(eq(clinics.status, query.status as any));
 
-    if (query.city)   conditions.push(eq(clinics.city, query.city));
+    // 支援單一或多個縣市篩選（前台多複選）
+    if (query.city) {
+      const cities = Array.isArray(query.city) ? query.city : [query.city];
+      conditions.push(inArray(clinics.city, cities));
+    }
     if (query.search) conditions.push(ilike(clinics.name, `%${query.search}%`));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

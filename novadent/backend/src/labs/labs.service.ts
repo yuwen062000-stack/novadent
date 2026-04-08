@@ -2,7 +2,7 @@
 import {
   Injectable, Inject, NotFoundException
 } from '@nestjs/common';
-import { eq, ilike, and, sql } from 'drizzle-orm';
+import { eq, ilike, and, sql, inArray } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import { labs, auditLogs } from '../database/schema';
@@ -54,7 +54,7 @@ export class LabsService {
 
   // ── 公開牙技所列表（只回傳 ACTIVE，PUBLIC_FIELDS）───────
   async findAllPublic(query: {
-    city?: string;
+    city?: string | string[];
     search?: string;
     page?: number;
     pageSize?: number;
@@ -64,7 +64,11 @@ export class LabsService {
     const offset   = (page - 1) * pageSize;
 
     const conditions: any[] = [eq(labs.status, 'ACTIVE')];
-    if (query.city)   conditions.push(eq(labs.city, query.city));
+    // 支援單一或多個縣市篩選（前台多複選）
+    if (query.city) {
+      const cities = Array.isArray(query.city) ? query.city : [query.city];
+      conditions.push(inArray(labs.city, cities));
+    }
     if (query.search) conditions.push(ilike(labs.name, `%${query.search}%`));
 
     const whereClause = and(...conditions);
@@ -87,7 +91,7 @@ export class LabsService {
   // ── 分頁查詢牙技所列表（Admin，含所有狀態）──────────────
   async findAll(query: {
     status?: string;
-    city?: string;
+    city?: string | string[];
     search?: string;
     page?: number;
     pageSize?: number;
@@ -98,7 +102,11 @@ export class LabsService {
 
     const conditions: any[] = [];
     if (query.status) conditions.push(eq(labs.status, query.status as any));
-    if (query.city)   conditions.push(eq(labs.city, query.city));
+    // 支援單一或多個縣市篩選
+    if (query.city) {
+      const cities = Array.isArray(query.city) ? query.city : [query.city];
+      conditions.push(inArray(labs.city, cities));
+    }
     if (query.search) conditions.push(ilike(labs.name, `%${query.search}%`));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

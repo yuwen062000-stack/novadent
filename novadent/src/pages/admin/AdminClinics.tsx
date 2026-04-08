@@ -1,12 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw, Check, XCircle, CheckCircle2 } from 'lucide-react';
+// AdminClinics — 診所管理後台
+// 支援：新增 / 編輯 / 審核 / 停用 / 封面照片上傳
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Search, RefreshCw, Check, XCircle, CheckCircle2, Upload, X, Image } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
-const CITY_OPTIONS = [
+// 台灣完整縣市清單（與前台共用）
+export const TAIWAN_CITIES = [
   '台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市',
   '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣',
   '雲林縣', '嘉義市', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣',
   '台東縣', '澎湖縣', '金門縣', '連江縣',
+];
+
+// 診所服務 / 療程類型選項
+const SERVICE_OPTIONS = [
+  '固定式假牙', '活動假牙', '植牙', '全瓷冠', '鋯瓷假牙',
+  '數位掃描', '全口重建', '牙橋', '隱形矯正',
 ];
 
 interface Clinic {
@@ -18,17 +27,35 @@ interface Clinic {
   city: string;
   status: string;
   coverPhotoUrl?: string;
+  services?: string[];
+}
+
+// 必填標記（紅色 *）
+function RequiredLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-xs font-bold text-slate-500 mb-1">
+      {children} <span className="text-red-500">*</span>
+    </label>
+  );
+}
+function OptionalLabel({ children }: { children: React.ReactNode }) {
+  return <label className="block text-xs font-bold text-slate-500 mb-1">{children}</label>;
 }
 
 export function AdminClinics() {
-  const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<Clinic | null>(null);
-  const [form, setForm] = useState({ name: '', leadDoctorName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '' });
-  const [submitting, setSubmitting] = useState(false);
-  const [toggling, setToggling] = useState<string | null>(null);
+  const [clinics, setClinics]         = useState<Clinic[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState('');
+  const [showModal, setShowModal]     = useState(false);
+  const [editTarget, setEditTarget]   = useState<Clinic | null>(null);
+  const [form, setForm]               = useState({
+    name: '', leadDoctorName: '', phone: '', email: '',
+    city: '', detailedAddress: '', coverPhotoUrl: '', services: [] as string[],
+  });
+  const [submitting, setSubmitting]   = useState(false);
+  const [toggling, setToggling]       = useState<string | null>(null);
+  const [uploading, setUploading]     = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
     setLoading(true);
@@ -42,13 +69,43 @@ export function AdminClinics() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditTarget(null); setForm({ name: '', leadDoctorName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '' }); setShowModal(true); };
-  const openEdit = (c: Clinic) => { setEditTarget(c); setForm({ name: c.name, leadDoctorName: c.leadDoctorName, phone: c.phone, email: c.email, city: c.city, detailedAddress: '', coverPhotoUrl: c.coverPhotoUrl || '' }); setShowModal(true); };
+  const openCreate = () => {
+    setEditTarget(null);
+    setForm({ name: '', leadDoctorName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '', services: [] });
+    setShowModal(true);
+  };
+  const openEdit = (c: Clinic) => {
+    setEditTarget(c);
+    setForm({ name: c.name, leadDoctorName: c.leadDoctorName || '', phone: c.phone, email: c.email || '', city: c.city, detailedAddress: '', coverPhotoUrl: c.coverPhotoUrl || '', services: c.services || [] });
+    setShowModal(true);
+  };
 
+  // 上傳封面照片到 /api/upload，拿到 url 存入 form
+  const handlePhotoUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await apiFetch('/upload', { method: 'POST', body: formData });
+      if (!res.ok) { alert('上傳失敗'); return; }
+      const { url } = await res.json();
+      setForm(p => ({ ...p, coverPhotoUrl: url }));
+    } catch { alert('上傳失敗'); }
+    finally { setUploading(false); }
+  };
+
+  const toggleService = (s: string) => {
+    setForm(p => ({
+      ...p,
+      services: p.services.includes(s) ? p.services.filter(x => x !== s) : [...p.services, s],
+    }));
+  };
+
+  // 必填：診所名稱、電話
   const handleSubmit = async () => {
-    if (!form.name || !form.phone || !form.email || !form.city) return alert('請填入必要欄位');
+    if (!form.name.trim() || !form.phone.trim()) return alert('請填入必要欄位（診所名稱、電話）');
     setSubmitting(true);
-    const url = editTarget ? `/admin/clinics/${editTarget.id}` : '/admin/clinics';
+    const url    = editTarget ? `/admin/clinics/${editTarget.id}` : '/admin/clinics';
     const method = editTarget ? 'PATCH' : 'POST';
     const res = await apiFetch(url, { method, body: JSON.stringify(form) });
     setSubmitting(false);
@@ -59,10 +116,7 @@ export function AdminClinics() {
   const handleToggleStatus = async (c: Clinic, newStatus: string) => {
     setToggling(c.id);
     try {
-      await apiFetch(`/admin/clinics/${c.id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await apiFetch(`/admin/clinics/${c.id}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
       load();
     } catch { alert('操作失敗'); }
     finally { setToggling(null); }
@@ -103,20 +157,26 @@ export function AdminClinics() {
           <table className="w-full text-left min-w-[700px]">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                {['診所名稱', '負責醫師', '電話', '城市', '狀態', '操作'].map(h => (
+                {['封面', '診所名稱', '負責醫師', '電話', '城市', '狀態', '操作'].map(h => (
                   <th key={h} className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={6} className="text-center py-12 text-slate-400">載入中...</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-slate-400">載入中...</td></tr>
               ) : clinics.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-12 text-slate-400">無資料</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-slate-400">無資料</td></tr>
               ) : clinics.map(c => (
                 <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3">
+                    {c.coverPhotoUrl
+                      ? <img src={c.coverPhotoUrl} alt={c.name} className="w-12 h-10 object-cover rounded-lg" />
+                      : <div className="w-12 h-10 bg-blue-50 rounded-lg flex items-center justify-center"><Image size={16} className="text-blue-200" /></div>
+                    }
+                  </td>
                   <td className="px-4 py-3 font-medium text-slate-900">{c.name}</td>
-                  <td className="px-4 py-3 text-slate-600 text-sm">{c.leadDoctorName}</td>
+                  <td className="px-4 py-3 text-slate-600 text-sm">{c.leadDoctorName || '—'}</td>
                   <td className="px-4 py-3 text-slate-600 text-sm">{c.phone}</td>
                   <td className="px-4 py-3 text-slate-600 text-sm">{c.city}</td>
                   <td className="px-4 py-3"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${STATUS_COLORS[c.status] || 'bg-slate-50 text-slate-600'}`}>{STATUS_LABELS[c.status] || c.status}</span></td>
@@ -125,19 +185,19 @@ export function AdminClinics() {
                       <button onClick={() => openEdit(c)} className="text-xs font-bold text-slate-500 hover:text-blue-800 transition-colors">編輯</button>
                       {c.status === 'PENDING' && (
                         <button onClick={() => handleToggleStatus(c, 'ACTIVE')} disabled={toggling === c.id}
-                          className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1 disabled:opacity-50">
                           <CheckCircle2 size={12} />審核通過
                         </button>
                       )}
                       {c.status === 'ACTIVE' && (
                         <button onClick={() => handleToggleStatus(c, 'DISABLED')} disabled={toggling === c.id}
-                          className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1 disabled:opacity-50">
                           <XCircle size={12} />停用
                         </button>
                       )}
                       {c.status === 'DISABLED' && (
                         <button onClick={() => handleToggleStatus(c, 'ACTIVE')} disabled={toggling === c.id}
-                          className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1 disabled:opacity-50">
                           <CheckCircle2 size={12} />啟用
                         </button>
                       )}
@@ -150,53 +210,119 @@ export function AdminClinics() {
         </div>
       </div>
 
+      {/* 新增 / 編輯 Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">{editTarget ? '編輯診所' : '新增診所'}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="block text-xs font-bold text-slate-500 mb-1">診所名稱 *</label>
-                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900">{editTarget ? '編輯診所' : '新增診所'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+            </div>
+
+            <div className="space-y-4">
+              {/* 封面照片上傳 */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">負責醫師 *</label>
-                <input value={form.leadDoctorName} onChange={e => setForm(p => ({ ...p, leadDoctorName: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                <OptionalLabel>封面照片</OptionalLabel>
+                <div className="flex items-center gap-3">
+                  {/* 預覽區 */}
+                  <div className="w-24 h-20 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center bg-slate-50 shrink-0">
+                    {form.coverPhotoUrl
+                      ? <img src={form.coverPhotoUrl} alt="封面" className="w-full h-full object-cover" />
+                      : <Image size={28} className="text-slate-300" />
+                    }
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    {/* 上傳按鈕 */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+                    >
+                      <Upload size={15} />
+                      {uploading ? '上傳中...' : '點擊上傳圖片'}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => { if (e.target.files?.[0]) handlePhotoUpload(e.target.files[0]); e.target.value = ''; }}
+                    />
+                    {/* 清除按鈕 */}
+                    {form.coverPhotoUrl && (
+                      <button onClick={() => setForm(p => ({ ...p, coverPhotoUrl: '' }))}
+                        className="text-xs text-red-500 hover:text-red-600">清除圖片</button>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* 診所名稱（必填） */}
+                <div className="col-span-2">
+                  <RequiredLabel>診所名稱</RequiredLabel>
+                  <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+
+                {/* 負責醫師（非必填） */}
+                <div>
+                  <OptionalLabel>負責醫師</OptionalLabel>
+                  <input value={form.leadDoctorName} onChange={e => setForm(p => ({ ...p, leadDoctorName: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+
+                {/* 城市（下拉，非必填） */}
+                <div>
+                  <OptionalLabel>城市</OptionalLabel>
+                  <select value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 bg-white">
+                    <option value="">請選擇城市</option>
+                    {TAIWAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+
+                {/* 電話（必填） */}
+                <div>
+                  <RequiredLabel>電話</RequiredLabel>
+                  <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+
+                {/* Email（非必填） */}
+                <div>
+                  <OptionalLabel>Email</OptionalLabel>
+                  <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+
+                {/* 詳細地址 */}
+                <div className="col-span-2">
+                  <OptionalLabel>詳細地址</OptionalLabel>
+                  <input value={form.detailedAddress} onChange={e => setForm(p => ({ ...p, detailedAddress: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+              </div>
+
+              {/* 服務標籤（多選） */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">城市 *</label>
-                <select
-                  value={form.city}
-                  onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 bg-white"
-                >
-                  <option value="">請選擇城市</option>
-                  {CITY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">電話 *</label>
-                <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Email *</label>
-                <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-bold text-slate-500 mb-1">詳細地址</label>
-                <input value={form.detailedAddress} onChange={e => setForm(p => ({ ...p, detailedAddress: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-bold text-slate-500 mb-1">封面照片 URL</label>
-                <input value={form.coverPhotoUrl} onChange={e => setForm(p => ({ ...p, coverPhotoUrl: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                <OptionalLabel>服務項目（卡片標籤）</OptionalLabel>
+                <div className="flex flex-wrap gap-2">
+                  {SERVICE_OPTIONS.map(s => (
+                    <button key={s} type="button" onClick={() => toggleService(s)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                        form.services.includes(s)
+                          ? 'bg-blue-800 text-white border-blue-800'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400'
+                      }`}>
+                      {form.services.includes(s) && <Check size={10} className="inline mr-1" />}
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">取消</button>
               <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2.5 bg-blue-800 text-white rounded-xl text-sm font-bold hover:bg-blue-900 disabled:opacity-50">

@@ -59,12 +59,14 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
     if (!caseId) return;
     Promise.all([
       apiFetch(`/cases/${caseId}`).then(r => r.json()),
-      apiFetch('/labs?status=ACTIVE').then(r => r.json()),
-    ]).then(([c, labData]) => {
+      // 只顯示已合作的牙技所（partner-links/my），不開放全部
+      apiFetch('/partner-links/my').then(r => r.json()),
+    ]).then(([c, partnerData]) => {
       setCaseData(c);
       setSelectedLabId(c.labId || '');
-      const list = Array.isArray(labData) ? labData : labData.data ?? [];
-      setLabs(list);
+      // partner-links/my 回傳 { labId, labName, labCity, ... }
+      const list = Array.isArray(partnerData) ? partnerData : [];
+      setLabs(list.map((p: any) => ({ id: p.labId, name: p.labName || p.labId, city: p.labCity || '' })));
       setLoading(false);
     }).catch(() => {
       setError('無法載入案件詳情');
@@ -77,8 +79,7 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
     setAssigningLab(true);
     try {
       const res = await apiFetch(`/cases/${caseData.id}/assign`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
         body: JSON.stringify({ labId: selectedLabId }),
       });
       if (!res.ok) throw new Error('指派失敗');
@@ -98,7 +99,7 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
     setCompleting(true);
     try {
       const res = await apiFetch(`/cases/${caseData.id}/complete`, {
-        method: 'PATCH',
+        method: 'POST',
       });
       if (!res.ok) throw new Error();
       const updated = await res.json();
@@ -202,13 +203,16 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
       {/* Assign Lab */}
       {(c.status === CaseStatus.CREATED || c.status === CaseStatus.ASSIGNED) && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-5">
-          <h3 className="font-semibold text-slate-900 mb-4">指派牙技所</h3>
+          <h3 className="font-semibold text-slate-900 mb-3">指派牙技所</h3>
+          {labs.length === 0 ? (
+            <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-xl">尚無合作牙技所。請先至「合作牙技所」頁面建立合作關係。</p>
+          ) : (
           <div className="flex gap-3">
             <SearchableSelect
-              options={labs.map(lab => ({ value: lab.id, label: `${lab.name} — ${lab.city}` }))}
+              options={labs.map(lab => ({ value: lab.id, label: `${lab.name}${lab.city ? ` — ${lab.city}` : ''}` }))}
               value={selectedLabId}
               onChange={v => setSelectedLabId(v)}
-              placeholder="搜尋並選擇牙技所"
+              placeholder="搜尋並選擇合作牙技所"
               className="flex-1"
             />
             <button
@@ -220,6 +224,7 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
               指派
             </button>
           </div>
+          )}
         </div>
       )}
 

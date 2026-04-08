@@ -18,10 +18,11 @@ export function AdminPartnerLinks() {
 
   const load = async () => {
     setLoading(true);
+    // 使用 admin 端點載入診所/牙技所，確保 PENDING 狀態也能正確顯示名稱
     const [linksRes, clinicsRes, labsRes] = await Promise.all([
       apiFetch('/admin/partner-links').then(r => r.json()),
-      apiFetch('/clinics?limit=200').then(r => r.json()),
-      apiFetch('/labs?limit=200').then(r => r.json()),
+      apiFetch('/admin/clinics?limit=500').then(r => r.json()),
+      apiFetch('/admin/labs?limit=500').then(r => r.json()),
     ]);
     setLinks(Array.isArray(linksRes) ? linksRes : linksRes.data || []);
     setClinics(Array.isArray(clinicsRes) ? clinicsRes : clinicsRes.data || []);

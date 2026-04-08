@@ -15,11 +15,11 @@ import { CreateClinicDto, UpdateClinicDto, UpdateClinicStatusDto } from './dto/c
 export class ClinicsPublicController {
   constructor(private readonly clinicsService: ClinicsService) {}
 
-  // GET /api/clinics — 公開列表（只回傳 ACTIVE）
+  // GET /api/clinics — 公開列表（只回傳 ACTIVE，city 支援多選：?city=台北市&city=台中市）
   @Public()
   @Get()
   findAll(
-    @Query('city')     city?: string,
+    @Query('city')     city?: string | string[],
     @Query('type')     type?: string,
     @Query('search')   search?: string,
     @Query('page')     page?: string,

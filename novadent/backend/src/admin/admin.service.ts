@@ -102,8 +102,23 @@ export class AdminService {
       where = eq(partnerLinks.labId, query.labId);
     }
 
+    // JOIN clinics / labs 以直接回傳名稱，避免前端找不到 PENDING 診所而顯示 UUID
+    const c = clinics;
+    const l = labs;
     const [rows, countResult] = await Promise.all([
-      this.db.select().from(partnerLinks)
+      this.db
+        .select({
+          id:        partnerLinks.id,
+          clinicId:  partnerLinks.clinicId,
+          labId:     partnerLinks.labId,
+          status:    partnerLinks.status,
+          createdAt: partnerLinks.createdAt,
+          clinicName: c.name,
+          labName:    l.name,
+        })
+        .from(partnerLinks)
+        .leftJoin(c, eq(c.id, partnerLinks.clinicId))
+        .leftJoin(l, eq(l.id, partnerLinks.labId))
         .where(where)
         .orderBy(desc(partnerLinks.createdAt))
         .limit(pageSize)
@@ -144,6 +159,73 @@ export class AdminService {
     if (!row) throw new NotFoundException('連結不存在');
 
     await this.db.delete(partnerLinks).where(eq(partnerLinks.id, id));
+    return { success: true };
+  }
+
+  // ── 診所/牙技所查詢自己的合作清單 ───────────────────────────
+  // CLINIC → 回傳合作牙技所清單；LAB → 回傳合作診所清單
+  async getMyPartnerLinks(userId: string, role: string) {
+    if (role === 'CLINIC') {
+      const [clinic] = await this.db.select({ id: clinics.id })
+        .from(clinics).where(eq(clinics.userId, userId)).limit(1);
+      if (!clinic) return [];
+      return this.db
+        .select({
+          id:             partnerLinks.id,
+          labId:          partnerLinks.labId,
+          labName:        labs.name,
+          labCity:        labs.city,
+          labPhone:       labs.phone,
+          labPhotoUrl:    labs.coverPhotoUrl,
+          createdAt:      partnerLinks.createdAt,
+        })
+        .from(partnerLinks)
+        .leftJoin(labs, eq(labs.id, partnerLinks.labId))
+        .where(eq(partnerLinks.clinicId, clinic.id))
+        .orderBy(desc(partnerLinks.createdAt));
+    } else if (role === 'LAB') {
+      const [lab] = await this.db.select({ id: labs.id })
+        .from(labs).where(eq(labs.userId, userId)).limit(1);
+      if (!lab) return [];
+      return this.db
+        .select({
+          id:                partnerLinks.id,
+          clinicId:          partnerLinks.clinicId,
+          clinicName:        clinics.name,
+          clinicCity:        clinics.city,
+          clinicPhone:       clinics.phone,
+          clinicPhotoUrl:    clinics.coverPhotoUrl,
+          createdAt:         partnerLinks.createdAt,
+        })
+        .from(partnerLinks)
+        .leftJoin(clinics, eq(clinics.id, partnerLinks.clinicId))
+        .where(eq(partnerLinks.labId, lab.id))
+        .orderBy(desc(partnerLinks.createdAt));
+    }
+    return [];
+  }
+
+  // ── 診所自行建立合作連結 ──────────────────────────────────
+  async createMyPartnerLink(clinicUserId: string, labId: string) {
+    const [clinic] = await this.db.select({ id: clinics.id, name: clinics.name })
+      .from(clinics).where(eq(clinics.userId, clinicUserId)).limit(1);
+    if (!clinic) throw new NotFoundException('診所不存在');
+    return this.createPartnerLink(clinic.id, labId, clinicUserId);
+  }
+
+  // ── 診所刪除自己的合作連結（驗證歸屬）──────────────────────
+  async deleteMyPartnerLink(clinicUserId: string, linkId: string) {
+    const [clinic] = await this.db.select({ id: clinics.id })
+      .from(clinics).where(eq(clinics.userId, clinicUserId)).limit(1);
+    if (!clinic) throw new NotFoundException('診所不存在');
+
+    const [link] = await this.db.select()
+      .from(partnerLinks)
+      .where(and(eq(partnerLinks.id, linkId), eq(partnerLinks.clinicId, clinic.id)))
+      .limit(1);
+    if (!link) throw new NotFoundException('連結不存在或無權限');
+
+    await this.db.delete(partnerLinks).where(eq(partnerLinks.id, linkId));
     return { success: true };
   }
 

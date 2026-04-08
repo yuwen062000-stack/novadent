@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+// AdminLabs — 牙技所管理後台
+// 支援：新增 / 編輯 / 審核 / 停用 / 封面照片上傳 / 服務標籤
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Search, RefreshCw, CheckCircle2, XCircle, Upload, X, Image, Check } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
+import { TAIWAN_CITIES } from './AdminClinics';
+
+// 牙技所專長 / 接案類型選項
+const SPECIALTY_OPTIONS = [
+  '全瓷冠', '鋯瓷假牙', '植牙上部結構', '金屬烤瓷冠',
+  '活動假牙', '全口重建', '固定式假牙', '牙橋', '數位義齒',
+];
 
 interface Lab {
   id: string;
@@ -10,23 +19,42 @@ interface Lab {
   email: string;
   city: string;
   status: string;
+  coverPhotoUrl?: string;
+  specialties?: string[];
+}
+
+function RequiredLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-xs font-bold text-slate-500 mb-1">
+      {children} <span className="text-red-500">*</span>
+    </label>
+  );
+}
+function OptionalLabel({ children }: { children: React.ReactNode }) {
+  return <label className="block text-xs font-bold text-slate-500 mb-1">{children}</label>;
 }
 
 export function AdminLabs() {
-  const [labs, setLabs] = useState<Lab[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [labs, setLabs]             = useState<Lab[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState('');
+  const [showModal, setShowModal]   = useState(false);
   const [editTarget, setEditTarget] = useState<Lab | null>(null);
-  const [form, setForm] = useState({ name: '', leadTechnicianName: '', phone: '', email: '', city: '', detailedAddress: '' });
+  const [form, setForm]             = useState({
+    name: '', leadTechnicianName: '', phone: '', email: '',
+    city: '', detailedAddress: '', coverPhotoUrl: '', specialties: [] as string[],
+  });
   const [submitting, setSubmitting] = useState(false);
-  const [toggling, setToggling] = useState<string | null>(null);
+  const [toggling, setToggling]     = useState<string | null>(null);
+  const [uploading, setUploading]   = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 使用 /admin/labs 端點，可取得所有狀態（含 PENDING）的牙技所
   const load = () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.append('search', search);
-    apiFetch(`/labs?${params}&limit=100`)
+    apiFetch(`/admin/labs?${params}&limit=100`)
       .then(r => r.json())
       .then(data => { setLabs(Array.isArray(data) ? data : data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -34,17 +62,44 @@ export function AdminLabs() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditTarget(null); setForm({ name: '', leadTechnicianName: '', phone: '', email: '', city: '', detailedAddress: '' }); setShowModal(true); };
-  const openEdit = (l: Lab) => { setEditTarget(l); setForm({ name: l.name, leadTechnicianName: l.leadTechnicianName, phone: l.phone, email: l.email, city: l.city, detailedAddress: '' }); setShowModal(true); };
+  const openCreate = () => {
+    setEditTarget(null);
+    setForm({ name: '', leadTechnicianName: '', phone: '', email: '', city: '', detailedAddress: '', coverPhotoUrl: '', specialties: [] });
+    setShowModal(true);
+  };
+  const openEdit = (l: Lab) => {
+    setEditTarget(l);
+    setForm({ name: l.name, leadTechnicianName: l.leadTechnicianName || '', phone: l.phone, email: l.email || '', city: l.city || '', detailedAddress: '', coverPhotoUrl: l.coverPhotoUrl || '', specialties: l.specialties || [] });
+    setShowModal(true);
+  };
 
+  const handlePhotoUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await apiFetch('/upload', { method: 'POST', body: formData });
+      if (!res.ok) { alert('上傳失敗'); return; }
+      const { url } = await res.json();
+      setForm(p => ({ ...p, coverPhotoUrl: url }));
+    } catch { alert('上傳失敗'); }
+    finally { setUploading(false); }
+  };
+
+  const toggleSpecialty = (s: string) => {
+    setForm(p => ({
+      ...p,
+      specialties: p.specialties.includes(s) ? p.specialties.filter(x => x !== s) : [...p.specialties, s],
+    }));
+  };
+
+  // 必填：牙技所名稱、電話
   const handleSubmit = async () => {
-    if (!form.name || !form.phone || !form.email || !form.city) return alert('請填入必要欄位');
+    if (!form.name.trim() || !form.phone.trim()) return alert('請填入必要欄位（牙技所名稱、電話）');
     setSubmitting(true);
-    const url = editTarget ? `/admin/labs/${editTarget.id}` : '/admin/labs';
-    const res = await apiFetch(url, {
-      method: editTarget ? 'PATCH' : 'POST',
-      body: JSON.stringify(form),
-    });
+    const url    = editTarget ? `/admin/labs/${editTarget.id}` : '/admin/labs';
+    const method = editTarget ? 'PATCH' : 'POST';
+    const res = await apiFetch(url, { method, body: JSON.stringify(form) });
     setSubmitting(false);
     if (res.ok) { setShowModal(false); load(); }
     else { const err = await res.json(); alert(err.message || '操作失敗'); }
@@ -53,10 +108,7 @@ export function AdminLabs() {
   const handleToggleStatus = async (l: Lab, newStatus: string) => {
     setToggling(l.id);
     try {
-      await apiFetch(`/admin/labs/${l.id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await apiFetch(`/admin/labs/${l.id}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
       load();
     } catch { alert('操作失敗'); }
     finally { setToggling(null); }
@@ -88,38 +140,44 @@ export function AdminLabs() {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[600px]">
+          <table className="w-full text-left min-w-[700px]">
             <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>{['牙技所名稱', '負責技師', '電話', '城市', '狀態', '操作'].map(h => <th key={h} className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>)}</tr>
+              <tr>{['封面', '牙技所名稱', '負責技師', '電話', '城市', '狀態', '操作'].map(h => <th key={h} className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loading ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">載入中...</td></tr>
-              : labs.length === 0 ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">無資料</td></tr>
+              {loading ? <tr><td colSpan={7} className="text-center py-12 text-slate-400">載入中...</td></tr>
+              : labs.length === 0 ? <tr><td colSpan={7} className="text-center py-12 text-slate-400">無資料</td></tr>
               : labs.map(l => (
                 <tr key={l.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    {l.coverPhotoUrl
+                      ? <img src={l.coverPhotoUrl} alt={l.name} className="w-12 h-10 object-cover rounded-lg" />
+                      : <div className="w-12 h-10 bg-blue-50 rounded-lg flex items-center justify-center"><Image size={16} className="text-blue-200" /></div>
+                    }
+                  </td>
                   <td className="px-4 py-3 font-medium text-slate-900">{l.name}</td>
-                  <td className="px-4 py-3 text-slate-600 text-sm">{l.leadTechnicianName}</td>
+                  <td className="px-4 py-3 text-slate-600 text-sm">{l.leadTechnicianName || '—'}</td>
                   <td className="px-4 py-3 text-slate-600 text-sm">{l.phone}</td>
-                  <td className="px-4 py-3 text-slate-600 text-sm">{l.city}</td>
+                  <td className="px-4 py-3 text-slate-600 text-sm">{l.city || '—'}</td>
                   <td className="px-4 py-3"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${STATUS_COLORS[l.status] || 'bg-slate-50 text-slate-600'}`}>{STATUS_LABELS[l.status] || l.status}</span></td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 flex-wrap">
                       <button onClick={() => openEdit(l)} className="text-xs font-bold text-slate-500 hover:text-blue-800 transition-colors">編輯</button>
                       {l.status === 'PENDING' && (
                         <button onClick={() => handleToggleStatus(l, 'ACTIVE')} disabled={toggling === l.id}
-                          className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1 disabled:opacity-50">
                           <CheckCircle2 size={12} />審核通過
                         </button>
                       )}
                       {l.status === 'ACTIVE' && (
                         <button onClick={() => handleToggleStatus(l, 'DISABLED')} disabled={toggling === l.id}
-                          className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1 disabled:opacity-50">
                           <XCircle size={12} />停用
                         </button>
                       )}
                       {l.status === 'DISABLED' && (
                         <button onClick={() => handleToggleStatus(l, 'ACTIVE')} disabled={toggling === l.id}
-                          className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 disabled:opacity-50">
+                          className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1 disabled:opacity-50">
                           <CheckCircle2 size={12} />啟用
                         </button>
                       )}
@@ -134,24 +192,93 @@ export function AdminLabs() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">{editTarget ? '編輯牙技所' : '新增牙技所'}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: '牙技所名稱 *', key: 'name', col: 2 },
-                { label: '負責技師 *', key: 'leadTechnicianName', col: 1 },
-                { label: '城市 *', key: 'city', col: 1 },
-                { label: '電話 *', key: 'phone', col: 1 },
-                { label: 'Email *', key: 'email', col: 1 },
-                { label: '詳細地址', key: 'detailedAddress', col: 2 },
-              ].map(f => (
-                <div key={f.key} className={f.col === 2 ? 'col-span-2' : ''}>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{f.label}</label>
-                  <input value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900">{editTarget ? '編輯牙技所' : '新增牙技所'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+            </div>
+
+            <div className="space-y-4">
+              {/* 封面照片 */}
+              <div>
+                <OptionalLabel>封面照片</OptionalLabel>
+                <div className="flex items-center gap-3">
+                  <div className="w-24 h-20 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center bg-slate-50 shrink-0">
+                    {form.coverPhotoUrl
+                      ? <img src={form.coverPhotoUrl} alt="封面" className="w-full h-full object-cover" />
+                      : <Image size={28} className="text-slate-300" />
+                    }
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                      className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50">
+                      <Upload size={15} />
+                      {uploading ? '上傳中...' : '點擊上傳圖片'}
+                    </button>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+                      onChange={e => { if (e.target.files?.[0]) handlePhotoUpload(e.target.files[0]); e.target.value = ''; }} />
+                    {form.coverPhotoUrl && (
+                      <button onClick={() => setForm(p => ({ ...p, coverPhotoUrl: '' }))} className="text-xs text-red-500 hover:text-red-600">清除圖片</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <RequiredLabel>牙技所名稱</RequiredLabel>
+                  <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
                 </div>
-              ))}
+                <div>
+                  <OptionalLabel>負責技師</OptionalLabel>
+                  <input value={form.leadTechnicianName} onChange={e => setForm(p => ({ ...p, leadTechnicianName: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+                <div>
+                  <OptionalLabel>城市</OptionalLabel>
+                  <select value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 bg-white">
+                    <option value="">請選擇城市</option>
+                    {TAIWAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <RequiredLabel>電話</RequiredLabel>
+                  <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+                <div>
+                  <OptionalLabel>Email</OptionalLabel>
+                  <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+                <div className="col-span-2">
+                  <OptionalLabel>詳細地址</OptionalLabel>
+                  <input value={form.detailedAddress} onChange={e => setForm(p => ({ ...p, detailedAddress: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+                </div>
+              </div>
+
+              {/* 專長標籤（多選） */}
+              <div>
+                <OptionalLabel>專長項目（卡片標籤）</OptionalLabel>
+                <div className="flex flex-wrap gap-2">
+                  {SPECIALTY_OPTIONS.map(s => (
+                    <button key={s} type="button" onClick={() => toggleSpecialty(s)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                        form.specialties.includes(s)
+                          ? 'bg-blue-800 text-white border-blue-800'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400'
+                      }`}>
+                      {form.specialties.includes(s) && <Check size={10} className="inline mr-1" />}
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
+
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">取消</button>
               <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2.5 bg-blue-800 text-white rounded-xl text-sm font-bold hover:bg-blue-900 disabled:opacity-50">{submitting ? '儲存中...' : '儲存'}</button>
