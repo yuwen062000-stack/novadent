@@ -1,7 +1,7 @@
 // AccountMgmtPage — 子帳號管理（CLINIC / LAB 共用）
 // 功能：列出子帳號、新增、編輯姓名/電話、刪除、重設密碼
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, X, Users, Trash2, Edit2, KeyRound } from 'lucide-react';
+import { Plus, Loader2, X, Users, Trash2, Edit2, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface SubAccount {
@@ -29,6 +29,7 @@ export function AccountMgmtPage({ userRole }: Props) {
   const [createForm, setCreateForm] = useState({ name: '', email: '', phone: '', password: '' });
   const [createError, setCreateError] = useState('');
   const [creating, setCreating]   = useState(false);
+  const [showCreatePw, setShowCreatePw] = useState(false); // 新增子帳號密碼欄位顯示切換
 
   // 編輯帳號
   const [editingAcc, setEditingAcc] = useState<SubAccount | null>(null);
@@ -251,7 +252,13 @@ export function AccountMgmtPage({ userRole }: Props) {
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">初始密碼 <span className="text-red-500">*</span></label>
-                <input type="password" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="至少 8 個字元" className={inputCls} required minLength={8} />
+                <div className="relative">
+                  <input type={showCreatePw ? 'text' : 'password'} value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="至少 8 個字元" className={inputCls + ' pr-10'} required minLength={8} />
+                  <button type="button" onClick={() => setShowCreatePw(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    {showCreatePw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50">取消</button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw, Pencil } from 'lucide-react';
+import { Plus, Search, RefreshCw, Pencil, Eye, EyeOff } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface User {
@@ -27,6 +27,7 @@ export function AdminUsers() {
   const [editForm, setEditForm] = useState({ name: '', phone: '' });
   const [form, setForm] = useState({ name: '', email: '', role: 'CLINIC', password: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [showPw, setShowPw] = useState(false); // 新增帳號密碼欄位顯示切換
 
   const load = () => {
     setLoading(true);
@@ -199,17 +200,36 @@ export function AdminUsers() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-4">新增帳號</h2>
             <div className="space-y-3">
-              {[
-                { label: '姓名', key: 'name', type: 'text' },
-                { label: 'Email', key: 'email', type: 'email' },
-                { label: '初始密碼', key: 'password', type: 'password' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{f.label}</label>
-                  <input type={f.type} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              {/* 姓名（必填） */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">
+                  姓名 <span className="text-red-500">*</span>
+                </label>
+                <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" required />
+              </div>
+              {/* Email（必填） */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" required />
+              </div>
+              {/* 初始密碼（必填）+ 顯示/隱藏切換 */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">
+                  初始密碼 <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input type={showPw ? 'text' : 'password'} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                    className="w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" required />
+                  <button type="button" onClick={() => setShowPw(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
-              ))}
+              </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">角色</label>
                 <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}

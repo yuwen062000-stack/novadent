@@ -6,7 +6,8 @@ import {
   ChevronRight, Camera, MapPin, Search, ArrowRight, ShieldCheck, FileText, Users,
   LayoutDashboard, BookOpen, Info, Phone, LogIn, Calendar, User, ArrowUpRight,
   Stethoscope, HeartPulse, UserPlus, Lock, Mail, MapPinned, Star, Check, X, Menu,
-  Gift, Bell, BriefcaseMedical, ChevronDown, Image, Video as VideoIcon, LogOut
+  Gift, Bell, BriefcaseMedical, ChevronDown, Image, Video as VideoIcon, LogOut,
+  Eye, EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
@@ -1480,6 +1481,8 @@ function AccountSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [pwSaving, setPwSaving] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);     // 新密碼欄位顯示切換
+  const [showConfirmPw, setShowConfirmPw] = useState(false); // 確認密碼欄位顯示切換
   const [toast, setToast] = useState('');
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
@@ -1559,12 +1562,22 @@ function AccountSettingsPage() {
       <form onSubmit={handleChangePw} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
         <h2 className="font-semibold text-slate-800">變更密碼</h2>
         <div className="space-y-1.5">
-          <label className={labelCls}>新密碼</label>
-          <input type="password" value={pwForm.newPw} onChange={e => setPwForm(p => ({ ...p, newPw: e.target.value }))} placeholder="至少 8 個字元" className={inputCls} minLength={8} required />
+          <label className={labelCls}>新密碼 <span className="text-red-500 normal-case font-bold">*</span></label>
+          <div className="relative">
+            <input type={showNewPw ? 'text' : 'password'} value={pwForm.newPw} onChange={e => setPwForm(p => ({ ...p, newPw: e.target.value }))} placeholder="至少 8 個字元" className={inputCls + ' pr-10'} minLength={8} required />
+            <button type="button" onClick={() => setShowNewPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>確認新密碼</label>
-          <input type="password" value={pwForm.confirm} onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))} placeholder="再次輸入新密碼" className={inputCls} required />
+          <label className={labelCls}>確認新密碼 <span className="text-red-500 normal-case font-bold">*</span></label>
+          <div className="relative">
+            <input type={showConfirmPw ? 'text' : 'password'} value={pwForm.confirm} onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))} placeholder="再次輸入新密碼" className={inputCls + ' pr-10'} required />
+            <button type="button" onClick={() => setShowConfirmPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              {showConfirmPw ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
         <button type="submit" disabled={pwSaving} className="w-full py-2.5 bg-slate-800 text-white rounded-xl text-sm font-semibold hover:bg-slate-700 disabled:opacity-40">
           {pwSaving ? '變更中...' : '變更密碼'}
