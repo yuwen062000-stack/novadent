@@ -154,8 +154,24 @@ export class CasesService {
     if (query.type)   conditions.push(eq(cases.type,   query.type   as any));
 
     const rows = await this.db
-      .select()
+      .select({
+        id:           cases.id,
+        clinicId:     cases.clinicId,
+        labId:        cases.labId,
+        memberId:     cases.memberId,
+        patientName:  cases.patientName,
+        type:         cases.type,
+        status:       cases.status,
+        description:  cases.description,
+        progress:     cases.progress,
+        currentStage: cases.currentStage,
+        createdAt:    cases.createdAt,
+        updatedAt:    cases.updatedAt,
+        // JOIN labs 表帶入牙技所名稱
+        labName:      labs.name,
+      })
       .from(cases)
+      .leftJoin(labs, eq(cases.labId, labs.id))
       .where(and(...conditions))
       .orderBy(desc(cases.createdAt))
       .limit(pageSize)
@@ -219,8 +235,11 @@ export class CasesService {
         currentStage: cases.currentStage,
         createdAt:    cases.createdAt,
         updatedAt:    cases.updatedAt,
+        // JOIN clinics 表帶入診所名稱
+        clinicName:   clinics.name,
       })
       .from(cases)
+      .leftJoin(clinics, eq(cases.clinicId, clinics.id))
       .where(and(...conditions))
       .orderBy(desc(cases.createdAt))
       .limit(pageSize)
@@ -346,7 +365,7 @@ export class CasesService {
       progress:    0,
     } as any).returning();
 
-    // 自動建立 7 個預設製程節點
+    // 自動建立預設製程節點（從 mfg_step_templates 動態讀取 SuperAdmin 設定的模板）
     await this.mfgStepsService.initDefaultSteps(newCase.id);
 
     await this.writeAuditLog(clinicUserId, 'CREATE_CASE', newCase.id, {

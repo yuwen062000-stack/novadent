@@ -50,7 +50,7 @@ export function AdminLabs() {
 
   // 載入 tag 清單（公開端點，無需 auth）
   useEffect(() => {
-    fetch('/api/tags')
+    fetch('/api/tags?target=LAB')
       .then(r => r.json())
       .then(data => setAvailableTags(Array.isArray(data) ? data.map((t: any) => t.name) : []))
       .catch(() => {});
