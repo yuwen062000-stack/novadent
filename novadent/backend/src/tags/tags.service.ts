@@ -31,7 +31,7 @@ export class TagsService {
     const [tag] = await this.db.insert(clinicTags).values({
       name: name.trim(),
       sortOrder,
-    }).returning();
+    } as any).returning();
     return tag;
   }
 
