@@ -484,7 +484,7 @@ const AboutPage = React.memo(({ aboutBlocks, aboutLoaded }: { aboutBlocks: any[]
   </div>
 ));
 
-// ── 台灣完整縣市清單（前台篩選用，與後台 AdminClinics 共用相同邏輯）────
+// ── 台灣完整縣市清單（前台篩選用）────
 const TAIWAN_CITIES_PUBLIC = [
   '台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市',
   '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣',
@@ -1346,16 +1346,21 @@ function ClinicProfilePage() {
           { key: 'leadDoctorName', label: '負責醫師' },
           { key: 'phone', label: '聯絡電話' },
           { key: 'email', label: '聯絡 Email', type: 'email' },
-          { key: 'city', label: '城市' },
+          { key: 'city', label: '城市', select: true },
           { key: 'district', label: '區域' },
           { key: 'detailedAddress', label: '詳細地址' },
           { key: 'description', label: '診所簡介', textarea: true },
-        ].map(({ key, label, required, type, textarea }: any) => (
+        ].map(({ key, label, required, type, textarea, select }: any) => (
           <div key={key} className="space-y-1.5">
             <label className={labelCls}>
               {label}{required && <span className="text-red-500 ml-0.5">*</span>}
             </label>
-            {textarea ? (
+            {select ? (
+              <select value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls + ' bg-white'}>
+                <option value="">請選擇縣市</option>
+                {TAIWAN_CITIES_PUBLIC.map((c: string) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : textarea ? (
               <textarea rows={3} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls + ' resize-none'} />
             ) : (
               <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls} required={required} />
@@ -1459,14 +1464,21 @@ function LabProfilePage() {
           { key: 'leadTechnicianName', label: '主任技師姓名' },
           { key: 'phone', label: '聯絡電話' },
           { key: 'email', label: '聯絡 Email', type: 'email' },
-          { key: 'city', label: '城市' },
+          { key: 'city', label: '城市', select: true },
           { key: 'detailedAddress', label: '詳細地址' },
-        ].map(({ key, label, required, type }: any) => (
+        ].map(({ key, label, required, type, select }: any) => (
           <div key={key} className="space-y-1.5">
             <label className={labelCls}>
               {label}{required && <span className="text-red-500 ml-0.5">*</span>}
             </label>
-            <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls} required={required} />
+            {select ? (
+              <select value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls + ' bg-white'}>
+                <option value="">請選擇縣市</option>
+                {TAIWAN_CITIES_PUBLIC.map((c: string) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : (
+              <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls} required={required} />
+            )}
           </div>
         ))}
         <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white rounded-xl text-sm font-semibold hover:bg-blue-900 disabled:opacity-40 transition-colors">

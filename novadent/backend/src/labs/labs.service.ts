@@ -137,6 +137,8 @@ export class LabsService {
       .limit(1);
 
     if (!lab) throw new NotFoundException('牙技所不存在');
+    // 非 Admin 不可存取已停用的牙技所（與 clinics 行為一致）
+    if (!isAdmin && (lab as any).status !== 'ACTIVE') throw new NotFoundException('牙技所不存在');
     return lab;
   }
 

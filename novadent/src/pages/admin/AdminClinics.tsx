@@ -4,13 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Search, RefreshCw, Check, XCircle, CheckCircle2, Upload, X, Image } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
-// 台灣完整縣市清單（與前台共用）
-export const TAIWAN_CITIES = [
-  '台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市',
-  '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣',
-  '雲林縣', '嘉義市', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣',
-  '台東縣', '澎湖縣', '金門縣', '連江縣',
-];
+import { TAIWAN_CITIES } from '../../constants/cities';
+export { TAIWAN_CITIES }; // 保留 re-export 供其他 admin 頁面 import
 
 // 診所服務 / 療程類型選項
 const SERVICE_OPTIONS = [
