@@ -3,7 +3,7 @@
 // SUPER_ADMIN 專屬：稽核日誌
 import {
   Controller, Get, Post, Patch, Delete, Put,
-  Param, Query, Body, UseGuards, HttpCode, HttpStatus,
+  Param, Query, Body, UseGuards, HttpCode, HttpStatus, ParseUUIDPipe,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -139,6 +139,7 @@ export class AdminController {
 export class PartnerLinksPublicController {
   constructor(private adminService: AdminService) {}
 
+  // GET /api/partner-links — 公開查詢（可篩選 clinicId / labId）
   @Public()
   @Get()
   getPartnerLinks(
@@ -150,6 +151,36 @@ export class PartnerLinksPublicController {
       clinicId, labId,
       page: page ? parseInt(page) : 1,
     });
+  }
+
+  // GET /api/partner-links/my — CLINIC取合作牙技所清單，LAB取合作診所清單
+  @Get('my')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CLINIC', 'LAB')
+  getMyPartnerLinks(@CurrentUser() user: any) {
+    return this.adminService.getMyPartnerLinks(user.id, user.role);
+  }
+
+  // POST /api/partner-links/my — CLINIC 自行建立合作連結
+  @Post('my')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CLINIC')
+  createMyPartnerLink(
+    @CurrentUser() user: any,
+    @Body() dto: { labId: string },
+  ) {
+    return this.adminService.createMyPartnerLink(user.id, dto.labId);
+  }
+
+  // DELETE /api/partner-links/my/:id — CLINIC 刪除自己的合作連結
+  @Delete('my/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CLINIC')
+  deleteMyPartnerLink(
+    @CurrentUser() user: any,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.adminService.deleteMyPartnerLink(user.id, id);
   }
 }
 

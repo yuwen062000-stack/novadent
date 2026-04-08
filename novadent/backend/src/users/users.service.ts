@@ -283,7 +283,77 @@ export class UsersService {
       id:           subAccount.id,
       email:        subAccount.email,
       name:         subAccount.name,
+      role:         subAccount.role,
+      status:       subAccount.status,
+      createdAt:    subAccount.createdAt,
       tempPassword,
     };
+  }
+
+  // ── 編輯子帳號（僅限父帳號操作）─────────────────────────────
+  async updateSubAccount(parentId: string, subId: string, dto: { name?: string; phone?: string }) {
+    const [sub] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, subId), eq(users.parentId, parentId)))
+      .limit(1);
+    if (!sub) throw new NotFoundException('子帳號不存在或無權限');
+
+    const [updated] = await this.db
+      .update(users)
+      .set({ ...dto, updatedAt: new Date() } as any)
+      .where(eq(users.id, subId))
+      .returning({
+        id: users.id, email: users.email, name: users.name,
+        role: users.role, phone: users.phone, status: users.status,
+      });
+    return updated;
+  }
+
+  // ── 刪除子帳號（僅限父帳號操作）─────────────────────────────
+  async deleteSubAccount(parentId: string, subId: string) {
+    const [sub] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, subId), eq(users.parentId, parentId)))
+      .limit(1);
+    if (!sub) throw new NotFoundException('子帳號不存在或無權限');
+
+    await this.db.delete(users).where(eq(users.id, subId));
+    await this.writeAuditLog(parentId, 'DELETE_SUB_ACCOUNT', 'user', subId);
+    return { success: true };
+  }
+
+  // ── 重設子帳號密碼（僅限父帳號操作）─────────────────────────
+  async resetSubAccountPassword(parentId: string, subId: string) {
+    const [sub] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, subId), eq(users.parentId, parentId)))
+      .limit(1);
+    if (!sub) throw new NotFoundException('子帳號不存在或無權限');
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
+    await this.db.update(users)
+      .set({ passwordHash, forceChangePassword: true, updatedAt: new Date() } as any)
+      .where(eq(users.id, subId));
+
+    await this.writeAuditLog(parentId, 'RESET_SUB_ACCOUNT_PASSWORD', 'user', subId);
+    return { tempPassword };
+  }
+
+  // ── 更新自己的基本資料（Admin/SuperAdmin/任何角色）──────────
+  async updateSelf(userId: string, dto: { name?: string; phone?: string }) {
+    const [updated] = await this.db
+      .update(users)
+      .set({ ...dto, updatedAt: new Date() } as any)
+      .where(eq(users.id, userId))
+      .returning({
+        id: users.id, email: users.email, name: users.name,
+        phone: users.phone, role: users.role,
+      });
+    if (!updated) throw new NotFoundException('使用者不存在');
+    return updated;
   }
 }

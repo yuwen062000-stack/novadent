@@ -19,7 +19,7 @@ import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import { ForceChangePasswordPage } from './components/auth/ForceChangePasswordPage';
 import { RegisterPage as RegisterPageComponent } from './components/auth/RegisterPage';
-import { getCurrentUser, logout, register as authRegister, refreshAccessToken, apiFetch } from './services/authService';
+import { getCurrentUser, logout, register as authRegister, refreshAccessToken, apiFetch, changePassword } from './services/authService';
 const authService = { register: authRegister };
 
 // ── Admin Pages ────────────────────────────────────────────
@@ -46,9 +46,11 @@ import { MemberCaseTracking } from './pages/member/MemberCaseTracking';
 import { ClinicCaseList } from './pages/clinic/ClinicCaseList';
 import { ClinicCreateCase } from './pages/clinic/ClinicCreateCase';
 import { ClinicCaseDetail } from './pages/clinic/ClinicCaseDetail';
+import { ClinicPartnerLabs } from './pages/clinic/ClinicPartnerLabs';
 // ── Lab Pages ──────────────────────────────────────────────
 import { LabCaseList } from './pages/lab/LabCaseList';
 import { LabCaseDetail } from './pages/lab/LabCaseDetail';
+import { LabPartnerClinics } from './pages/lab/LabPartnerClinics';
 // ── Shared Pages ───────────────────────────────────────────
 import { MemberSettings } from './pages/member/MemberSettings';
 import { NotificationsPage } from './pages/shared/NotificationsPage';
@@ -365,14 +367,18 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
               <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => setViewAndClose('CLINIC_CASES')} />
               <NavItem icon={<Plus size={20} />} label="新建案件" active={view === 'CLINIC_CREATE_CASE'} onClick={() => setViewAndClose('CLINIC_CREATE_CASE')} />
               <NavItem icon={<Building2 size={20} />} label="診所資料" active={view === 'CLINIC_PROFILE'} onClick={() => setViewAndClose('CLINIC_PROFILE')} />
+              <NavItem icon={<Microscope size={20} />} label="合作牙技所" active={view === 'CLINIC_PARTNER_LABS'} onClick={() => setViewAndClose('CLINIC_PARTNER_LABS')} />
               <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
+              <NavItem icon={<Settings size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
             </>
           )}
           {role === 'LAB' && (
             <>
               <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => setViewAndClose('LAB_CASES')} />
               <NavItem icon={<Microscope size={20} />} label="牙技所資料" active={view === 'LAB_PROFILE'} onClick={() => setViewAndClose('LAB_PROFILE')} />
+              <NavItem icon={<Building2 size={20} />} label="合作診所" active={view === 'LAB_PARTNER_CLINICS'} onClick={() => setViewAndClose('LAB_PARTNER_CLINICS')} />
               <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
+              <NavItem icon={<Settings size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
             </>
           )}
           {role === 'MEMBER' && (
@@ -413,6 +419,9 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
                 <NavItem icon={<CheckCircle2 size={18} />} label={ml('/super/mfg-templates', '製程模板')} active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => setViewAndClose('SUPER_MFG_TEMPLATES')} />
               </NavGroup>
             </>
+          )}
+          {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+            <NavItem icon={<User size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
           )}
           {role !== 'GUEST' && (
             <NavItem icon={<Bell size={20} />} label="通知中心" active={view === 'NOTIFICATIONS'} onClick={() => setViewAndClose('NOTIFICATIONS')} />
@@ -967,10 +976,13 @@ function AppContent() {
     CLINIC_CASE_DETAIL: '/clinic/cases/detail',
     CLINIC_DETAIL: '/clinic/detail',
     CLINIC_PROFILE: '/clinic/profile',
+    CLINIC_PARTNER_LABS: '/clinic/partner-labs',
     LAB_CASES: '/lab/cases',
     LAB_CASE_DETAIL: '/lab/cases/detail',
     LAB_PROFILE: '/lab/profile',
+    LAB_PARTNER_CLINICS: '/lab/partner-clinics',
     LAB_SETTINGS: '/lab/settings',
+    ACCOUNT_SETTINGS: '/account/settings',
     INSURER_CUSTOMER_MGMT: '/insurer/customers',
     ADMIN_DASHBOARD: '/admin/dashboard',
     ADMIN_USERS: '/admin/users',
@@ -1227,11 +1239,14 @@ function AppContent() {
             {view === 'CLINIC_CREATE_CASE' && <ClinicCreateCase setView={handleSetView} />}
             {view === 'CLINIC_CASE_DETAIL' && <ClinicCaseDetail caseId={selectedCaseId} setView={handleSetView} />}
             {view === 'CLINIC_PROFILE' && <ClinicProfilePage />}
+            {view === 'CLINIC_PARTNER_LABS' && <ClinicPartnerLabs />}
             {/* ── Lab Pages ────────────────────────────────── */}
             {view === 'LAB_CASES' && <LabCaseList setView={handleSetView} setSelectedCaseId={setSelectedCaseId} />}
             {view === 'LAB_CASE_DETAIL' && <LabCaseDetail caseId={selectedCaseId} setView={handleSetView} />}
             {view === 'LAB_PROFILE' && <LabProfilePage />}
+            {view === 'LAB_PARTNER_CLINICS' && <LabPartnerClinics />}
             {/* ── Shared Pages ──────────────────────────────── */}
+            {view === 'ACCOUNT_SETTINGS' && <AccountSettingsPage />}
             {view === 'NOTIFICATIONS' && <NotificationsPage />}
           </motion.div>
         </AnimatePresence>
@@ -1242,12 +1257,14 @@ function AppContent() {
 }
 
 // ── 診所資料編輯頁（CLINIC 角色專用）────────────────────────
-// 讓診所管理者更新自己的基本資訊（名稱、聯絡方式、地址、服務項目等）
+// 讓診所管理者更新自己的基本資訊（名稱、聯絡方式、地址、服務項目、封面照片等）
 function ClinicProfilePage() {
   const [form, setForm] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
 
@@ -1258,32 +1275,36 @@ function ClinicProfilePage() {
     }).catch(() => setLoading(false));
   }, []);
 
+  async function handlePhotoUpload(file: File) {
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const res = await apiFetch('/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('上傳失敗');
+      const { url } = await res.json();
+      setForm((f: any) => ({ ...f, coverPhotoUrl: url }));
+      showToast('✅ 照片已上傳');
+    } catch { showToast('❌ 照片上傳失敗'); }
+    finally { setUploading(false); }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
       const res = await apiFetch('/clinics/me', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: form.name,
-          phone: form.phone,
-          email: form.email,
-          city: form.city,
-          district: form.district,
-          detailedAddress: form.detailedAddress,
-          treatmentTypes: form.treatmentTypes,
-          services: form.services,
-          description: form.description,
+          name: form.name, phone: form.phone, email: form.email,
+          city: form.city, district: form.district, detailedAddress: form.detailedAddress,
+          treatmentTypes: form.treatmentTypes, services: form.services,
+          description: form.description, coverPhotoUrl: form.coverPhotoUrl,
         }),
       });
       if (!res.ok) throw new Error('儲存失敗');
       showToast('✅ 診所資料已更新');
-    } catch (err: any) {
-      showToast(`❌ ${err.message || '儲存失敗'}`);
-    } finally {
-      setSaving(false);
-    }
+    } catch (err: any) { showToast(`❌ ${err.message || '儲存失敗'}`); }
+    finally { setSaving(false); }
   }
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900" /></div>;
@@ -1299,17 +1320,38 @@ function ClinicProfilePage() {
         <p className="text-slate-500 text-sm mt-1">管理您的診所基本資訊</p>
       </header>
       <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+        {/* 封面照片 */}
+        <div className="space-y-2">
+          <label className={labelCls}>封面照片</label>
+          <div className="flex items-center gap-4">
+            {form.coverPhotoUrl ? (
+              <img src={form.coverPhotoUrl} alt="封面" className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0" />
+            ) : (
+              <div className="w-20 h-20 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
+                <Camera size={24} className="text-slate-300" />
+              </div>
+            )}
+            <div className="flex-1">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); }} />
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                className="px-4 py-2 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50">
+                {uploading ? '上傳中...' : '點擊上傳圖片'}
+              </button>
+            </div>
+          </div>
+        </div>
         {[
-          { key: 'name', label: '診所名稱', required: true },
+          { key: 'name', label: '診所名稱 *', required: true },
+          { key: 'leadDoctorName', label: '負責醫師' },
           { key: 'phone', label: '聯絡電話' },
           { key: 'email', label: '聯絡 Email', type: 'email' },
           { key: 'city', label: '城市' },
           { key: 'district', label: '區域' },
           { key: 'detailedAddress', label: '詳細地址' },
           { key: 'description', label: '診所簡介', textarea: true },
-        ].map(({ key, label, required, type, textarea }) => (
+        ].map(({ key, label, required, type, textarea }: any) => (
           <div key={key} className="space-y-1.5">
-            <label className={labelCls}>{label}{required && ' *'}</label>
+            <label className={labelCls}>{label}</label>
             {textarea ? (
               <textarea rows={3} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls + ' resize-none'} />
             ) : (
@@ -1326,12 +1368,14 @@ function ClinicProfilePage() {
 }
 
 // ── 牙技所資料編輯頁（LAB 角色專用）─────────────────────────
-// 讓牙技所管理者更新自己的基本資訊（名稱、技師、聯絡方式、服務類型等）
+// 讓牙技所管理者更新自己的基本資訊（名稱、技師、聯絡方式、服務類型、封面照片等）
 function LabProfilePage() {
   const [form, setForm] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
 
@@ -1342,31 +1386,36 @@ function LabProfilePage() {
     }).catch(() => setLoading(false));
   }, []);
 
+  async function handlePhotoUpload(file: File) {
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const res = await apiFetch('/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('上傳失敗');
+      const { url } = await res.json();
+      setForm((f: any) => ({ ...f, coverPhotoUrl: url }));
+      showToast('✅ 照片已上傳');
+    } catch { showToast('❌ 照片上傳失敗'); }
+    finally { setUploading(false); }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
       const res = await apiFetch('/labs/me', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: form.name,
-          leadTechnicianName: form.leadTechnicianName,
-          phone: form.phone,
-          email: form.email,
-          city: form.city,
-          detailedAddress: form.detailedAddress,
-          acceptedCaseTypes: form.acceptedCaseTypes,
-          specialties: form.specialties,
+          name: form.name, leadTechnicianName: form.leadTechnicianName,
+          phone: form.phone, email: form.email, city: form.city,
+          detailedAddress: form.detailedAddress, acceptedCaseTypes: form.acceptedCaseTypes,
+          specialties: form.specialties, coverPhotoUrl: form.coverPhotoUrl,
         }),
       });
       if (!res.ok) throw new Error('儲存失敗');
       showToast('✅ 牙技所資料已更新');
-    } catch (err: any) {
-      showToast(`❌ ${err.message || '儲存失敗'}`);
-    } finally {
-      setSaving(false);
-    }
+    } catch (err: any) { showToast(`❌ ${err.message || '儲存失敗'}`); }
+    finally { setSaving(false); }
   }
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900" /></div>;
@@ -1382,21 +1431,143 @@ function LabProfilePage() {
         <p className="text-slate-500 text-sm mt-1">管理您的牙技所基本資訊</p>
       </header>
       <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+        {/* 封面照片 */}
+        <div className="space-y-2">
+          <label className={labelCls}>封面照片</label>
+          <div className="flex items-center gap-4">
+            {form.coverPhotoUrl ? (
+              <img src={form.coverPhotoUrl} alt="封面" className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0" />
+            ) : (
+              <div className="w-20 h-20 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
+                <Camera size={24} className="text-slate-300" />
+              </div>
+            )}
+            <div className="flex-1">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); }} />
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                className="px-4 py-2 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50">
+                {uploading ? '上傳中...' : '點擊上傳圖片'}
+              </button>
+            </div>
+          </div>
+        </div>
         {[
-          { key: 'name', label: '牙技所名稱', required: true },
+          { key: 'name', label: '牙技所名稱 *', required: true },
           { key: 'leadTechnicianName', label: '主任技師姓名' },
           { key: 'phone', label: '聯絡電話' },
           { key: 'email', label: '聯絡 Email', type: 'email' },
           { key: 'city', label: '城市' },
           { key: 'detailedAddress', label: '詳細地址' },
-        ].map(({ key, label, required, type }) => (
+        ].map(({ key, label, required, type }: any) => (
           <div key={key} className="space-y-1.5">
-            <label className={labelCls}>{label}{required && ' *'}</label>
+            <label className={labelCls}>{label}</label>
             <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm((f: any) => ({ ...f, [key]: e.target.value }))} className={inputCls} required={required} />
           </div>
         ))}
         <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white rounded-xl text-sm font-semibold hover:bg-blue-900 disabled:opacity-40 transition-colors">
           {saving ? '儲存中...' : '儲存'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ── 帳號設定頁（所有已登入角色）──────────────────────────────
+// 讓使用者修改自己的姓名、電話，以及變更登入密碼
+function AccountSettingsPage() {
+  const [profile, setProfile] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [toast, setToast] = useState('');
+
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500); }
+
+  useEffect(() => {
+    apiFetch('/admin/users/me').then(r => r.json()).then(d => {
+      setProfile(d || {});
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await apiFetch('/admin/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: profile.name, phone: profile.phone }),
+      });
+      if (!res.ok) throw new Error('儲存失敗');
+      showToast('✅ 個人資料已更新');
+    } catch (err: any) { showToast(`❌ ${err.message}`); }
+    finally { setSaving(false); }
+  }
+
+  async function handleChangePw(e: React.FormEvent) {
+    e.preventDefault();
+    if (pwForm.newPw !== pwForm.confirm) { showToast('❌ 新密碼與確認密碼不符'); return; }
+    if (pwForm.newPw.length < 8) { showToast('❌ 新密碼至少需要 8 個字元'); return; }
+    setPwSaving(true);
+    try {
+      const result = await changePassword(pwForm.newPw);
+      if (result.success) {
+        showToast('✅ 密碼已變更');
+        setPwForm({ current: '', newPw: '', confirm: '' });
+      } else {
+        showToast(`❌ ${result.error || '變更失敗'}`);
+      }
+    } catch { showToast('❌ 密碼變更失敗'); }
+    finally { setPwSaving(false); }
+  }
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900" /></div>;
+
+  const inputCls = "w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 focus:border-blue-800";
+  const labelCls = "text-xs font-semibold text-slate-500 uppercase tracking-wider";
+
+  return (
+    <div className="max-w-xl mx-auto p-4 md:p-8 space-y-6">
+      {toast && <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl text-sm shadow-xl">{toast}</div>}
+      <header>
+        <h1 className="text-2xl font-bold text-slate-900">帳號設定</h1>
+        <p className="text-slate-500 text-sm mt-1">修改個人資料與登入密碼</p>
+      </header>
+
+      {/* 個人資料 */}
+      <form onSubmit={handleSaveProfile} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800">個人資料</h2>
+        <div className="space-y-1.5">
+          <label className={labelCls}>姓名</label>
+          <input type="text" value={profile.name || ''} onChange={e => setProfile((p: any) => ({ ...p, name: e.target.value }))} className={inputCls} />
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelCls}>電話</label>
+          <input type="tel" value={profile.phone || ''} onChange={e => setProfile((p: any) => ({ ...p, phone: e.target.value }))} placeholder="選填" className={inputCls} />
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelCls}>Email（不可修改）</label>
+          <input type="email" value={profile.email || ''} disabled className={inputCls + ' bg-slate-50 text-slate-400 cursor-not-allowed'} />
+        </div>
+        <button type="submit" disabled={saving} className="w-full py-2.5 bg-blue-950 text-white rounded-xl text-sm font-semibold hover:bg-blue-900 disabled:opacity-40">
+          {saving ? '儲存中...' : '儲存個人資料'}
+        </button>
+      </form>
+
+      {/* 變更密碼 */}
+      <form onSubmit={handleChangePw} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800">變更密碼</h2>
+        <div className="space-y-1.5">
+          <label className={labelCls}>新密碼</label>
+          <input type="password" value={pwForm.newPw} onChange={e => setPwForm(p => ({ ...p, newPw: e.target.value }))} placeholder="至少 8 個字元" className={inputCls} minLength={8} required />
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelCls}>確認新密碼</label>
+          <input type="password" value={pwForm.confirm} onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))} placeholder="再次輸入新密碼" className={inputCls} required />
+        </div>
+        <button type="submit" disabled={pwSaving} className="w-full py-2.5 bg-slate-800 text-white rounded-xl text-sm font-semibold hover:bg-slate-700 disabled:opacity-40">
+          {pwSaving ? '變更中...' : '變更密碼'}
         </button>
       </form>
     </div>

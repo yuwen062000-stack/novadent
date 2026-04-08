@@ -1,6 +1,6 @@
 // Users Controller — 用戶管理 API 路由（Admin 操作 + 子帳號管理）
 import {
-  Controller, Get, Post, Patch, Body, Param, Query, UseGuards, ParseUUIDPipe
+  Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard }   from '../common/guards/roles.guard';
@@ -44,14 +44,54 @@ export class UsersController {
     return this.usersService.getSubAccounts(user.id);
   }
 
-  // ── POST /api/users/me/sub-accounts — CLINIC/LAB 建立子帳號
+  // ── POST /api/admin/users/me/sub-accounts — CLINIC/LAB 建立子帳號
   @Post('me/sub-accounts')
   @Roles('CLINIC', 'LAB')
   createMySubAccount(@CurrentUser() user: any, @Body() dto: CreateSubAccountDto) {
     return this.usersService.createSubAccount(user.id, dto);
   }
 
-  // ── GET /api/users/:id — Admin 取單一用戶 ───────────────
+  // ── PATCH /api/admin/users/me/sub-accounts/:id — 編輯子帳號
+  @Patch('me/sub-accounts/:id')
+  @Roles('CLINIC', 'LAB')
+  updateMySubAccount(
+    @CurrentUser() user: any,
+    @Param('id', ParseUUIDPipe) subId: string,
+    @Body() dto: { name?: string; phone?: string },
+  ) {
+    return this.usersService.updateSubAccount(user.id, subId, dto);
+  }
+
+  // ── DELETE /api/admin/users/me/sub-accounts/:id — 刪除子帳號
+  @Delete('me/sub-accounts/:id')
+  @Roles('CLINIC', 'LAB')
+  deleteMySubAccount(
+    @CurrentUser() user: any,
+    @Param('id', ParseUUIDPipe) subId: string,
+  ) {
+    return this.usersService.deleteSubAccount(user.id, subId);
+  }
+
+  // ── POST /api/admin/users/me/sub-accounts/:id/reset-password — 重設子帳號密碼
+  @Post('me/sub-accounts/:id/reset-password')
+  @Roles('CLINIC', 'LAB')
+  resetMySubAccountPassword(
+    @CurrentUser() user: any,
+    @Param('id', ParseUUIDPipe) subId: string,
+  ) {
+    return this.usersService.resetSubAccountPassword(user.id, subId);
+  }
+
+  // ── PATCH /api/admin/users/me — 更新自己的基本資料（任何角色）
+  @Patch('me')
+  updateMe(
+    @CurrentUser() user: any,
+    @Body() dto: { name?: string; phone?: string },
+  ) {
+    return this.usersService.updateSelf(user.id, dto);
+  }
+
+  // ── GET /api/admin/users/:id — Admin 取單一用戶 ───────────────
   @Get(':id')
   @Roles('ADMIN', 'SUPER_ADMIN')
   findById(@Param('id', ParseUUIDPipe) id: string) {
