@@ -17,7 +17,8 @@ export function AdminArticles() {
 
   const load = () => {
     setLoading(true);
-    apiFetch('/admin/articles?limit=100')
+    // 加 _t 時間戳避免 CDN 快取舊資料（Replit CDN 可能快取 GET 回應）
+    apiFetch(`/admin/articles?limit=100&_t=${Date.now()}`)
       .then(r => r.json())
       .then(data => { setArticles(Array.isArray(data) ? data : data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
