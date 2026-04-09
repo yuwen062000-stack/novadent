@@ -57,21 +57,17 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
 
   useEffect(() => {
     if (!caseId) return;
-    Promise.all([
-      apiFetch(`/cases/${caseId}`).then(r => r.json()),
-      // 只顯示已合作的牙技所（partner-links/my），不開放全部
-      apiFetch('/partner-links/my').then(r => r.json()),
-    ]).then(([c, partnerData]) => {
-      setCaseData(c);
-      setSelectedLabId(c.labId || '');
-      // partner-links/my 回傳 { labId, labName, labCity, ... }
-      const list = Array.isArray(partnerData) ? partnerData : [];
-      setLabs(list.map((p: any) => ({ id: p.labId, name: p.labName || p.labId, city: p.labCity || '' })));
-      setLoading(false);
-    }).catch(() => {
-      setError('無法載入案件詳情');
-      setLoading(false);
-    });
+    // 分開載入，避免其中一個失敗導致另一個也拿不到
+    apiFetch(`/cases/${caseId}`).then(r => r.ok ? r.json() : Promise.reject())
+      .then(c => { setCaseData(c); setSelectedLabId(c.labId || ''); })
+      .catch(() => setError('無法載入案件詳情'))
+      .finally(() => setLoading(false));
+    apiFetch('/partner-links/my').then(r => r.ok ? r.json() : [])
+      .then((data: any[]) => {
+        const list = Array.isArray(data) ? data : [];
+        setLabs(list.map((p: any) => ({ id: p.labId, name: p.labName || p.labId, city: p.labCity || '' })));
+      })
+      .catch(() => {});
   }, [caseId]);
 
   async function handleAssignLab() {

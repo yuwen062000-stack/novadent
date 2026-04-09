@@ -34,13 +34,18 @@ export function ClinicPartnerLabs() {
 
   const load = async () => {
     setLoading(true);
-    const [myLinks, allLabs] = await Promise.all([
-      apiFetch('/partner-links/my').then(r => r.json()),
-      apiFetch('/labs').then(r => r.json()),
-    ]);
-    setLinks(Array.isArray(myLinks) ? myLinks : []);
-    const labList = Array.isArray(allLabs) ? allLabs : allLabs.data ?? [];
-    setLabs(labList);
+    // 分開載入，避免其中一個失敗導致另一個也拿不到
+    try {
+      const myRes = await apiFetch('/partner-links/my');
+      const myLinks = myRes.ok ? await myRes.json() : [];
+      setLinks(Array.isArray(myLinks) ? myLinks : []);
+    } catch { setLinks([]); }
+    try {
+      const labsRes = await apiFetch('/labs');
+      const allLabs = labsRes.ok ? await labsRes.json() : [];
+      const labList = Array.isArray(allLabs) ? allLabs : allLabs.data ?? [];
+      setLabs(labList);
+    } catch { setLabs([]); }
     setLoading(false);
   };
 
