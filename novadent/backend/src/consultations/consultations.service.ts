@@ -30,8 +30,11 @@ export class ConsultationsService {
 
   // ── 建立 QA 諮詢（Member 用）─────────────────────────────
   async create(memberId: string, dto: CreateConsultationDto) {
-    // 從 q1Answer 推斷 inferred_case_type
-    const inferredCaseType = dto.q1Answer as 'FIXED' | 'REMOVABLE' | 'IMPLANT';
+    // 從 q1Answer 推斷 inferred_case_type，不在清單內則 fallback null（不過濾類型）
+    const validTypes = ['FIXED', 'REMOVABLE', 'IMPLANT'];
+    const inferredCaseType = validTypes.includes(dto.q1Answer ?? '')
+      ? (dto.q1Answer as 'FIXED' | 'REMOVABLE' | 'IMPLANT')
+      : null;
 
     const [consultation] = await this.db.insert(consultations).values({
       memberId,
