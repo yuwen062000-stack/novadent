@@ -508,7 +508,8 @@ export async function autoSeed() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
-    await ensureDefaultPasswords(pool);
+    // ensureDefaultPasswords 已移除 — 密碼管理應透過後台「重設密碼」功能處理，
+    // 不應在每次啟動時由 seed 干預，避免交付客戶後成為安全漏洞
     await deduplicateAndSeedMenu(pool);
     await seedSystemSettings(pool);
     await seedPageContents(pool);  // 聯絡資訊、服務條款、隱私權政策預設資料
