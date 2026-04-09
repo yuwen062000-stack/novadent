@@ -11,6 +11,13 @@ const CASE_TYPE_LABEL: Record<string, string> = {
   IMPLANT:   '植牙牙冠',
 };
 
+// QA 問題 lookup 型別：{ qId → { text: 題目文字, options: { value → label } } }
+interface QaLookupEntry {
+  text: string;
+  options: Record<string, string>;  // option value → 中文 label
+}
+type QaLookup = Record<string, QaLookupEntry>;  // key: "1", "2", ... (qa_questions.id 轉字串)
+
 interface ConsultationRow {
   id: string;
   consultation_number: number;
@@ -45,8 +52,31 @@ export function AdminMemberConsultations() {
   const [expandedId, setExpandedId] = useState<string | null>(null);  // 展開中的記錄 ID
   const [detail, setDetail]       = useState<ConsultationDetail | null>(null);  // 展開的詳細資料
   const [detailLoading, setDetailLoading] = useState(false);           // 展開詳情載入中
+  const [qaLookup, setQaLookup]   = useState<QaLookup>({});           // QA 題目 + 選項 lookup map
 
   const LIMIT = 20; // 每頁筆數
+
+  // 載入 QA 問題 lookup（公開 API，轉換為 { qId → { text, options: { value→label } } }）
+  useEffect(() => {
+    apiFetch('/qa-questions')
+      .then(r => r.ok ? r.json() : [])
+      .then((questions: any[]) => {
+        const lookup: QaLookup = {};
+        (Array.isArray(questions) ? questions : []).forEach((q: any) => {
+          const optMap: Record<string, string> = {};
+          if (Array.isArray(q.options)) {
+            q.options.forEach((opt: any) => {
+              if (opt.value != null) {
+                optMap[String(opt.value)] = opt.label ?? String(opt.value);
+              }
+            });
+          }
+          lookup[String(q.id)] = { text: q.questionText ?? `問題 ${q.id}`, options: optMap };
+        });
+        setQaLookup(lookup);
+      })
+      .catch(() => {}); // 失敗時保持空 map，renderAnswers 退回顯示原始值
+  }, []);
 
   // 載入諮詢列表
   const load = (p = 1) => {
@@ -84,16 +114,36 @@ export function AdminMemberConsultations() {
   };
 
   // 將 answers JSONB 轉為可讀文字列表
+  // answers 格式：{ "q1": "FIXED", "q2": "missing", "q5": ["val1","val2"] }
+  // key 格式為 "q${question.id}"，透過 qaLookup 解析為中文題目與答案
   const renderAnswers = (answers: any) => {
     if (!answers || typeof answers !== 'object') return <span className="text-slate-400">無資料</span>;
+
     return (
-      <ul className="space-y-1">
-        {Object.entries(answers).map(([k, v]) => (
-          <li key={k} className="text-xs text-slate-600">
-            <span className="font-semibold text-slate-700">{k}：</span>
-            {Array.isArray(v) ? v.join('、') : String(v)}
-          </li>
-        ))}
+      <ul className="space-y-2">
+        {Object.entries(answers).map(([k, v]) => {
+          // 從 key "q1" → "1" 取得題目 id
+          const qId    = k.replace(/^q/, '');
+          const entry  = qaLookup[qId];
+
+          // 題目文字：有 lookup 就用中文，否則顯示 key
+          const qText  = entry?.text ?? k;
+
+          // 答案文字：將 option value 轉成中文 label
+          const resolveLabel = (val: string) =>
+            entry?.options[val] ?? val;  // lookup 有對應就用中文，否則保留原值
+
+          const answerText = Array.isArray(v)
+            ? (v as string[]).map(resolveLabel).join('、')
+            : resolveLabel(String(v));
+
+          return (
+            <li key={k} className="text-xs text-slate-600">
+              <span className="font-semibold text-slate-700">{qText}：</span>
+              <span>{answerText}</span>
+            </li>
+          );
+        })}
       </ul>
     );
   };

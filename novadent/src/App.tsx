@@ -356,14 +356,18 @@ interface SidebarProps {
   handleSetView: (v: string) => void;
   currentUser: AuthUser | null;
   handleLogout: () => void;
-  adminMenuLabels?: Record<string, string>; // 從 DB 選單設定動態讀取的路徑→名稱對應表
+  adminMenuLabels?: Record<string, { label: string; visible: boolean; order: number }>; // 路徑→{標籤,可見性,排序}
 }
 
 const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen, handleSetView, currentUser, handleLogout, adminMenuLabels = {} }: SidebarProps) => {
   const setViewAndClose = (v: string) => { handleSetView(v); setIsMobileMenuOpen(false); };
   const goHome = () => { setIsMobileMenuOpen(false); };
   // ml(path, fallback) — 從 DB 選單名稱取得顯示標籤，若尚未載入則使用預設值
-  const ml = (path: string, fallback: string) => adminMenuLabels[path] || fallback;
+  const ml = (path: string, fallback: string) => adminMenuLabels[path]?.label || fallback;
+  // mv(path) — 判斷該選單項目是否啟用（DB 未設定時預設顯示）
+  const mv = (path: string) => adminMenuLabels[path] ? adminMenuLabels[path].visible !== false : true;
+  // mo(path, def) — 取排序值（DB 未設定時使用預設值）
+  const mo = (path: string, def: number) => adminMenuLabels[path]?.order ?? def;
 
   return (
     <>
@@ -394,48 +398,66 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
           {role === 'ADMIN' && (
             <NavItem icon={<ClipboardList size={20} />} label="案件總覽" active={view === 'CASE_MANAGEMENT' || view === 'DETAIL'} onClick={() => setViewAndClose('CASE_MANAGEMENT')} />
           )}
-          {role === 'CLINIC' && (
-            <>
-              <NavItem icon={<ClipboardList size={20} />} label={ml('/clinic/cases', '案件管理')} active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => setViewAndClose('CLINIC_CASES')} />
-              <NavItem icon={<Plus size={20} />} label={ml('/clinic/create-case', '新建案件')} active={view === 'CLINIC_CREATE_CASE'} onClick={() => setViewAndClose('CLINIC_CREATE_CASE')} />
-              <NavItem icon={<Building2 size={20} />} label={ml('/clinic/profile', '診所資料')} active={view === 'CLINIC_PROFILE'} onClick={() => setViewAndClose('CLINIC_PROFILE')} />
-              <NavItem icon={<Microscope size={20} />} label={ml('/clinic/partner-labs', '合作牙技所')} active={view === 'CLINIC_PARTNER_LABS'} onClick={() => setViewAndClose('CLINIC_PARTNER_LABS')} />
-              <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
-              <NavItem icon={<Settings size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
-            </>
-          )}
-          {role === 'LAB' && (
-            <>
-              <NavItem icon={<ClipboardList size={20} />} label={ml('/lab/cases', '案件管理')} active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => setViewAndClose('LAB_CASES')} />
-              <NavItem icon={<Microscope size={20} />} label={ml('/lab/profile', '牙技所資料')} active={view === 'LAB_PROFILE'} onClick={() => setViewAndClose('LAB_PROFILE')} />
-              <NavItem icon={<Building2 size={20} />} label={ml('/lab/partner-clinics', '合作診所')} active={view === 'LAB_PARTNER_CLINICS'} onClick={() => setViewAndClose('LAB_PARTNER_CLINICS')} />
-              <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
-              <NavItem icon={<Settings size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
-            </>
-          )}
-          {role === 'MEMBER' && (
-            <>
-              <NavItem icon={<ClipboardList size={20} />} label={ml('/member/qa', '假牙問診')} active={view === 'MEMBER_QA'} onClick={() => setViewAndClose('MEMBER_QA')} />
-              <NavItem icon={<HeartPulse size={20} />} label={ml('/member/recs', '推薦診所')} active={view === 'MEMBER_RECOMMENDATIONS'} onClick={() => setViewAndClose('MEMBER_RECOMMENDATIONS')} />
-              <NavItem icon={<Activity size={20} />} label={ml('/member/cases', '案件追蹤')} active={view === 'MEMBER_CASES'} onClick={() => setViewAndClose('MEMBER_CASES')} />
-              <NavItem icon={<User size={20} />} label="個人設定" active={view === 'SETTINGS'} onClick={() => setViewAndClose('SETTINGS')} />
-            </>
-          )}
+          {/* ── CLINIC 側邊欄：依後台 visible/order 動態過濾+排序 ── */}
+          {role === 'CLINIC' && [
+            { path: '/clinic/cases',        icon: <ClipboardList size={20}/>, label: '案件管理',  views: ['CLINIC_CASES','CLINIC_CASE_DETAIL'], go: 'CLINIC_CASES',        def: 9 },
+            { path: '/clinic/create-case',  icon: <Plus size={20}/>,          label: '新建案件',  views: ['CLINIC_CREATE_CASE'],               go: 'CLINIC_CREATE_CASE',  def: 10 },
+            { path: '/clinic/profile',      icon: <Building2 size={20}/>,     label: '診所資料',  views: ['CLINIC_PROFILE'],                   go: 'CLINIC_PROFILE',      def: 11 },
+            { path: '/clinic/partner-labs', icon: <Microscope size={20}/>,    label: '合作牙技所',views: ['CLINIC_PARTNER_LABS'],              go: 'CLINIC_PARTNER_LABS', def: 12 },
+            { path: '/account',             icon: <Users size={20}/>,         label: '帳號管理',  views: ['ACCOUNT_MGMT'],                     go: 'ACCOUNT_MGMT',        def: 98 },
+            { path: '/account/settings',    icon: <Settings size={20}/>,      label: '帳號設定',  views: ['ACCOUNT_SETTINGS'],                 go: 'ACCOUNT_SETTINGS',    def: 99 },
+          ].filter(i => mv(i.path))
+           .sort((a, b) => mo(a.path, a.def) - mo(b.path, b.def))
+           .map(i => (
+             <NavItem key={i.path} icon={i.icon} label={ml(i.path, i.label)}
+               active={i.views.some(v => view === v)} onClick={() => setViewAndClose(i.go)} />
+           ))}
+
+          {/* ── LAB 側邊欄：依後台 visible/order 動態過濾+排序 ── */}
+          {role === 'LAB' && [
+            { path: '/lab/cases',           icon: <ClipboardList size={20}/>, label: '案件管理',  views: ['LAB_CASES','LAB_CASE_DETAIL'],    go: 'LAB_CASES',           def: 13 },
+            { path: '/lab/profile',         icon: <Microscope size={20}/>,    label: '牙技所資料',views: ['LAB_PROFILE'],                    go: 'LAB_PROFILE',         def: 14 },
+            { path: '/lab/partner-clinics', icon: <Building2 size={20}/>,     label: '合作診所',  views: ['LAB_PARTNER_CLINICS'],            go: 'LAB_PARTNER_CLINICS', def: 15 },
+            { path: '/account',             icon: <Users size={20}/>,         label: '帳號管理',  views: ['ACCOUNT_MGMT'],                   go: 'ACCOUNT_MGMT',        def: 98 },
+            { path: '/account/settings',    icon: <Settings size={20}/>,      label: '帳號設定',  views: ['ACCOUNT_SETTINGS'],               go: 'ACCOUNT_SETTINGS',    def: 99 },
+          ].filter(i => mv(i.path))
+           .sort((a, b) => mo(a.path, a.def) - mo(b.path, b.def))
+           .map(i => (
+             <NavItem key={i.path} icon={i.icon} label={ml(i.path, i.label)}
+               active={i.views.some(v => view === v)} onClick={() => setViewAndClose(i.go)} />
+           ))}
+
+          {/* ── MEMBER 側邊欄：依後台 visible/order 動態過濾+排序 ── */}
+          {role === 'MEMBER' && [
+            { path: '/member/qa',   icon: <ClipboardList size={20}/>, label: '假牙問診', views: ['MEMBER_QA'],              go: 'MEMBER_QA',              def: 16 },
+            { path: '/member/recs', icon: <HeartPulse size={20}/>,    label: '推薦診所', views: ['MEMBER_RECOMMENDATIONS'], go: 'MEMBER_RECOMMENDATIONS', def: 17 },
+            { path: '/member/cases',icon: <Activity size={20}/>,      label: '案件追蹤', views: ['MEMBER_CASES'],           go: 'MEMBER_CASES',           def: 18 },
+            { path: '/settings',    icon: <User size={20}/>,          label: '個人設定', views: ['SETTINGS'],               go: 'SETTINGS',               def: 99 },
+          ].filter(i => mv(i.path))
+           .sort((a, b) => mo(a.path, a.def) - mo(b.path, b.def))
+           .map(i => (
+             <NavItem key={i.path} icon={i.icon} label={ml(i.path, i.label)}
+               active={i.views.some(v => view === v)} onClick={() => setViewAndClose(i.go)} />
+           ))}
+
+          {/* ── ADMIN / SUPER_ADMIN 側邊欄：加 mv() 可見性控制 ── */}
           {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
             <>
-              <NavItem icon={<LayoutDashboard size={20} />} label={ml('/admin/dashboard', '統計儀表板')} active={view === 'ADMIN_DASHBOARD'} onClick={() => setViewAndClose('ADMIN_DASHBOARD')} />
-              <NavItem icon={<Users size={20} />} label={ml('/admin/users', '帳號管理')} active={view === 'ADMIN_USERS'} onClick={() => setViewAndClose('ADMIN_USERS')} />
-              <NavItem icon={<Building2 size={20} />} label={ml('/admin/clinics', '診所管理')} active={view === 'ADMIN_CLINICS'} onClick={() => setViewAndClose('ADMIN_CLINICS')} />
-              <NavItem icon={<Microscope size={20} />} label={ml('/admin/labs', '牙技所管理')} active={view === 'ADMIN_LABS'} onClick={() => setViewAndClose('ADMIN_LABS')} />
-              <NavItem icon={<Activity size={20} />} label={ml('/admin/partner-links', '合作連結')} active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => setViewAndClose('ADMIN_PARTNER_LINKS')} />
-              <NavItem icon={<ClipboardList size={20} />} label={ml('/admin/consultations', '會員諮詢')} active={view === 'ADMIN_CONSULTATIONS'} onClick={() => setViewAndClose('ADMIN_CONSULTATIONS')} />
-              {/* 內容管理群組：標籤從 DB 讀取，子項目各自對應路徑 */}
-              <NavGroup icon={<FileText size={20} />} label={ml('/admin/content', '內容管理')} active={['ADMIN_ARTICLES','ADMIN_NOTIFICATION_CMS','ADMIN_SITE_IMAGES','ADMIN_VIDEOS'].includes(view)}>
-                <NavItem icon={<FileText size={18} />} label={ml('/admin/articles', '文章管理')} active={view === 'ADMIN_ARTICLES'} onClick={() => setViewAndClose('ADMIN_ARTICLES')} />
-                <NavItem icon={<Bell size={18} />} label={ml('/admin/notifications', '通知廣播')} active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => setViewAndClose('ADMIN_NOTIFICATION_CMS')} />
-                <NavItem icon={<Image size={18} />} label={ml('/admin/site-images', '圖片管理')} active={view === 'ADMIN_SITE_IMAGES'} onClick={() => setViewAndClose('ADMIN_SITE_IMAGES')} />
-                <NavItem icon={<VideoIcon size={18} />} label={ml('/admin/videos', '影音管理')} active={view === 'ADMIN_VIDEOS'} onClick={() => setViewAndClose('ADMIN_VIDEOS')} />
-              </NavGroup>
+              {mv('/admin/dashboard')    && <NavItem icon={<LayoutDashboard size={20} />} label={ml('/admin/dashboard', '統計儀表板')} active={view === 'ADMIN_DASHBOARD'} onClick={() => setViewAndClose('ADMIN_DASHBOARD')} />}
+              {mv('/admin/users')        && <NavItem icon={<Users size={20} />} label={ml('/admin/users', '帳號管理')} active={view === 'ADMIN_USERS'} onClick={() => setViewAndClose('ADMIN_USERS')} />}
+              {mv('/admin/clinics')      && <NavItem icon={<Building2 size={20} />} label={ml('/admin/clinics', '診所管理')} active={view === 'ADMIN_CLINICS'} onClick={() => setViewAndClose('ADMIN_CLINICS')} />}
+              {mv('/admin/labs')         && <NavItem icon={<Microscope size={20} />} label={ml('/admin/labs', '牙技所管理')} active={view === 'ADMIN_LABS'} onClick={() => setViewAndClose('ADMIN_LABS')} />}
+              {mv('/admin/partner-links')&& <NavItem icon={<Activity size={20} />} label={ml('/admin/partner-links', '合作連結')} active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => setViewAndClose('ADMIN_PARTNER_LINKS')} />}
+              {mv('/admin/consultations')&& <NavItem icon={<ClipboardList size={20} />} label={ml('/admin/consultations', '會員諮詢')} active={view === 'ADMIN_CONSULTATIONS'} onClick={() => setViewAndClose('ADMIN_CONSULTATIONS')} />}
+              {/* 內容管理群組：整體群組也受 mv 控制 */}
+              {mv('/admin/content') && (
+                <NavGroup icon={<FileText size={20} />} label={ml('/admin/content', '內容管理')} active={['ADMIN_ARTICLES','ADMIN_NOTIFICATION_CMS','ADMIN_SITE_IMAGES','ADMIN_VIDEOS'].includes(view)}>
+                  {mv('/admin/articles')      && <NavItem icon={<FileText size={18} />} label={ml('/admin/articles', '文章管理')} active={view === 'ADMIN_ARTICLES'} onClick={() => setViewAndClose('ADMIN_ARTICLES')} />}
+                  {mv('/admin/notifications') && <NavItem icon={<Bell size={18} />} label={ml('/admin/notifications', '通知廣播')} active={view === 'ADMIN_NOTIFICATION_CMS'} onClick={() => setViewAndClose('ADMIN_NOTIFICATION_CMS')} />}
+                  {mv('/admin/site-images')   && <NavItem icon={<Image size={18} />} label={ml('/admin/site-images', '圖片管理')} active={view === 'ADMIN_SITE_IMAGES'} onClick={() => setViewAndClose('ADMIN_SITE_IMAGES')} />}
+                  {mv('/admin/videos')        && <NavItem icon={<VideoIcon size={18} />} label={ml('/admin/videos', '影音管理')} active={view === 'ADMIN_VIDEOS'} onClick={() => setViewAndClose('ADMIN_VIDEOS')} />}
+                </NavGroup>
+              )}
             </>
           )}
           {role === 'SUPER_ADMIN' && (
@@ -1183,14 +1205,14 @@ function AppContent() {
       }).catch(() => {});
   }, []);
 
-  // 所有登入角色都載入選單標籤，讓 Sidebar 名稱與 SuperAdmin 選單管理同步
-  const [adminMenuLabels, setAdminMenuLabels] = useState<Record<string, string>>({});
+  // 選單設定：存放 { path: { label, visible, order } }，控制 Sidebar 名稱/顯示/排序
+  const [adminMenuLabels, setAdminMenuLabels] = useState<Record<string, { label: string; visible: boolean; order: number }>>({});
   const fetchAdminMenuLabels = useCallback(() => {
     if (!role || role === 'GUEST') return; // 未登入不需要
-    // /admin/menu-labels 回傳 { path: label } map，所有登入角色皆可呼叫
+    // /admin/menu-labels 回傳 { path: {label,visible,order} } map，所有登入角色皆可呼叫
     apiFetch('/admin/menu-labels')
       .then(r => r.ok ? r.json() : {})
-      .then((map: Record<string, string>) => {
+      .then((map: Record<string, { label: string; visible: boolean; order: number }>) => {
         if (map && typeof map === 'object') setAdminMenuLabels(map);
       }).catch(() => {});
   }, [role]);

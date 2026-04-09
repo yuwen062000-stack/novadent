@@ -61,15 +61,21 @@ export class AdminController {
     return this.adminService.getMenuConfig();
   }
 
-  // 所有登入角色可呼叫：回傳 path→label 對應表，供前端 Sidebar 動態顯示選單名稱
+  // 所有登入角色可呼叫：回傳 path→{label,visible,order} 對應表，供前端 Sidebar 動態控制選單名稱/顯示/排序
   // 注意：固定路由必須在 menu-config（動態路由）之前 — 這裡以字母序 menu-labels < menu-public
   @Get('menu-labels')
   @Roles('MEMBER', 'CLINIC', 'LAB', 'ADMIN', 'SUPER_ADMIN')
   async getMenuLabels() {
     const rows = await this.adminService.getMenuConfig();
-    // 只回傳路徑→名稱對應，不暴露 roles/parentId 等管理欄位
-    const map: Record<string, string> = {};
-    rows.forEach((r: any) => { if (r.path) map[r.path] = r.label; });
+    // 回傳 label + visible + order，前端用來控制顯示/隱藏與排序
+    const map: Record<string, { label: string; visible: boolean; order: number }> = {};
+    rows.forEach((r: any) => {
+      if (r.path) map[r.path] = {
+        label:   r.label,
+        visible: r.visible ?? true,
+        order:   r.order  ?? 0,
+      };
+    });
     return map;
   }
 

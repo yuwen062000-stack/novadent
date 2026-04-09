@@ -6,9 +6,10 @@ import { apiFetch } from '../../services/authService';
 
 interface Consultation {
   id: string;
-  inferredCaseType: string | null;
-  selectedCity: string | null;
-  createdAt: string;
+  inferredCaseType: string | null;      // 推斷假牙類型
+  selectedCity: string | null;          // 選擇城市
+  createdAt: string;                    // 建立時間
+  consultation_number?: number;         // 全域流水號（與 Admin 顯示的 C-001 一致）
 }
 
 interface RecommendedClinic {
@@ -243,7 +244,9 @@ export function MemberRecommendations({ setView, consultationId }: Props) {
                         : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
-                    <div className="text-xs text-slate-400 mb-1">#{consultations.length - idx}</div>
+                    <div className="text-xs font-mono font-bold text-blue-800 mb-1">
+                      C-{String(c.consultation_number ?? (consultations.length - idx)).padStart(3, '0')}
+                    </div>
                     <div className={`text-sm font-bold mb-1 ${isSelected ? 'text-blue-950' : 'text-slate-800'}`}>
                       {typeLabel}
                     </div>
