@@ -7,10 +7,10 @@ const SEED_SALT =  8; // 測試帳號用較低強度（加速 seed，降低 Repl
 async function hash(pw: string, rounds = SALT) { return bcrypt.hash(pw, rounds); }
 
 async function ensureDefaultPasswords(pool: Pool) {
-  // 統一測試密碼，方便人工測試各角色
-  // 重要：只算一次 hash，所有測試帳號共用，避免 Replit 低速 CPU 超時
+  // 只補「尚未改過密碼」的帳號（force_change_password = true 表示仍在初始狀態）
+  // 已手動改過密碼的帳號（force_change_password = false）不會被重置
+  // 這樣每次 Replit 重啟不會把管理員改好的密碼蓋回預設值
   const TEST_PW = 'admin@123';
-  const h = await hash(TEST_PW, SEED_SALT); // ← 只算一次
   const emails = [
     'superadmin@novadent.com',
     'admin@novadent.com',
@@ -21,18 +21,29 @@ async function ensureDefaultPasswords(pool: Pool) {
     'artisan-lab@novadent.com',
     'member1@test.com',
   ];
-  for (const email of emails) {
+
+  // 先查詢哪些帳號還在「強制改密碼」狀態（即尚未改過）
+  const { rows: needReset } = await pool.query(
+    `SELECT email FROM users WHERE email = ANY($1) AND force_change_password = true`,
+    [emails]
+  );
+  if (needReset.length === 0) {
+    console.log('[AutoSeed] Default passwords: all accounts already changed, skipping');
+    return;
+  }
+
+  const h = await hash(TEST_PW, SEED_SALT); // ← 只在有需要時才算 hash
+  for (const { email } of needReset) {
     try {
-      const { rowCount } = await pool.query(
-        `UPDATE users SET password_hash = $1, force_change_password = false WHERE email = $2`,
+      await pool.query(
+        `UPDATE users SET password_hash = $1 WHERE email = $2 AND force_change_password = true`,
         [h, email]
       );
-      if (rowCount === 0) console.warn(`[AutoSeed] Password reset skipped (user not found): ${email}`);
     } catch (e: any) {
       console.error(`[AutoSeed] Password reset failed for ${email}:`, e.message);
     }
   }
-  console.log('[AutoSeed] Default passwords ensured (admin@123, salt=8)');
+  console.log(`[AutoSeed] Default passwords ensured for ${needReset.length} account(s) with force_change_password=true`);
 }
 
 async function deduplicateAndSeedMenu(pool: Pool) {
@@ -172,9 +183,11 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   await pool.query(`UPDATE menu_config SET path = '/super/qa-questions' WHERE path = '/super/qa'`);
   await pool.query(`UPDATE menu_config SET path = '/super/mfg-templates' WHERE path = '/super/mfg'`);
 
-  // ── 設定前台 show_in_footer（關於我們、衛教中心、影音專區）──────
-  await pool.query(`UPDATE menu_config SET show_in_footer = true WHERE path IN ('/about', '/knowledge', '/videos') AND menu_type = 'PUBLIC'`);
-  console.log('[AutoSeed] menu_config columns migrated & menu_type/show_in_footer updated');
+  // ── 設定前台 show_in_footer 初始值（只補 false 的，不覆蓋管理員已修改的 true→false）──
+  // 注意：這裡不做強制覆蓋，改用「目前為 false 才更新為 true」，避免管理員設定被 seed 蓋掉
+  // 這一行已停用：改為 INSERT WHERE NOT EXISTS 模式，保留管理員的設定
+  // await pool.query(`UPDATE menu_config SET show_in_footer = true WHERE path IN ('/about', '/knowledge', '/videos') AND menu_type = 'PUBLIC'`);
+  console.log('[AutoSeed] menu_config columns migrated & menu_type updated');
 
   // ── 寫入預設 SEO 設定（不存在才 INSERT，避免覆蓋管理員已設定的值）──
   const defaultSeoSettings: [string, string, string][] = [
