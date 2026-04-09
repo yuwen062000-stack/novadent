@@ -182,12 +182,12 @@ export function AdminVideos() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">標題 *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">標題 <span className="text-red-500">*</span></label>
                 <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg" placeholder="影片標題" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">YouTube 連結 *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">YouTube 連結 <span className="text-red-500">*</span></label>
                 <input value={form.videoUrl} onChange={e => setForm({ ...form, videoUrl: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg" placeholder="https://www.youtube.com/watch?v=..." />
                 {form.videoUrl && extractYoutubeId(form.videoUrl) && (

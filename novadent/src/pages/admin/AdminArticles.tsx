@@ -61,6 +61,7 @@ export function AdminArticles() {
     const url = editTarget ? `/admin/articles/${editTarget.id}` : '/admin/articles';
     const res = await apiFetch(url, {
       method: editTarget ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },  // 必須帶 Content-Type，NestJS 才能正確解析 JSON body
       body: JSON.stringify({ ...form, slug, tags: tagsArr }),
     });
     setSubmitting(false);
@@ -152,7 +153,7 @@ export function AdminArticles() {
             <h2 className="text-lg font-bold text-slate-900 mb-4">{editTarget ? '編輯文章' : '新增文章'}</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">標題 *</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">標題 <span className="text-red-500">*</span></label>
                 <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -178,7 +179,7 @@ export function AdminArticles() {
                 <textarea rows={2} value={form.summary} onChange={e => setForm(p => ({ ...p, summary: e.target.value }))} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 resize-none" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">內容 *</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">內容 <span className="text-red-500">*</span></label>
                 <textarea rows={8} value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 resize-y" placeholder="支援 Markdown 語法..." />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">

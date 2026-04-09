@@ -33,6 +33,7 @@ import { AdminArticles } from './pages/admin/AdminArticles';
 import { AdminNotificationCMS } from './pages/admin/AdminNotificationCMS';
 import { AdminSiteImages } from './pages/admin/AdminSiteImages';
 import { AdminVideos } from './pages/admin/AdminVideos';
+import { AdminMemberConsultations } from './pages/admin/AdminMemberConsultations';
 // ── SuperAdmin Pages ───────────────────────────────────────
 import { SuperAuditLogs } from './pages/super/SuperAuditLogs';
 import { SuperSystemSettings } from './pages/super/SuperSystemSettings';
@@ -109,7 +110,7 @@ const FeatureCard = React.memo(({ icon, title, desc }: any) => (
 const DEFAULT_NAV_ITEMS = [
   { label: '首頁',        path: '/' },
   { label: '關於我們與服務', path: '/about' },
-  { label: '衛教中心',    path: '/education' },
+  { label: '衛教中心',    path: '/knowledge' },
   { label: '影音專區',    path: '/videos' },
   { label: '合作診所',    path: '/clinics' },
   { label: '合作牙技所',  path: '/labs' },
@@ -427,6 +428,7 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
               <NavItem icon={<Building2 size={20} />} label={ml('/admin/clinics', '診所管理')} active={view === 'ADMIN_CLINICS'} onClick={() => setViewAndClose('ADMIN_CLINICS')} />
               <NavItem icon={<Microscope size={20} />} label={ml('/admin/labs', '牙技所管理')} active={view === 'ADMIN_LABS'} onClick={() => setViewAndClose('ADMIN_LABS')} />
               <NavItem icon={<Activity size={20} />} label={ml('/admin/partner-links', '合作連結')} active={view === 'ADMIN_PARTNER_LINKS'} onClick={() => setViewAndClose('ADMIN_PARTNER_LINKS')} />
+              <NavItem icon={<ClipboardList size={20} />} label={ml('/admin/consultations', '會員諮詢')} active={view === 'ADMIN_CONSULTATIONS'} onClick={() => setViewAndClose('ADMIN_CONSULTATIONS')} />
               {/* 內容管理群組：標籤從 DB 讀取，子項目各自對應路徑 */}
               <NavGroup icon={<FileText size={20} />} label={ml('/admin/content', '內容管理')} active={['ADMIN_ARTICLES','ADMIN_NOTIFICATION_CMS','ADMIN_SITE_IMAGES','ADMIN_VIDEOS'].includes(view)}>
                 <NavItem icon={<FileText size={18} />} label={ml('/admin/articles', '文章管理')} active={view === 'ADMIN_ARTICLES'} onClick={() => setViewAndClose('ADMIN_ARTICLES')} />
@@ -996,7 +998,7 @@ function AppContent() {
   const VIEW_PATH_MAP: Record<string, string> = {
     HOME: '/',
     SERVICE: '/about',
-    KNOWLEDGE: '/education',
+    KNOWLEDGE: '/knowledge',
     VIDEOS: '/videos',
     LOGIN: '/login',
     REGISTER: '/register',
@@ -1039,6 +1041,7 @@ function AppContent() {
     ADMIN_NOTIFICATION_CMS: '/admin/notifications',
     ADMIN_SITE_IMAGES: '/admin/site-images',
     ADMIN_VIDEOS: '/admin/videos',
+    ADMIN_CONSULTATIONS: '/admin/consultations',
     SUPER_SYSTEM_SETTINGS: '/super/settings',
     SUPER_MENU: '/super/menu',
     SUPER_AUDIT_LOGS: '/super/audit-logs',
@@ -1271,6 +1274,7 @@ function AppContent() {
             {view === 'ADMIN_NOTIFICATION_CMS' && <AdminNotificationCMS />}
             {view === 'ADMIN_SITE_IMAGES' && <AdminSiteImages />}
             {view === 'ADMIN_VIDEOS' && <AdminVideos />}
+            {view === 'ADMIN_CONSULTATIONS' && <AdminMemberConsultations />}
             {/* ── V1.2 SuperAdmin Pages ────────────────────── */}
             {view === 'SUPER_SYSTEM_SETTINGS' && <SuperSystemSettings />}
             {view === 'SUPER_MENU' && <SuperMenuManager />}
