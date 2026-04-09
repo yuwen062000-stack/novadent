@@ -395,28 +395,28 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
           )}
           {role === 'CLINIC' && (
             <>
-              <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => setViewAndClose('CLINIC_CASES')} />
-              <NavItem icon={<Plus size={20} />} label="新建案件" active={view === 'CLINIC_CREATE_CASE'} onClick={() => setViewAndClose('CLINIC_CREATE_CASE')} />
-              <NavItem icon={<Building2 size={20} />} label="診所資料" active={view === 'CLINIC_PROFILE'} onClick={() => setViewAndClose('CLINIC_PROFILE')} />
-              <NavItem icon={<Microscope size={20} />} label="合作牙技所" active={view === 'CLINIC_PARTNER_LABS'} onClick={() => setViewAndClose('CLINIC_PARTNER_LABS')} />
+              <NavItem icon={<ClipboardList size={20} />} label={ml('/clinic/cases', '案件管理')} active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => setViewAndClose('CLINIC_CASES')} />
+              <NavItem icon={<Plus size={20} />} label={ml('/clinic/create-case', '新建案件')} active={view === 'CLINIC_CREATE_CASE'} onClick={() => setViewAndClose('CLINIC_CREATE_CASE')} />
+              <NavItem icon={<Building2 size={20} />} label={ml('/clinic/profile', '診所資料')} active={view === 'CLINIC_PROFILE'} onClick={() => setViewAndClose('CLINIC_PROFILE')} />
+              <NavItem icon={<Microscope size={20} />} label={ml('/clinic/partner-labs', '合作牙技所')} active={view === 'CLINIC_PARTNER_LABS'} onClick={() => setViewAndClose('CLINIC_PARTNER_LABS')} />
               <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
               <NavItem icon={<Settings size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
             </>
           )}
           {role === 'LAB' && (
             <>
-              <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => setViewAndClose('LAB_CASES')} />
-              <NavItem icon={<Microscope size={20} />} label="牙技所資料" active={view === 'LAB_PROFILE'} onClick={() => setViewAndClose('LAB_PROFILE')} />
-              <NavItem icon={<Building2 size={20} />} label="合作診所" active={view === 'LAB_PARTNER_CLINICS'} onClick={() => setViewAndClose('LAB_PARTNER_CLINICS')} />
+              <NavItem icon={<ClipboardList size={20} />} label={ml('/lab/cases', '案件管理')} active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => setViewAndClose('LAB_CASES')} />
+              <NavItem icon={<Microscope size={20} />} label={ml('/lab/profile', '牙技所資料')} active={view === 'LAB_PROFILE'} onClick={() => setViewAndClose('LAB_PROFILE')} />
+              <NavItem icon={<Building2 size={20} />} label={ml('/lab/partner-clinics', '合作診所')} active={view === 'LAB_PARTNER_CLINICS'} onClick={() => setViewAndClose('LAB_PARTNER_CLINICS')} />
               <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
               <NavItem icon={<Settings size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
             </>
           )}
           {role === 'MEMBER' && (
             <>
-              <NavItem icon={<ClipboardList size={20} />} label="假牙問診" active={view === 'MEMBER_QA'} onClick={() => setViewAndClose('MEMBER_QA')} />
-              <NavItem icon={<HeartPulse size={20} />} label="推薦診所" active={view === 'MEMBER_RECOMMENDATIONS'} onClick={() => setViewAndClose('MEMBER_RECOMMENDATIONS')} />
-              <NavItem icon={<Activity size={20} />} label="案件追蹤" active={view === 'MEMBER_CASES'} onClick={() => setViewAndClose('MEMBER_CASES')} />
+              <NavItem icon={<ClipboardList size={20} />} label={ml('/member/qa', '假牙問診')} active={view === 'MEMBER_QA'} onClick={() => setViewAndClose('MEMBER_QA')} />
+              <NavItem icon={<HeartPulse size={20} />} label={ml('/member/recs', '推薦診所')} active={view === 'MEMBER_RECOMMENDATIONS'} onClick={() => setViewAndClose('MEMBER_RECOMMENDATIONS')} />
+              <NavItem icon={<Activity size={20} />} label={ml('/member/cases', '案件追蹤')} active={view === 'MEMBER_CASES'} onClick={() => setViewAndClose('MEMBER_CASES')} />
               <NavItem icon={<User size={20} />} label="個人設定" active={view === 'SETTINGS'} onClick={() => setViewAndClose('SETTINGS')} />
             </>
           )}
@@ -1180,16 +1180,15 @@ function AppContent() {
       }).catch(() => {});
   }, []);
 
-  // 後台選單標籤：ADMIN/SUPER_ADMIN 登入後讀取，讓左側選單名稱與 DB 同步
+  // 所有登入角色都載入選單標籤，讓 Sidebar 名稱與 SuperAdmin 選單管理同步
   const [adminMenuLabels, setAdminMenuLabels] = useState<Record<string, string>>({});
   const fetchAdminMenuLabels = useCallback(() => {
-    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') return;
-    apiFetch('/admin/menu-config')
-      .then(r => r.ok ? r.json() : [])
-      .then((items: any[]) => {
-        const map: Record<string, string> = {};
-        items.forEach((i: any) => { if (i.path) map[i.path] = i.label; });
-        setAdminMenuLabels(map);
+    if (!role || role === 'GUEST') return; // 未登入不需要
+    // /admin/menu-labels 回傳 { path: label } map，所有登入角色皆可呼叫
+    apiFetch('/admin/menu-labels')
+      .then(r => r.ok ? r.json() : {})
+      .then((map: Record<string, string>) => {
+        if (map && typeof map === 'object') setAdminMenuLabels(map);
       }).catch(() => {});
   }, [role]);
   // 登入時載入一次

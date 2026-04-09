@@ -378,15 +378,38 @@ async function deduplicateAndSeedMenu(pool: Pool) {
       }
     }
 
-    // Step 4：確保頂層獨立項目存在（合作連結）
-    const { rows: plExists } = await pool.query(
-      `SELECT id FROM menu_config WHERE path = '/admin/partner-links' LIMIT 1`
-    );
-    if (plExists.length === 0) {
-      await pool.query(
-        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
-         VALUES ('合作連結','/admin/partner-links','{ADMIN,SUPER_ADMIN}',15,true,'ADMIN')`
-      );
+    // Step 4：確保所有登入後 Sidebar 的獨立項目存在（INSERT WHERE NOT EXISTS，不覆蓋 label）
+    type StandaloneDef = [string, string, string[], number];
+    const standaloneItems: StandaloneDef[] = [
+      // MEMBER
+      ['假牙問診',    '/member/qa',              ['MEMBER'],              6],
+      ['推薦診所',    '/member/recs',            ['MEMBER'],              7],
+      ['案件追蹤',    '/member/cases',           ['MEMBER'],              8],
+      // CLINIC
+      ['案件管理',    '/clinic/cases',           ['CLINIC'],              9],
+      ['新建案件',    '/clinic/create-case',     ['CLINIC'],              10],
+      ['診所資料',    '/clinic/profile',         ['CLINIC'],              11],
+      ['合作牙技所',  '/clinic/partner-labs',    ['CLINIC'],              12],
+      // LAB
+      ['案件管理',    '/lab/cases',              ['LAB'],                 13],
+      ['牙技所資料',  '/lab/profile',            ['LAB'],                 14],
+      ['合作診所',    '/lab/partner-clinics',    ['LAB'],                 15],
+      // ADMIN
+      ['統計儀表板',  '/admin/dashboard',        ['ADMIN','SUPER_ADMIN'], 16],
+      ['帳號管理',    '/admin/users',            ['ADMIN','SUPER_ADMIN'], 17],
+      ['診所管理',    '/admin/clinics',          ['ADMIN','SUPER_ADMIN'], 18],
+      ['牙技所管理',  '/admin/labs',             ['ADMIN','SUPER_ADMIN'], 19],
+      ['合作連結',    '/admin/partner-links',    ['ADMIN','SUPER_ADMIN'], 20],
+    ];
+    for (const [label, path, roles, order] of standaloneItems) {
+      const { rows: ex } = await pool.query(`SELECT id FROM menu_config WHERE path = $1 LIMIT 1`, [path]);
+      if (ex.length === 0) {
+        // 不存在才 INSERT，保留管理員已修改的名稱
+        await pool.query(
+          `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type) VALUES ($1,$2,$3,$4,true,'ADMIN')`,
+          [label, path, roles, order]
+        );
+      }
     }
 
     console.log('[AutoSeed] Existing menu_config: deduped + parent groups + children ensured');
