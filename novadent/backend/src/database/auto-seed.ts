@@ -413,6 +413,7 @@ async function deduplicateAndSeedMenu(pool: Pool) {
       ['診所管理',    '/admin/clinics',          ['ADMIN','SUPER_ADMIN'], 18],
       ['牙技所管理',  '/admin/labs',             ['ADMIN','SUPER_ADMIN'], 19],
       ['合作連結',    '/admin/partner-links',    ['ADMIN','SUPER_ADMIN'], 20],
+      ['會員諮詢',    '/admin/consultations',    ['ADMIN','SUPER_ADMIN'], 21],  // 新功能：Admin 查看會員 QA 問診記錄
     ];
     for (const [label, path, roles, order] of standaloneItems) {
       const { rows: ex } = await pool.query(`SELECT id FROM menu_config WHERE path = $1 LIMIT 1`, [path]);

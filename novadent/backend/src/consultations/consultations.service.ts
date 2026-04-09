@@ -74,7 +74,19 @@ export class ConsultationsService {
       WHERE member_id = ${memberId}
       ORDER BY created_at DESC
     `);
-    return rows;
+
+    // raw SQL 回傳 snake_case，對應前端 interface 的 camelCase 欄位名
+    return rows.map(r => ({
+      id:                  r.id,
+      inferredCaseType:    r.inferred_case_type,
+      selectedCity:        r.selected_city,
+      selectedDistrict:    r.selected_district,
+      answers:             r.answers,
+      summary:             r.summary,
+      status:              r.status,
+      createdAt:           r.created_at,
+      consultation_number: r.consultation_number,  // 前端直接用 snake_case 存取此欄位
+    }));
   }
 
   // ── 取單一諮詢（確認歸屬會員）───────────────────────────
