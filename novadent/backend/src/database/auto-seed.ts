@@ -363,9 +363,11 @@ async function deduplicateAndSeedMenu(pool: Pool) {
         `SELECT id FROM menu_config WHERE path = $1 LIMIT 1`, [path]
       );
       if (existing.length > 0) {
+        // 只更新結構性欄位（parent_id、roles、order、menu_type），不覆蓋 label
+        // 避免管理員在後台修改的選單名稱被 seed 重置
         await pool.query(
-          `UPDATE menu_config SET parent_id = $1, label = $2, roles = $3, "order" = $4, menu_type = 'ADMIN' WHERE id = $5`,
-          [parentId, label, roles, order, existing[0].id]
+          `UPDATE menu_config SET parent_id = $1, roles = $2, "order" = $3, menu_type = 'ADMIN' WHERE id = $4`,
+          [parentId, roles, order, existing[0].id]
         );
       } else {
         await pool.query(
