@@ -1,0 +1,68 @@
+-- ── 城市選項標準化 SQL ────────────────────────────────────────
+-- 找到分類為「地區」的題目 → 更新選項
+-- 若不存在則新建一題
+-- 執行前請先確認 SELECT 結果，確保只影響城市那一題
+
+-- 先查看目前城市題的狀況
+SELECT id, question_text, category, order_index, options
+FROM qa_questions
+WHERE category = '地區' OR question_text LIKE '%城市%' OR question_text LIKE '%縣市%';
+
+-- 如果上面有找到，用 UPDATE（把 id 換成查到的實際 id）：
+UPDATE qa_questions
+SET
+  options = '[
+    {"value": "台北市", "label": "台北市", "score": 0},
+    {"value": "新北市", "label": "新北市", "score": 0},
+    {"value": "桃園市", "label": "桃園市", "score": 0},
+    {"value": "台中市", "label": "台中市", "score": 0},
+    {"value": "台南市", "label": "台南市", "score": 0},
+    {"value": "高雄市", "label": "高雄市", "score": 0},
+    {"value": "基隆市", "label": "基隆市", "score": 0},
+    {"value": "新竹市", "label": "新竹市", "score": 0},
+    {"value": "新竹縣", "label": "新竹縣", "score": 0},
+    {"value": "苗栗縣", "label": "苗栗縣", "score": 0},
+    {"value": "彰化縣", "label": "彰化縣", "score": 0},
+    {"value": "南投縣", "label": "南投縣", "score": 0},
+    {"value": "雲林縣", "label": "雲林縣", "score": 0},
+    {"value": "嘉義市", "label": "嘉義市", "score": 0},
+    {"value": "嘉義縣", "label": "嘉義縣", "score": 0},
+    {"value": "屏東縣", "label": "屏東縣", "score": 0},
+    {"value": "宜蘭縣", "label": "宜蘭縣", "score": 0},
+    {"value": "花蓮縣", "label": "花蓮縣", "score": 0},
+    {"value": "台東縣", "label": "台東縣", "score": 0}
+  ]'::jsonb,
+  question_type = 'single_choice',
+  updated_at = NOW()
+WHERE category = '地區';
+
+-- 如果上面 SELECT 完全沒找到（0 筆），改用 INSERT：
+INSERT INTO qa_questions (question_text, question_type, options, order_index, category, is_active)
+SELECT
+  '您所在的城市？',
+  'single_choice',
+  '[
+    {"value": "台北市", "label": "台北市", "score": 0},
+    {"value": "新北市", "label": "新北市", "score": 0},
+    {"value": "桃園市", "label": "桃園市", "score": 0},
+    {"value": "台中市", "label": "台中市", "score": 0},
+    {"value": "台南市", "label": "台南市", "score": 0},
+    {"value": "高雄市", "label": "高雄市", "score": 0},
+    {"value": "基隆市", "label": "基隆市", "score": 0},
+    {"value": "新竹市", "label": "新竹市", "score": 0},
+    {"value": "新竹縣", "label": "新竹縣", "score": 0},
+    {"value": "苗栗縣", "label": "苗栗縣", "score": 0},
+    {"value": "彰化縣", "label": "彰化縣", "score": 0},
+    {"value": "南投縣", "label": "南投縣", "score": 0},
+    {"value": "雲林縣", "label": "雲林縣", "score": 0},
+    {"value": "嘉義市", "label": "嘉義市", "score": 0},
+    {"value": "嘉義縣", "label": "嘉義縣", "score": 0},
+    {"value": "屏東縣", "label": "屏東縣", "score": 0},
+    {"value": "宜蘭縣", "label": "宜蘭縣", "score": 0},
+    {"value": "花蓮縣", "label": "花蓮縣", "score": 0},
+    {"value": "台東縣", "label": "台東縣", "score": 0}
+  ]'::jsonb,
+  4,  -- order_index，放在第4題
+  '地區',
+  true
+WHERE NOT EXISTS (SELECT 1 FROM qa_questions WHERE category = '地區');
