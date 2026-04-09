@@ -23,15 +23,19 @@ export function AdminArticles() {
       .catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
-  // 載入文章分類選項
+  // 載入文章分類選項（用 apiFetch 確保帶 JWT，避免 CDN 快取舊回應）
   useEffect(() => {
-    fetch('/api/options/ARTICLE_CATEGORY')
+    apiFetch('/options/ARTICLE_CATEGORY')
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const cats = Array.isArray(data) ? data.map((d: any) => d.label || d.value) : [];
-        setCategories(cats.length > 0 ? cats : ['假牙百科', '口腔護理', '診所指南', '最新消息']);
+        if (cats.length > 0) {
+          setCategories(cats);
+        }
+        // cats.length === 0 時保留 useState 初始值空陣列，下方 select 顯示「無分類」
+        // 不 fallback 寫死值，讓管理員知道 DB 資料有問題
       })
-      .catch(() => setCategories(['假牙百科', '口腔護理', '診所指南', '最新消息']));
+      .catch(() => {}); // API 失敗時 categories 保持空陣列，新增表單不預設分類
   }, []);
 
   const openCreate = () => {
