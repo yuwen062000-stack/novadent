@@ -1,6 +1,6 @@
-// Consultations Controller — QA 諮詢 API 路由（MEMBER 專用）
+// Consultations Controller — QA 諮詢 API 路由（MEMBER + Admin 管理用）
 import {
-  Controller, Get, Post, Body, Param, UseGuards, ParseUUIDPipe
+  Controller, Get, Post, Body, Param, Query, UseGuards, ParseUUIDPipe
 } from '@nestjs/common';
 import { JwtAuthGuard }            from '../common/guards/jwt-auth.guard';
 import { RolesGuard }              from '../common/guards/roles.guard';
@@ -36,5 +36,27 @@ export class ConsultationsController {
     @CurrentUser() user: any,
   ) {
     return this.consultationsService.recommend(id, user.id);
+  }
+
+  // ── Admin / SuperAdmin 專用路由（必須放在 :id 之前避免路由衝突）──
+
+  // GET /api/consultations/admin/all — Admin 查看所有會員諮詢記錄
+  @Get('admin/all')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  findAllForAdmin(
+    @Query('page')  page  = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.consultationsService.findAllForAdmin(
+      parseInt(page,  10),
+      parseInt(limit, 10),
+    );
+  }
+
+  // GET /api/consultations/admin/:id — Admin 查看單一諮詢記錄（含推薦診所）
+  @Get('admin/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  findOneForAdmin(@Param('id', ParseUUIDPipe) id: string) {
+    return this.consultationsService.findByIdForAdmin(id);
   }
 }
