@@ -105,6 +105,45 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   // ── 遷移：clinic_tags 加 target_type 欄位（CLINIC/LAB/ALL）──
   await pool.query(`ALTER TABLE clinic_tags ADD COLUMN IF NOT EXISTS target_type VARCHAR(10) NOT NULL DEFAULT 'ALL'`);
 
+  // ── 遷移：建立 system_options 表並塞入預設選項 ───────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS system_options (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      "group"     VARCHAR(30) NOT NULL,
+      value       VARCHAR(50) NOT NULL,
+      label       VARCHAR(50) NOT NULL,
+      sort_order  INT NOT NULL DEFAULT 0,
+      is_active   BOOLEAN NOT NULL DEFAULT true,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  // 預設文章分類
+  const articleCats = [
+    { value: '假牙百科', label: '假牙百科', order: 0 },
+    { value: '口腔護理', label: '口腔護理', order: 1 },
+    { value: '診所指南', label: '診所指南', order: 2 },
+    { value: '最新消息', label: '最新消息', order: 3 },
+  ];
+  for (const c of articleCats) {
+    await pool.query(
+      `INSERT INTO system_options ("group", value, label, sort_order) SELECT $1, $2, $3, $4 WHERE NOT EXISTS (SELECT 1 FROM system_options WHERE "group"=$1 AND value=$2)`,
+      ['ARTICLE_CATEGORY', c.value, c.label, c.order]
+    );
+  }
+  // 預設案件類型
+  const caseTypes = [
+    { value: 'FIXED',     label: '固定式假牙', order: 0 },
+    { value: 'REMOVABLE', label: '活動式假牙', order: 1 },
+    { value: 'IMPLANT',   label: '植牙牙冠',   order: 2 },
+  ];
+  for (const c of caseTypes) {
+    await pool.query(
+      `INSERT INTO system_options ("group", value, label, sort_order) SELECT $1, $2, $3, $4 WHERE NOT EXISTS (SELECT 1 FROM system_options WHERE "group"=$1 AND value=$2)`,
+      ['CASE_TYPE', c.value, c.label, c.order]
+    );
+  }
+  console.log('[AutoSeed] system_options table ready');
+
   // ── 遷移：確保新欄位存在（舊站升級不需手動跑 migration）───────
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS menu_type VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'`);
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS parent_id UUID`);

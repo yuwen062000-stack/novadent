@@ -40,6 +40,7 @@ import { SuperQAQuestions } from './pages/super/SuperQAQuestions';
 import { SuperMfgTemplates } from './pages/super/SuperMfgTemplates';
 import { SuperMenuManager } from './pages/super/SuperMenuManager';
 import { SuperTagsManager } from './pages/super/SuperTagsManager';
+import { SuperOptionsManager } from './pages/super/SuperOptionsManager';
 // ── Member Pages ───────────────────────────────────────────
 import { MemberQAWizard } from './pages/member/MemberQAWizard';
 import { MemberRecommendations } from './pages/member/MemberRecommendations';
@@ -444,10 +445,11 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
                 <NavItem icon={<ShieldCheck size={18} />} label={ml('/super/audit-logs', '稽核日誌')} active={view === 'SUPER_AUDIT_LOGS'} onClick={() => setViewAndClose('SUPER_AUDIT_LOGS')} />
               </NavGroup>
               {/* 進階設定群組：QA問卷 + 製程模板 */}
-              <NavGroup icon={<ClipboardList size={20} />} label={ml('/super/advanced', '進階設定')} active={['SUPER_QA_QUESTIONS','SUPER_MFG_TEMPLATES','SUPER_TAGS'].includes(view)}>
+              <NavGroup icon={<ClipboardList size={20} />} label={ml('/super/advanced', '進階設定')} active={['SUPER_QA_QUESTIONS','SUPER_MFG_TEMPLATES','SUPER_TAGS','SUPER_OPTIONS'].includes(view)}>
                 <NavItem icon={<ClipboardList size={18} />} label={ml('/super/qa-questions', 'QA問卷管理')} active={view === 'SUPER_QA_QUESTIONS'} onClick={() => setViewAndClose('SUPER_QA_QUESTIONS')} />
                 <NavItem icon={<CheckCircle2 size={18} />} label={ml('/super/mfg-templates', '製程模板')} active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => setViewAndClose('SUPER_MFG_TEMPLATES')} />
                 <NavItem icon={<Star size={18} />} label={ml('/super/tags', 'Tag 管理')} active={view === 'SUPER_TAGS'} onClick={() => setViewAndClose('SUPER_TAGS')} />
+                <NavItem icon={<Settings size={18} />} label={ml('/super/options', '系統選項')} active={view === 'SUPER_OPTIONS'} onClick={() => setViewAndClose('SUPER_OPTIONS')} />
               </NavGroup>
             </>
           )}
@@ -1043,6 +1045,7 @@ function AppContent() {
     SUPER_QA_QUESTIONS: '/super/qa-questions',
     SUPER_MFG_TEMPLATES: '/super/mfg-templates',
     SUPER_TAGS:          '/super/tags',
+    SUPER_OPTIONS:       '/super/options',
     ARTICLE: '/article',
     QA: '/qa',
     RECOMMENDATIONS: '/recommendations',
@@ -1276,6 +1279,7 @@ function AppContent() {
             {view === 'SUPER_QA_QUESTIONS' && <SuperQAQuestions />}
             {view === 'SUPER_MFG_TEMPLATES' && <SuperMfgTemplates />}
             {view === 'SUPER_TAGS' && <SuperTagsManager />}
+            {view === 'SUPER_OPTIONS' && <SuperOptionsManager />}
             {/* ── Member Pages ─────────────────────────────── */}
             {view === 'MEMBER_QA' && <MemberQAWizard setView={handleSetView} onConsultationCreated={setConsultationId} />}
             {view === 'MEMBER_RECOMMENDATIONS' && <MemberRecommendations setView={handleSetView} consultationId={consultationId} />}
