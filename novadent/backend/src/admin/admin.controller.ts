@@ -61,6 +61,18 @@ export class AdminController {
     return this.adminService.getMenuConfig();
   }
 
+  // 所有登入角色可呼叫：回傳 path→label 對應表，供前端 Sidebar 動態顯示選單名稱
+  // 注意：固定路由必須在 menu-config（動態路由）之前 — 這裡以字母序 menu-labels < menu-public
+  @Get('menu-labels')
+  @Roles('MEMBER', 'CLINIC', 'LAB', 'ADMIN', 'SUPER_ADMIN')
+  async getMenuLabels() {
+    const rows = await this.adminService.getMenuConfig();
+    // 只回傳路徑→名稱對應，不暴露 roles/parentId 等管理欄位
+    const map: Record<string, string> = {};
+    rows.forEach((r: any) => { if (r.path) map[r.path] = r.label; });
+    return map;
+  }
+
   // 公開前台選單（訪客導覽列 + Footer 快速連結，不需登入）
   // 注意：固定路由 'menu-public' 必須在動態路由 'menu-config' 之前宣告
   @Get('menu-public')

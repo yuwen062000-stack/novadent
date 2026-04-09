@@ -22,6 +22,7 @@ import { SiteImagesModule } from './site-images/site-images.module';
 import { VideosModule } from './videos/videos.module';
 import { PageContentsModule } from './page-contents/page-contents.module';
 import { TagsModule } from './tags/tags.module';
+import { SystemOptionsModule } from './system-options/system-options.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { TagsModule } from './tags/tags.module';
     VideosModule,
     PageContentsModule,
     TagsModule,
+    SystemOptionsModule,
   ],
 })
 export class AppModule {}

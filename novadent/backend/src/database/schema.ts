@@ -312,6 +312,18 @@ export const clinicTags = pgTable('clinic_tags', {
   createdAt:  timestamp('created_at').notNull().defaultNow(),
 });
 
+// ── system_options（系統選項 — SuperAdmin 管理，文章分類/案件類型等）──
+// group: 'ARTICLE_CATEGORY' | 'CASE_TYPE' 等，用來區分不同類型的選項
+export const systemOptions = pgTable('system_options', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  group:     varchar('group', { length: 30 }).notNull(),
+  value:     varchar('value', { length: 50 }).notNull(),
+  label:     varchar('label', { length: 50 }).notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive:  boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // ── mfg_step_templates（製程節點模板 — SuperAdmin 管理）────
 export const mfgStepTemplates = pgTable('mfg_step_templates', {
   id:          integer('id').primaryKey().generatedAlwaysAsIdentity(),

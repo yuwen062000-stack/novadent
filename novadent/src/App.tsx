@@ -40,6 +40,7 @@ import { SuperQAQuestions } from './pages/super/SuperQAQuestions';
 import { SuperMfgTemplates } from './pages/super/SuperMfgTemplates';
 import { SuperMenuManager } from './pages/super/SuperMenuManager';
 import { SuperTagsManager } from './pages/super/SuperTagsManager';
+import { SuperOptionsManager } from './pages/super/SuperOptionsManager';
 // ── Member Pages ───────────────────────────────────────────
 import { MemberQAWizard } from './pages/member/MemberQAWizard';
 import { MemberRecommendations } from './pages/member/MemberRecommendations';
@@ -394,28 +395,28 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
           )}
           {role === 'CLINIC' && (
             <>
-              <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => setViewAndClose('CLINIC_CASES')} />
-              <NavItem icon={<Plus size={20} />} label="新建案件" active={view === 'CLINIC_CREATE_CASE'} onClick={() => setViewAndClose('CLINIC_CREATE_CASE')} />
-              <NavItem icon={<Building2 size={20} />} label="診所資料" active={view === 'CLINIC_PROFILE'} onClick={() => setViewAndClose('CLINIC_PROFILE')} />
-              <NavItem icon={<Microscope size={20} />} label="合作牙技所" active={view === 'CLINIC_PARTNER_LABS'} onClick={() => setViewAndClose('CLINIC_PARTNER_LABS')} />
+              <NavItem icon={<ClipboardList size={20} />} label={ml('/clinic/cases', '案件管理')} active={view === 'CLINIC_CASES' || view === 'CLINIC_CASE_DETAIL'} onClick={() => setViewAndClose('CLINIC_CASES')} />
+              <NavItem icon={<Plus size={20} />} label={ml('/clinic/create-case', '新建案件')} active={view === 'CLINIC_CREATE_CASE'} onClick={() => setViewAndClose('CLINIC_CREATE_CASE')} />
+              <NavItem icon={<Building2 size={20} />} label={ml('/clinic/profile', '診所資料')} active={view === 'CLINIC_PROFILE'} onClick={() => setViewAndClose('CLINIC_PROFILE')} />
+              <NavItem icon={<Microscope size={20} />} label={ml('/clinic/partner-labs', '合作牙技所')} active={view === 'CLINIC_PARTNER_LABS'} onClick={() => setViewAndClose('CLINIC_PARTNER_LABS')} />
               <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
               <NavItem icon={<Settings size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
             </>
           )}
           {role === 'LAB' && (
             <>
-              <NavItem icon={<ClipboardList size={20} />} label="案件管理" active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => setViewAndClose('LAB_CASES')} />
-              <NavItem icon={<Microscope size={20} />} label="牙技所資料" active={view === 'LAB_PROFILE'} onClick={() => setViewAndClose('LAB_PROFILE')} />
-              <NavItem icon={<Building2 size={20} />} label="合作診所" active={view === 'LAB_PARTNER_CLINICS'} onClick={() => setViewAndClose('LAB_PARTNER_CLINICS')} />
+              <NavItem icon={<ClipboardList size={20} />} label={ml('/lab/cases', '案件管理')} active={view === 'LAB_CASES' || view === 'LAB_CASE_DETAIL'} onClick={() => setViewAndClose('LAB_CASES')} />
+              <NavItem icon={<Microscope size={20} />} label={ml('/lab/profile', '牙技所資料')} active={view === 'LAB_PROFILE'} onClick={() => setViewAndClose('LAB_PROFILE')} />
+              <NavItem icon={<Building2 size={20} />} label={ml('/lab/partner-clinics', '合作診所')} active={view === 'LAB_PARTNER_CLINICS'} onClick={() => setViewAndClose('LAB_PARTNER_CLINICS')} />
               <NavItem icon={<Users size={20} />} label="帳號管理" active={view === 'ACCOUNT_MGMT'} onClick={() => setViewAndClose('ACCOUNT_MGMT')} />
               <NavItem icon={<Settings size={20} />} label="帳號設定" active={view === 'ACCOUNT_SETTINGS'} onClick={() => setViewAndClose('ACCOUNT_SETTINGS')} />
             </>
           )}
           {role === 'MEMBER' && (
             <>
-              <NavItem icon={<ClipboardList size={20} />} label="假牙問診" active={view === 'MEMBER_QA'} onClick={() => setViewAndClose('MEMBER_QA')} />
-              <NavItem icon={<HeartPulse size={20} />} label="推薦診所" active={view === 'MEMBER_RECOMMENDATIONS'} onClick={() => setViewAndClose('MEMBER_RECOMMENDATIONS')} />
-              <NavItem icon={<Activity size={20} />} label="案件追蹤" active={view === 'MEMBER_CASES'} onClick={() => setViewAndClose('MEMBER_CASES')} />
+              <NavItem icon={<ClipboardList size={20} />} label={ml('/member/qa', '假牙問診')} active={view === 'MEMBER_QA'} onClick={() => setViewAndClose('MEMBER_QA')} />
+              <NavItem icon={<HeartPulse size={20} />} label={ml('/member/recs', '推薦診所')} active={view === 'MEMBER_RECOMMENDATIONS'} onClick={() => setViewAndClose('MEMBER_RECOMMENDATIONS')} />
+              <NavItem icon={<Activity size={20} />} label={ml('/member/cases', '案件追蹤')} active={view === 'MEMBER_CASES'} onClick={() => setViewAndClose('MEMBER_CASES')} />
               <NavItem icon={<User size={20} />} label="個人設定" active={view === 'SETTINGS'} onClick={() => setViewAndClose('SETTINGS')} />
             </>
           )}
@@ -444,10 +445,11 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
                 <NavItem icon={<ShieldCheck size={18} />} label={ml('/super/audit-logs', '稽核日誌')} active={view === 'SUPER_AUDIT_LOGS'} onClick={() => setViewAndClose('SUPER_AUDIT_LOGS')} />
               </NavGroup>
               {/* 進階設定群組：QA問卷 + 製程模板 */}
-              <NavGroup icon={<ClipboardList size={20} />} label={ml('/super/advanced', '進階設定')} active={['SUPER_QA_QUESTIONS','SUPER_MFG_TEMPLATES','SUPER_TAGS'].includes(view)}>
+              <NavGroup icon={<ClipboardList size={20} />} label={ml('/super/advanced', '進階設定')} active={['SUPER_QA_QUESTIONS','SUPER_MFG_TEMPLATES','SUPER_TAGS','SUPER_OPTIONS'].includes(view)}>
                 <NavItem icon={<ClipboardList size={18} />} label={ml('/super/qa-questions', 'QA問卷管理')} active={view === 'SUPER_QA_QUESTIONS'} onClick={() => setViewAndClose('SUPER_QA_QUESTIONS')} />
                 <NavItem icon={<CheckCircle2 size={18} />} label={ml('/super/mfg-templates', '製程模板')} active={view === 'SUPER_MFG_TEMPLATES'} onClick={() => setViewAndClose('SUPER_MFG_TEMPLATES')} />
                 <NavItem icon={<Star size={18} />} label={ml('/super/tags', 'Tag 管理')} active={view === 'SUPER_TAGS'} onClick={() => setViewAndClose('SUPER_TAGS')} />
+                <NavItem icon={<Settings size={18} />} label={ml('/super/options', '系統選項')} active={view === 'SUPER_OPTIONS'} onClick={() => setViewAndClose('SUPER_OPTIONS')} />
               </NavGroup>
             </>
           )}
@@ -1043,6 +1045,7 @@ function AppContent() {
     SUPER_QA_QUESTIONS: '/super/qa-questions',
     SUPER_MFG_TEMPLATES: '/super/mfg-templates',
     SUPER_TAGS:          '/super/tags',
+    SUPER_OPTIONS:       '/super/options',
     ARTICLE: '/article',
     QA: '/qa',
     RECOMMENDATIONS: '/recommendations',
@@ -1177,16 +1180,15 @@ function AppContent() {
       }).catch(() => {});
   }, []);
 
-  // 後台選單標籤：ADMIN/SUPER_ADMIN 登入後讀取，讓左側選單名稱與 DB 同步
+  // 所有登入角色都載入選單標籤，讓 Sidebar 名稱與 SuperAdmin 選單管理同步
   const [adminMenuLabels, setAdminMenuLabels] = useState<Record<string, string>>({});
   const fetchAdminMenuLabels = useCallback(() => {
-    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') return;
-    apiFetch('/admin/menu-config')
-      .then(r => r.ok ? r.json() : [])
-      .then((items: any[]) => {
-        const map: Record<string, string> = {};
-        items.forEach((i: any) => { if (i.path) map[i.path] = i.label; });
-        setAdminMenuLabels(map);
+    if (!role || role === 'GUEST') return; // 未登入不需要
+    // /admin/menu-labels 回傳 { path: label } map，所有登入角色皆可呼叫
+    apiFetch('/admin/menu-labels')
+      .then(r => r.ok ? r.json() : {})
+      .then((map: Record<string, string>) => {
+        if (map && typeof map === 'object') setAdminMenuLabels(map);
       }).catch(() => {});
   }, [role]);
   // 登入時載入一次
@@ -1276,6 +1278,7 @@ function AppContent() {
             {view === 'SUPER_QA_QUESTIONS' && <SuperQAQuestions />}
             {view === 'SUPER_MFG_TEMPLATES' && <SuperMfgTemplates />}
             {view === 'SUPER_TAGS' && <SuperTagsManager />}
+            {view === 'SUPER_OPTIONS' && <SuperOptionsManager />}
             {/* ── Member Pages ─────────────────────────────── */}
             {view === 'MEMBER_QA' && <MemberQAWizard setView={handleSetView} onConsultationCreated={setConsultationId} />}
             {view === 'MEMBER_RECOMMENDATIONS' && <MemberRecommendations setView={handleSetView} consultationId={consultationId} />}

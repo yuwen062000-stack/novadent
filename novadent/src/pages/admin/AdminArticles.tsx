@@ -9,9 +9,11 @@ export function AdminArticles() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<Article | null>(null);
-  const [form, setForm] = useState({ title: '', category: '假牙百科', summary: '', content: '', author: 'Novadent 編輯部', slug: '', published: false, tags: '' });
+  const [form, setForm] = useState({ title: '', category: '', summary: '', content: '', author: 'Novadent 編輯部', slug: '', published: false, tags: '' });
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  // 從 system_options 動態讀取文章分類（SuperAdmin 在系統選項管理）
+  const [categories, setCategories] = useState<string[]>([]);
 
   const load = () => {
     setLoading(true);
@@ -21,10 +23,20 @@ export function AdminArticles() {
       .catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
+  // 載入文章分類選項
+  useEffect(() => {
+    fetch('/api/options/ARTICLE_CATEGORY')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        const cats = Array.isArray(data) ? data.map((d: any) => d.label || d.value) : [];
+        setCategories(cats.length > 0 ? cats : ['假牙百科', '口腔護理', '診所指南', '最新消息']);
+      })
+      .catch(() => setCategories(['假牙百科', '口腔護理', '診所指南', '最新消息']));
+  }, []);
 
   const openCreate = () => {
     setEditTarget(null);
-    setForm({ title: '', category: '假牙百科', summary: '', content: '', author: 'Novadent 編輯部', slug: '', published: false, tags: '' });
+    setForm({ title: '', category: categories[0] || '', summary: '', content: '', author: 'Novadent 編輯部', slug: '', published: false, tags: '' });
     setShowModal(true);
   };
   const openEdit = (a: Article) => {
@@ -72,7 +84,7 @@ export function AdminArticles() {
     finally { setDeleting(null); }
   };
 
-  const CATEGORIES = ['假牙百科', '口腔護理', '診所指南', '最新消息'];
+  // categories 已從 /api/options/ARTICLE_CATEGORY 動態取得（見 useEffect）
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -143,7 +155,7 @@ export function AdminArticles() {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">分類</label>
                   <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800">
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>

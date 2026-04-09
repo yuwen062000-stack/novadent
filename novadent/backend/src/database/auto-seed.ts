@@ -7,10 +7,10 @@ const SEED_SALT =  8; // 測試帳號用較低強度（加速 seed，降低 Repl
 async function hash(pw: string, rounds = SALT) { return bcrypt.hash(pw, rounds); }
 
 async function ensureDefaultPasswords(pool: Pool) {
-  // 統一測試密碼，方便人工測試各角色
-  // 重要：只算一次 hash，所有測試帳號共用，避免 Replit 低速 CPU 超時
+  // 只補「尚未改過密碼」的帳號（force_change_password = true 表示仍在初始狀態）
+  // 已手動改過密碼的帳號（force_change_password = false）不會被重置
+  // 這樣每次 Replit 重啟不會把管理員改好的密碼蓋回預設值
   const TEST_PW = 'admin@123';
-  const h = await hash(TEST_PW, SEED_SALT); // ← 只算一次
   const emails = [
     'superadmin@novadent.com',
     'admin@novadent.com',
@@ -21,18 +21,29 @@ async function ensureDefaultPasswords(pool: Pool) {
     'artisan-lab@novadent.com',
     'member1@test.com',
   ];
-  for (const email of emails) {
+
+  // 先查詢哪些帳號還在「強制改密碼」狀態（即尚未改過）
+  const { rows: needReset } = await pool.query(
+    `SELECT email FROM users WHERE email = ANY($1) AND force_change_password = true`,
+    [emails]
+  );
+  if (needReset.length === 0) {
+    console.log('[AutoSeed] Default passwords: all accounts already changed, skipping');
+    return;
+  }
+
+  const h = await hash(TEST_PW, SEED_SALT); // ← 只在有需要時才算 hash
+  for (const { email } of needReset) {
     try {
-      const { rowCount } = await pool.query(
-        `UPDATE users SET password_hash = $1, force_change_password = false WHERE email = $2`,
+      await pool.query(
+        `UPDATE users SET password_hash = $1 WHERE email = $2 AND force_change_password = true`,
         [h, email]
       );
-      if (rowCount === 0) console.warn(`[AutoSeed] Password reset skipped (user not found): ${email}`);
     } catch (e: any) {
       console.error(`[AutoSeed] Password reset failed for ${email}:`, e.message);
     }
   }
-  console.log('[AutoSeed] Default passwords ensured (admin@123, salt=8)');
+  console.log(`[AutoSeed] Default passwords ensured for ${needReset.length} account(s) with force_change_password=true`);
 }
 
 async function deduplicateAndSeedMenu(pool: Pool) {
@@ -105,6 +116,45 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   // ── 遷移：clinic_tags 加 target_type 欄位（CLINIC/LAB/ALL）──
   await pool.query(`ALTER TABLE clinic_tags ADD COLUMN IF NOT EXISTS target_type VARCHAR(10) NOT NULL DEFAULT 'ALL'`);
 
+  // ── 遷移：建立 system_options 表並塞入預設選項 ───────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS system_options (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      "group"     VARCHAR(30) NOT NULL,
+      value       VARCHAR(50) NOT NULL,
+      label       VARCHAR(50) NOT NULL,
+      sort_order  INT NOT NULL DEFAULT 0,
+      is_active   BOOLEAN NOT NULL DEFAULT true,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  // 預設文章分類
+  const articleCats = [
+    { value: '假牙百科', label: '假牙百科', order: 0 },
+    { value: '口腔護理', label: '口腔護理', order: 1 },
+    { value: '診所指南', label: '診所指南', order: 2 },
+    { value: '最新消息', label: '最新消息', order: 3 },
+  ];
+  for (const c of articleCats) {
+    await pool.query(
+      `INSERT INTO system_options ("group", value, label, sort_order) SELECT $1, $2, $3, $4 WHERE NOT EXISTS (SELECT 1 FROM system_options WHERE "group"=$1 AND value=$2)`,
+      ['ARTICLE_CATEGORY', c.value, c.label, c.order]
+    );
+  }
+  // 預設案件類型
+  const caseTypes = [
+    { value: 'FIXED',     label: '固定式假牙', order: 0 },
+    { value: 'REMOVABLE', label: '活動式假牙', order: 1 },
+    { value: 'IMPLANT',   label: '植牙牙冠',   order: 2 },
+  ];
+  for (const c of caseTypes) {
+    await pool.query(
+      `INSERT INTO system_options ("group", value, label, sort_order) SELECT $1, $2, $3, $4 WHERE NOT EXISTS (SELECT 1 FROM system_options WHERE "group"=$1 AND value=$2)`,
+      ['CASE_TYPE', c.value, c.label, c.order]
+    );
+  }
+  console.log('[AutoSeed] system_options table ready');
+
   // ── 遷移：確保新欄位存在（舊站升級不需手動跑 migration）───────
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS menu_type VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'`);
   await pool.query(`ALTER TABLE menu_config ADD COLUMN IF NOT EXISTS parent_id UUID`);
@@ -133,9 +183,11 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   await pool.query(`UPDATE menu_config SET path = '/super/qa-questions' WHERE path = '/super/qa'`);
   await pool.query(`UPDATE menu_config SET path = '/super/mfg-templates' WHERE path = '/super/mfg'`);
 
-  // ── 設定前台 show_in_footer（關於我們、衛教中心、影音專區）──────
-  await pool.query(`UPDATE menu_config SET show_in_footer = true WHERE path IN ('/about', '/knowledge', '/videos') AND menu_type = 'PUBLIC'`);
-  console.log('[AutoSeed] menu_config columns migrated & menu_type/show_in_footer updated');
+  // ── 設定前台 show_in_footer 初始值（只補 false 的，不覆蓋管理員已修改的 true→false）──
+  // 注意：這裡不做強制覆蓋，改用「目前為 false 才更新為 true」，避免管理員設定被 seed 蓋掉
+  // 這一行已停用：改為 INSERT WHERE NOT EXISTS 模式，保留管理員的設定
+  // await pool.query(`UPDATE menu_config SET show_in_footer = true WHERE path IN ('/about', '/knowledge', '/videos') AND menu_type = 'PUBLIC'`);
+  console.log('[AutoSeed] menu_config columns migrated & menu_type updated');
 
   // ── 寫入預設 SEO 設定（不存在才 INSERT，避免覆蓋管理員已設定的值）──
   const defaultSeoSettings: [string, string, string][] = [
@@ -324,9 +376,11 @@ async function deduplicateAndSeedMenu(pool: Pool) {
         `SELECT id FROM menu_config WHERE path = $1 LIMIT 1`, [path]
       );
       if (existing.length > 0) {
+        // 只更新結構性欄位（parent_id、roles、order、menu_type），不覆蓋 label
+        // 避免管理員在後台修改的選單名稱被 seed 重置
         await pool.query(
-          `UPDATE menu_config SET parent_id = $1, label = $2, roles = $3, "order" = $4, menu_type = 'ADMIN' WHERE id = $5`,
-          [parentId, label, roles, order, existing[0].id]
+          `UPDATE menu_config SET parent_id = $1, roles = $2, "order" = $3, menu_type = 'ADMIN' WHERE id = $4`,
+          [parentId, roles, order, existing[0].id]
         );
       } else {
         await pool.query(
@@ -337,15 +391,38 @@ async function deduplicateAndSeedMenu(pool: Pool) {
       }
     }
 
-    // Step 4：確保頂層獨立項目存在（合作連結）
-    const { rows: plExists } = await pool.query(
-      `SELECT id FROM menu_config WHERE path = '/admin/partner-links' LIMIT 1`
-    );
-    if (plExists.length === 0) {
-      await pool.query(
-        `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type)
-         VALUES ('合作連結','/admin/partner-links','{ADMIN,SUPER_ADMIN}',15,true,'ADMIN')`
-      );
+    // Step 4：確保所有登入後 Sidebar 的獨立項目存在（INSERT WHERE NOT EXISTS，不覆蓋 label）
+    type StandaloneDef = [string, string, string[], number];
+    const standaloneItems: StandaloneDef[] = [
+      // MEMBER
+      ['假牙問診',    '/member/qa',              ['MEMBER'],              6],
+      ['推薦診所',    '/member/recs',            ['MEMBER'],              7],
+      ['案件追蹤',    '/member/cases',           ['MEMBER'],              8],
+      // CLINIC
+      ['案件管理',    '/clinic/cases',           ['CLINIC'],              9],
+      ['新建案件',    '/clinic/create-case',     ['CLINIC'],              10],
+      ['診所資料',    '/clinic/profile',         ['CLINIC'],              11],
+      ['合作牙技所',  '/clinic/partner-labs',    ['CLINIC'],              12],
+      // LAB
+      ['案件管理',    '/lab/cases',              ['LAB'],                 13],
+      ['牙技所資料',  '/lab/profile',            ['LAB'],                 14],
+      ['合作診所',    '/lab/partner-clinics',    ['LAB'],                 15],
+      // ADMIN
+      ['統計儀表板',  '/admin/dashboard',        ['ADMIN','SUPER_ADMIN'], 16],
+      ['帳號管理',    '/admin/users',            ['ADMIN','SUPER_ADMIN'], 17],
+      ['診所管理',    '/admin/clinics',          ['ADMIN','SUPER_ADMIN'], 18],
+      ['牙技所管理',  '/admin/labs',             ['ADMIN','SUPER_ADMIN'], 19],
+      ['合作連結',    '/admin/partner-links',    ['ADMIN','SUPER_ADMIN'], 20],
+    ];
+    for (const [label, path, roles, order] of standaloneItems) {
+      const { rows: ex } = await pool.query(`SELECT id FROM menu_config WHERE path = $1 LIMIT 1`, [path]);
+      if (ex.length === 0) {
+        // 不存在才 INSERT，保留管理員已修改的名稱
+        await pool.query(
+          `INSERT INTO menu_config (label, path, roles, "order", visible, menu_type) VALUES ($1,$2,$3,$4,true,'ADMIN')`,
+          [label, path, roles, order]
+        );
+      }
     }
 
     console.log('[AutoSeed] Existing menu_config: deduped + parent groups + children ensured');
@@ -431,7 +508,8 @@ export async function autoSeed() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
-    await ensureDefaultPasswords(pool);
+    // ensureDefaultPasswords 已移除 — 密碼管理應透過後台「重設密碼」功能處理，
+    // 不應在每次啟動時由 seed 干預，避免交付客戶後成為安全漏洞
     await deduplicateAndSeedMenu(pool);
     await seedSystemSettings(pool);
     await seedPageContents(pool);  // 聯絡資訊、服務條款、隱私權政策預設資料

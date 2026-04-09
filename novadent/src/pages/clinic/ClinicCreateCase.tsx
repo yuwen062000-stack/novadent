@@ -13,7 +13,8 @@ interface Props {
   setView: (v: string) => void;
 }
 
-const CASE_TYPES = [
+// 案件類型從 system_options 動態讀取（fallback 寫死值避免空白）
+const FALLBACK_CASE_TYPES = [
   { value: 'FIXED', label: '固定式假牙' },
   { value: 'REMOVABLE', label: '活動式假牙' },
   { value: 'IMPLANT', label: '植牙牙冠' },
@@ -25,13 +26,31 @@ export function ClinicCreateCase({ setView }: Props) {
   const [loadingLabs, setLoadingLabs] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  // 動態載入案件類型
+  const [caseTypes, setCaseTypes] = useState(FALLBACK_CASE_TYPES);
 
   const [form, setForm] = useState({
     patientName: '',
-    type: 'FIXED',
+    type: '',
     description: '',
     labId: '',
   });
+
+  // 載入案件類型選項
+  useEffect(() => {
+    fetch('/api/options/CASE_TYPE')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        const types = Array.isArray(data) ? data.map((d: any) => ({ value: d.value, label: d.label })) : [];
+        if (types.length > 0) {
+          setCaseTypes(types);
+          setForm(f => ({ ...f, type: f.type || types[0].value }));
+        } else {
+          setForm(f => ({ ...f, type: f.type || 'FIXED' }));
+        }
+      })
+      .catch(() => setForm(f => ({ ...f, type: f.type || 'FIXED' })));
+  }, []);
 
   // 只載入「已合作牙技所」作為案件指定選項
   // /partner-links/my 回傳 [{ labId, labName, labCity, ... }]，需轉成 Lab 格式
@@ -145,7 +164,7 @@ export function ClinicCreateCase({ setView }: Props) {
         <div className="space-y-2">
           <label className="text-sm font-semibold text-slate-700">假牙類型 <span className="text-red-500">*</span></label>
           <div className="grid grid-cols-3 gap-3">
-            {CASE_TYPES.map(t => (
+            {caseTypes.map(t => (
               <button
                 key={t.value}
                 type="button"
