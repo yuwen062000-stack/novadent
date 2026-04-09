@@ -36,9 +36,9 @@ export function ClinicCreateCase({ setView }: Props) {
     labId: '',
   });
 
-  // 載入案件類型選項
+  // 載入案件類型選項（用 apiFetch 確保帶 JWT，避免 CDN 快取舊回應）
   useEffect(() => {
-    fetch('/api/options/CASE_TYPE')
+    apiFetch('/options/CASE_TYPE')
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const types = Array.isArray(data) ? data.map((d: any) => ({ value: d.value, label: d.label })) : [];
@@ -46,10 +46,10 @@ export function ClinicCreateCase({ setView }: Props) {
           setCaseTypes(types);
           setForm(f => ({ ...f, type: f.type || types[0].value }));
         } else {
-          setForm(f => ({ ...f, type: f.type || 'FIXED' }));
+          setForm(f => ({ ...f, type: f.type || FALLBACK_CASE_TYPES[0].value }));
         }
       })
-      .catch(() => setForm(f => ({ ...f, type: f.type || 'FIXED' })));
+      .catch(() => {}); // API 失敗時保留 FALLBACK_CASE_TYPES
   }, []);
 
   // 只載入「已合作牙技所」作為案件指定選項
