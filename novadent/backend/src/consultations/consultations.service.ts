@@ -51,13 +51,30 @@ export class ConsultationsService {
     return consultation;
   }
 
-  // ── 會員取自己的諮詢記錄 ─────────────────────────────────
+  // ── 會員取自己的諮詢記錄（含全域流水號，與 Admin 看到的 C-001 編號一致）───
   async findByMember(memberId: string) {
-    return this.db
-      .select()
-      .from(consultations)
-      .where(eq(consultations.memberId, memberId))
-      .orderBy(desc(consultations.createdAt));
+    // 用 CTE + ROW_NUMBER() OVER (全部記錄按時間排序) 產生全域序號
+    const rows = await this.db.execute<{
+      id: string;
+      member_id: string;
+      answers: any;
+      inferred_case_type: string | null;
+      selected_city: string | null;
+      selected_district: string | null;
+      summary: string | null;
+      status: string;
+      created_at: string;
+      consultation_number: number;
+    }>(sql`
+      WITH numbered AS (
+        SELECT *, ROW_NUMBER() OVER (ORDER BY created_at ASC) AS consultation_number
+        FROM consultations
+      )
+      SELECT * FROM numbered
+      WHERE member_id = ${memberId}
+      ORDER BY created_at DESC
+    `);
+    return rows;
   }
 
   // ── 取單一諮詢（確認歸屬會員）───────────────────────────
