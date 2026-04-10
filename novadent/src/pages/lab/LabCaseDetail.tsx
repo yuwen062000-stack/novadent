@@ -411,7 +411,7 @@ export function LabCaseDetail({ caseId, setView }: Props) {
               </button>
             </div>
             <div className="space-y-1.5 mb-6">
-              <label className="text-sm font-semibold text-slate-700">節點名稱</label>
+              <label className="text-sm font-semibold text-slate-700">節點名稱 <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={newStepName}
