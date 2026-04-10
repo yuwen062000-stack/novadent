@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Eye, EyeOff, RefreshCw, Trash2, Tag } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit2, Eye, EyeOff, RefreshCw, Trash2, Tag, Search } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface Article { id: string; title: string; category: string; tags?: string[]; published: boolean; createdAt: string; author: string; summary?: string; content?: string; slug?: string; }
@@ -14,6 +14,20 @@ export function AdminArticles() {
   const [deleting, setDeleting] = useState<string | null>(null);
   // 從 system_options 動態讀取文章分類（SuperAdmin 在系統選項管理）
   const [categories, setCategories] = useState<string[]>([]);
+  // 查詢條件
+  const [search, setSearch]             = useState('');           // 關鍵字（標題）
+  const [filterCategory, setFilterCategory] = useState('');      // 分類篩選
+  const [filterPublished, setFilterPublished] = useState('');    // 上架狀態：'' | 'true' | 'false'
+
+  // 套用查詢條件（客戶端過濾）
+  const filtered = useMemo(() => {
+    return articles.filter(a => {
+      if (search && !a.title.toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterCategory && a.category !== filterCategory) return false;
+      if (filterPublished !== '' && String(a.published) !== filterPublished) return false;
+      return true;
+    });
+  }, [articles, search, filterCategory, filterPublished]);
 
   const load = () => {
     setLoading(true);
@@ -105,6 +119,36 @@ export function AdminArticles() {
         </div>
       </div>
 
+      {/* 查詢條件列 */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="搜尋標題..."
+            className="pl-8 pr-3 py-2 w-full border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20"
+          />
+        </div>
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+          className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 bg-white">
+          <option value="">全部分類</option>
+          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={filterPublished} onChange={e => setFilterPublished(e.target.value)}
+          className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 bg-white">
+          <option value="">全部狀態</option>
+          <option value="true">已發布</option>
+          <option value="false">草稿</option>
+        </select>
+        {(search || filterCategory || filterPublished) && (
+          <button onClick={() => { setSearch(''); setFilterCategory(''); setFilterPublished(''); }}
+            className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50">
+            清除篩選
+          </button>
+        )}
+        <span className="self-center text-xs text-slate-400">共 {filtered.length} 筆</span>
+      </div>
+
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px]">
@@ -113,8 +157,8 @@ export function AdminArticles() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">載入中...</td></tr>
-              : articles.length === 0 ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">尚無文章</td></tr>
-              : articles.map(a => (
+              : filtered.length === 0 ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">{articles.length === 0 ? '尚無文章' : '無符合條件的文章'}</td></tr>
+              : filtered.map(a => (
                 <tr key={a.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-900 max-w-xs truncate">{a.title}</td>
                   <td className="px-4 py-3"><span className="px-2 py-1 bg-blue-50 text-blue-800 rounded-lg text-xs font-bold">{a.category}</span></td>

@@ -1,7 +1,7 @@
 // AdminMemberConsultations — Admin 查看所有會員諮詢記錄
 // 功能：列表顯示所有 QA 問診記錄（含流水號 C-001），點擊展開查看答案與推薦診所
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, RefreshCw, User, MapPin, Activity } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ChevronDown, ChevronRight, RefreshCw, User, MapPin, Activity, Search } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 // 假牙類型對應中文顯示
@@ -53,6 +53,20 @@ export function AdminMemberConsultations() {
   const [detail, setDetail]       = useState<ConsultationDetail | null>(null);  // 展開的詳細資料
   const [detailLoading, setDetailLoading] = useState(false);           // 展開詳情載入中
   const [qaLookup, setQaLookup]   = useState<QaLookup>({});           // QA 題目 + 選項 lookup map
+  const [search, setSearch]       = useState('');                      // 關鍵字（會員姓名/Email）
+  const [filterType, setFilterType] = useState('');                    // 假牙類型篩選
+
+  // 套用查詢條件（客戶端過濾目前頁的資料）
+  const filtered = useMemo(() => {
+    return rows.filter(r => {
+      if (search) {
+        const kw = search.toLowerCase();
+        if (!r.member_name?.toLowerCase().includes(kw) && !r.member_email?.toLowerCase().includes(kw)) return false;
+      }
+      if (filterType && r.inferred_case_type !== filterType) return false;
+      return true;
+    });
+  }, [rows, search, filterType]);
 
   const LIMIT = 20; // 每頁筆數
 
@@ -163,6 +177,32 @@ export function AdminMemberConsultations() {
         </button>
       </div>
 
+      {/* 查詢條件列 */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="搜尋姓名或 Email..."
+            className="pl-8 pr-3 py-2 w-full border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20"
+          />
+        </div>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)}
+          className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 bg-white">
+          <option value="">全部類型</option>
+          <option value="FIXED">固定式假牙</option>
+          <option value="REMOVABLE">活動式假牙</option>
+          <option value="IMPLANT">植牙牙冠</option>
+        </select>
+        {(search || filterType) && (
+          <button onClick={() => { setSearch(''); setFilterType(''); }}
+            className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50">
+            清除篩選
+          </button>
+        )}
+        <span className="self-center text-xs text-slate-400">顯示 {filtered.length} / {total} 筆</span>
+      </div>
+
       {/* 列表 */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -177,9 +217,9 @@ export function AdminMemberConsultations() {
             <tbody className="divide-y divide-slate-100">
               {loading
                 ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">載入中...</td></tr>
-                : rows.length === 0
-                  ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">尚無諮詢記錄</td></tr>
-                  : rows.map(row => (
+                : filtered.length === 0
+                  ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">{rows.length === 0 ? '尚無諮詢記錄' : '無符合條件的記錄'}</td></tr>
+                  : filtered.map(row => (
                     <React.Fragment key={row.id}>
                       {/* 列本身 */}
                       <tr
