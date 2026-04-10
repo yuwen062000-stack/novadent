@@ -3,7 +3,7 @@ import {
   Injectable, Inject, NotFoundException, BadRequestException, ConflictException
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { eq, ilike, and, or, sql } from 'drizzle-orm';
+import { eq, ne, ilike, and, or, sql } from 'drizzle-orm';
 import { Db } from '../database/db';
 import { DB_TOKEN } from '../database/database.module';
 import { users, clinics, labs, auditLogs } from '../database/schema';
@@ -47,6 +47,7 @@ export class UsersService {
     search?: string;
     page?: number;
     pageSize?: number;
+    requesterRole?: string;  // 請求者角色：ADMIN 時自動過濾掉 SUPER_ADMIN 帳號
   }) {
     const page     = query.page     ?? 1;
     const pageSize = query.pageSize ?? 20;
@@ -54,6 +55,10 @@ export class UsersService {
 
     // 組合動態 where 條件
     const conditions: any[] = [];
+    // ADMIN 看不到 SUPER_ADMIN 帳號（對 Admin 而言 SuperAdmin 帳號不存在）
+    if (query.requesterRole === 'ADMIN') {
+      conditions.push(ne(users.role, 'SUPER_ADMIN' as any));
+    }
     if (query.role)   conditions.push(eq(users.role,   query.role   as any));
     if (query.status) conditions.push(eq(users.status, query.status as any));
     if (query.search) {
@@ -93,7 +98,8 @@ export class UsersService {
   }
 
   // ── 取單一用戶（Admin）───────────────────────────────────
-  async findById(id: string) {
+  // requesterRole 傳入時，ADMIN 不可查詢 SUPER_ADMIN 帳號（當作不存在）
+  async findById(id: string, requesterRole?: string) {
     const [user] = await this.db
       .select({
         id:                  users.id,
@@ -112,6 +118,10 @@ export class UsersService {
       .limit(1);
 
     if (!user) throw new NotFoundException('用戶不存在');
+    // ADMIN 查到 SUPER_ADMIN 帳號時，視為不存在（不洩漏任何資訊）
+    if (requesterRole === 'ADMIN' && user.role === 'SUPER_ADMIN') {
+      throw new NotFoundException('用戶不存在');
+    }
     return user;
   }
 
@@ -183,8 +193,8 @@ export class UsersService {
   }
 
   // ── 更新用戶基本資料 ─────────────────────────────────────
-  async update(id: string, dto: UpdateUserDto, adminUserId: string) {
-    await this.findById(id); // 確認用戶存在
+  async update(id: string, dto: UpdateUserDto, adminUserId: string, requesterRole?: string) {
+    await this.findById(id, requesterRole); // ADMIN 查不到 SUPER_ADMIN → 404
 
     await this.db.update(users)
       .set({ ...dto, updatedAt: new Date() } as any)
@@ -196,8 +206,8 @@ export class UsersService {
   }
 
   // ── 啟用 / 停用用戶 ─────────────────────────────────────
-  async toggleStatus(id: string, adminUserId: string) {
-    const user = await this.findById(id);
+  async toggleStatus(id: string, adminUserId: string, requesterRole?: string) {
+    const user = await this.findById(id, requesterRole); // ADMIN 查不到 SUPER_ADMIN → 404
     const newStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
 
     await this.db.update(users)
@@ -213,8 +223,8 @@ export class UsersService {
   }
 
   // ── Admin 重設密碼（產生臨時密碼，只顯示一次）─────────────
-  async adminResetPassword(id: string, adminUserId: string) {
-    await this.findById(id); // 確認用戶存在
+  async adminResetPassword(id: string, adminUserId: string, requesterRole?: string) {
+    await this.findById(id, requesterRole); // ADMIN 查不到 SUPER_ADMIN → 404
 
     const tempPassword = generateTempPassword(); // 統一自動產生 nova#### 臨時密碼
     const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
