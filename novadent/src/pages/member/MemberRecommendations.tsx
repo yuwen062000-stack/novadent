@@ -129,6 +129,7 @@ export function MemberRecommendations({ setView, consultationId }: Props) {
   const [cityLabel, setCityLabel] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loadingClinics, setLoadingClinics] = useState(false);
+  const [clinicError, setClinicError] = useState('');  // 推薦診所載入失敗訊息
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // ── 載入所有問診歷史 ────────────────────────────────────────
@@ -152,13 +153,17 @@ export function MemberRecommendations({ setView, consultationId }: Props) {
     if (!selectedId) return;
     setLoadingClinics(true);
     setClinics([]);
+    setClinicError('');  // 重置錯誤狀態
     apiFetch(`/consultations/${selectedId}/recommendations`)
-      .then(r => r.ok ? r.json() : { recommendations: [], city: '' })
+      .then(r => {
+        if (!r.ok) throw new Error('載入失敗');
+        return r.json();
+      })
       .then(data => {
         setClinics(data.recommendations || []);
         setCityLabel(data.city || '');
       })
-      .catch(() => {})
+      .catch(() => setClinicError('推薦診所載入失敗，請稍後再試'))
       .finally(() => setLoadingClinics(false));
   }, [selectedId]);
 
@@ -262,6 +267,10 @@ export function MemberRecommendations({ setView, consultationId }: Props) {
           {loadingClinics ? (
             <div className="flex justify-center py-12">
               <Loader2 className="animate-spin text-blue-900" size={28} />
+            </div>
+          ) : clinicError ? (
+            <div className="text-center py-12 text-red-400">
+              <p>{clinicError}</p>
             </div>
           ) : clinics.length === 0 ? (
             <div className="text-center py-12 text-slate-400">

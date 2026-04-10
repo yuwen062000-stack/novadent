@@ -183,7 +183,7 @@ export function ClinicPartnerLabs() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">選擇牙技所</label>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">選擇牙技所 <span className="text-red-500">*</span></label>
                   <SearchableSelect
                     options={labOptions}
                     value={selectedLabId}

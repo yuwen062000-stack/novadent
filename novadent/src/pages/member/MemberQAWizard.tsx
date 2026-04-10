@@ -181,6 +181,8 @@ export function MemberQAWizard({ setView, onConsultationCreated }: Props) {
       if (!res.ok) throw new Error('Submit failed');
       const data = await res.json();
       if (onConsultationCreated) onConsultationCreated(data.id);
+      setAnswers({});       // 清除答案，避免返回問卷頁時帶舊資料
+      setCurrentIndex(0);   // 重置到第一題
       setSubmitted(true);
     } catch {
       setError('提交失敗，請稍後再試');

@@ -317,6 +317,10 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   } else {
     // ── 現有安裝修復流程 ─────────────────────────────────────────
 
+    // ── 廢棄路徑清除（功能移除時同步從 menu_config 刪除）─────────
+    // /member/cases：案件追蹤功能已移除（無法 mapping 會員與案件）
+    await pool.query(`DELETE FROM menu_config WHERE path = '/member/cases'`);
+
     // Step 1：去除所有重複路徑（保留 id 最小的那筆）
     // 注意：menu_config 沒有 created_at 欄位，必須用 id 排序
     await pool.query(`
@@ -397,7 +401,6 @@ async function deduplicateAndSeedMenu(pool: Pool) {
       // MEMBER
       ['假牙問診',    '/member/qa',              ['MEMBER'],              6],
       ['推薦診所',    '/member/recs',            ['MEMBER'],              7],
-      ['案件追蹤',    '/member/cases',           ['MEMBER'],              8],
       // CLINIC
       ['案件管理',    '/clinic/cases',           ['CLINIC'],              9],
       ['新建案件',    '/clinic/create-case',     ['CLINIC'],              10],
