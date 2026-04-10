@@ -1003,7 +1003,7 @@ function AppContent() {
       case 'ADMIN':    navigate('/admin/dashboard', { replace: true }); break;
       case 'CLINIC':   navigate('/clinic/cases', { replace: true }); break;
       case 'LAB':      navigate('/lab/cases', { replace: true }); break;
-      case 'MEMBER':   navigate('/member/cases', { replace: true }); break;
+      case 'MEMBER':   navigate('/member/recommendations', { replace: true }); break;
       default:         navigate('/', { replace: true });
     }
   };
