@@ -12,6 +12,7 @@ export function AdminArticles() {
   const [form, setForm] = useState({ title: '', category: '', summary: '', content: '', author: 'Novadent 編輯部', slug: '', published: false, tags: '' });
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState('');                 // API 載入錯誤訊息（403/網路錯誤等）
   // 從 system_options 動態讀取文章分類（SuperAdmin 在系統選項管理）
   const [categories, setCategories] = useState<string[]>([]);
   // 查詢條件
@@ -31,11 +32,20 @@ export function AdminArticles() {
 
   const load = () => {
     setLoading(true);
+    setLoadError('');
     // 加 _t 時間戳避免 CDN 快取舊資料（Replit CDN 可能快取 GET 回應）
     apiFetch(`/admin/articles?limit=100&_t=${Date.now()}`)
-      .then(r => r.json())
-      .then(data => { setArticles(Array.isArray(data) ? data : data.data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(r => {
+        // 顯示錯誤訊息（403 = 無存取權限，401 = 未登入）
+        if (!r.ok) { setLoadError(`載入失敗（HTTP ${r.status}）`); setLoading(false); return null; }
+        return r.json();
+      })
+      .then(data => {
+        if (!data) return;
+        setArticles(Array.isArray(data) ? data : data.data || []);
+        setLoading(false);
+      })
+      .catch(() => { setLoadError('載入失敗，請重新整理'); setLoading(false); });
   };
   useEffect(() => { load(); }, []);
   // 載入文章分類選項（用 apiFetch 確保帶 JWT，避免 CDN 快取舊回應）
@@ -157,6 +167,7 @@ export function AdminArticles() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">載入中...</td></tr>
+              : loadError ? <tr><td colSpan={6} className="text-center py-12 text-red-500">{loadError}</td></tr>
               : filtered.length === 0 ? <tr><td colSpan={6} className="text-center py-12 text-slate-400">{articles.length === 0 ? '尚無文章' : '無符合條件的文章'}</td></tr>
               : filtered.map(a => (
                 <tr key={a.id} className="hover:bg-slate-50">

@@ -183,6 +183,21 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   await pool.query(`UPDATE menu_config SET path = '/super/qa-questions' WHERE path = '/super/qa'`);
   await pool.query(`UPDATE menu_config SET path = '/super/mfg-templates' WHERE path = '/super/mfg'`);
 
+  // ── 確保 Admin 內容管理路徑的 roles 包含 ADMIN（每次啟動都執行，修正可能被手動改壞的資料）──
+  // 這些路徑 ADMIN 和 SUPER_ADMIN 都應能存取，不能只設 SUPER_ADMIN
+  const adminContentPaths = [
+    '/admin/articles', '/admin/notifications', '/admin/site-images', '/admin/videos',
+    '/admin/content',
+    '/admin/dashboard', '/admin/users', '/admin/clinics', '/admin/labs',
+    '/admin/partner-links', '/admin/consultations',
+  ];
+  for (const p of adminContentPaths) {
+    await pool.query(
+      `UPDATE menu_config SET roles = ARRAY['ADMIN','SUPER_ADMIN'] WHERE path = $1 AND NOT (roles @> ARRAY['ADMIN']::text[])`,
+      [p]
+    );
+  }
+
   // ── 設定前台 show_in_footer 初始值（只補 false 的，不覆蓋管理員已修改的 true→false）──
   // 注意：這裡不做強制覆蓋，改用「目前為 false 才更新為 true」，避免管理員設定被 seed 蓋掉
   // 這一行已停用：改為 INSERT WHERE NOT EXISTS 模式，保留管理員的設定
