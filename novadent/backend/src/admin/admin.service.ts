@@ -33,13 +33,14 @@ export class AdminService {
       .from(cases)
       .where(sql`${cases.createdAt} >= ${thisMonthStr}::timestamp`);
 
+    // 欄位名稱對應前端 DashboardStats interface（totalXxx / monthlyCases）
     return {
-      users:        userCount[0]?.count ?? 0,
-      clinics:      clinicCount[0]?.count ?? 0,
-      labs:         labCount[0]?.count ?? 0,
-      cases:        caseCount[0]?.count ?? 0,
-      articles:     articleCount[0]?.count ?? 0,
-      casesThisMonth: monthlyCases?.count ?? 0,
+      totalUsers:    userCount[0]?.count    ?? 0,
+      totalClinics:  clinicCount[0]?.count  ?? 0,
+      totalLabs:     labCount[0]?.count     ?? 0,
+      totalCases:    caseCount[0]?.count    ?? 0,
+      totalArticles: articleCount[0]?.count ?? 0,
+      monthlyCases:  monthlyCases?.count    ?? 0,
     };
   }
 

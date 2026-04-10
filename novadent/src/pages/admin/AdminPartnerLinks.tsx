@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, RefreshCw, Search } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 
@@ -15,6 +15,18 @@ export function AdminPartnerLinks() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ clinicId: '', labId: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState(''); // 關鍵字過濾診所或牙技所名稱
+
+  // 套用查詢條件（客戶端過濾）
+  const filtered = useMemo(() => {
+    if (!search.trim()) return links;
+    const kw = search.toLowerCase();
+    return links.filter(l => {
+      const clinic = (l.clinicName || clinics.find(c => c.id === l.clinicId)?.name || '').toLowerCase();
+      const lab    = (l.labName    || labs.find(lb => lb.id === l.labId)?.name     || '').toLowerCase();
+      return clinic.includes(kw) || lab.includes(kw);
+    });
+  }, [links, clinics, labs, search]);
 
   const load = async () => {
     setLoading(true);
@@ -65,6 +77,25 @@ export function AdminPartnerLinks() {
           <button onClick={() => setShowModal(true)} className="bg-blue-800 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-blue-900"><Plus size={18} /> 新增連結</button>
         </div>
       </div>
+      {/* 查詢條件列 */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="搜尋診所或牙技所名稱..."
+            className="pl-8 pr-3 py-2 w-full border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20"
+          />
+        </div>
+        {search && (
+          <button onClick={() => setSearch('')}
+            className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50">
+            清除篩選
+          </button>
+        )}
+        <span className="self-center text-xs text-slate-400">共 {filtered.length} 筆</span>
+      </div>
+
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -73,8 +104,8 @@ export function AdminPartnerLinks() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? <tr><td colSpan={4} className="text-center py-12 text-slate-400">載入中...</td></tr>
-              : links.length === 0 ? <tr><td colSpan={4} className="text-center py-12 text-slate-400">尚無合作連結</td></tr>
-              : links.map(l => (
+              : filtered.length === 0 ? <tr><td colSpan={4} className="text-center py-12 text-slate-400">{links.length === 0 ? '尚無合作連結' : '無符合條件的記錄'}</td></tr>
+              : filtered.map(l => (
                 <tr key={l.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-900">{l.clinicName || getClinicName(l.clinicId)}</td>
                   <td className="px-4 py-3 text-slate-600">{l.labName || getLabName(l.labId)}</td>
