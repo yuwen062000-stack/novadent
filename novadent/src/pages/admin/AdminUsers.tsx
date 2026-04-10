@@ -17,7 +17,8 @@ const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: '超級管理員', ADMIN: '管理員', CLINIC: '診所', LAB: '牙技所', MEMBER: '會員', INSURER: '保險業者',
 };
 
-export function AdminUsers() {
+// currentRole：登入者角色，ADMIN 時隱藏 SUPER_ADMIN 選項（對 Admin 而言 SuperAdmin 不存在）
+export function AdminUsers({ currentRole = 'ADMIN' }: { currentRole?: string }) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -153,7 +154,9 @@ export function AdminUsers() {
         <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); }}
           className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800">
           <option value="">所有角色</option>
-          {Object.entries(ROLE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {Object.entries(ROLE_LABELS)
+            .filter(([k]) => currentRole !== 'ADMIN' || k !== 'SUPER_ADMIN')
+            .map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <button onClick={load} className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
           <RefreshCw size={16} /> 搜尋

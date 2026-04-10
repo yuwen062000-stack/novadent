@@ -27,13 +27,15 @@ export class UsersController {
     @Query('search')   search?: string,
     @Query('page')     page?: string,
     @Query('pageSize') pageSize?: string,
+    @CurrentUser()     requester?: any,
   ) {
     return this.usersService.findAll({
       role,
       status,
       search,
-      page:     page     ? Number(page)     : undefined,
-      pageSize: pageSize ? Number(pageSize) : undefined,
+      page:          page     ? Number(page)     : undefined,
+      pageSize:      pageSize ? Number(pageSize) : undefined,
+      requesterRole: requester?.role,  // ADMIN 時自動過濾 SUPER_ADMIN 帳號
     });
   }
 
@@ -94,8 +96,8 @@ export class UsersController {
   // ── GET /api/admin/users/:id — Admin 取單一用戶 ───────────────
   @Get(':id')
   @Roles('ADMIN', 'SUPER_ADMIN')
-  findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.findById(id);
+  findById(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.usersService.findById(id, user.role);
   }
 
   // ── POST /api/users — Admin 建立 CLINIC/LAB 帳號 ────────
@@ -113,20 +115,20 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
     @CurrentUser() user: any,
   ) {
-    return this.usersService.update(id, dto, user.id);
+    return this.usersService.update(id, dto, user.id, user.role);
   }
 
   // ── POST /api/users/:id/toggle-status — Admin 啟用/停用帳號
   @Post(':id/toggle-status')
   @Roles('ADMIN', 'SUPER_ADMIN')
   toggleStatus(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
-    return this.usersService.toggleStatus(id, user.id);
+    return this.usersService.toggleStatus(id, user.id, user.role);
   }
 
   // ── POST /api/users/:id/reset-password — Admin 重設密碼（自動產生 nova#### 臨時密碼）
   @Post(':id/reset-password')
   @Roles('ADMIN', 'SUPER_ADMIN')
   resetPassword(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
-    return this.usersService.adminResetPassword(id, user.id);
+    return this.usersService.adminResetPassword(id, user.id, user.role);
   }
 }

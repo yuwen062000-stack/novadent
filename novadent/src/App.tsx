@@ -1285,7 +1285,7 @@ function AppContent() {
             {view === 'INSURER_CUSTOMER_MGMT' && <InsurerCustomerMgmt />}
             {/* ── V1.2 Admin Pages ─────────────────────────── */}
             {view === 'ADMIN_DASHBOARD' && <AdminDashboard />}
-            {view === 'ADMIN_USERS' && <AdminUsers />}
+            {view === 'ADMIN_USERS' && <AdminUsers currentRole={role} />}
             {view === 'ADMIN_CLINICS' && <AdminClinics />}
             {view === 'ADMIN_LABS' && <AdminLabs />}
             {view === 'ADMIN_PARTNER_LINKS' && <AdminPartnerLinks />}
