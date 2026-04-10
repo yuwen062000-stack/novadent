@@ -81,6 +81,7 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
       if (!res.ok) throw new Error('指派失敗');
       const updated = await res.json();
       setCaseData(updated);
+      setSelectedLabId('');  // 指派成功後重置選擇框
       showToast('✅ 已成功指派牙技所');
     } catch {
       showToast('❌ 指派失敗，請稍後再試');
