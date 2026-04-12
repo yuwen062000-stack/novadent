@@ -221,7 +221,7 @@ export class AuditLogsController {
     });
   }
 
-  @Post('clinics/merge-duplicate')
+  @Post('merge-clinic-duplicate')
   @Roles('SUPER_ADMIN')
   async mergeClinicDuplicate(
     @Body() dto: { keepId: string; removeId: string },
