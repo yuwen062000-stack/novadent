@@ -137,7 +137,7 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   ];
   for (const c of articleCats) {
     await pool.query(
-      `INSERT INTO system_options ("group", value, label, sort_order) SELECT $1, $2, $3, $4 WHERE NOT EXISTS (SELECT 1 FROM system_options WHERE "group"=$1 AND value=$2)`,
+      `INSERT INTO system_options ("group", value, label, sort_order) SELECT $1::varchar, $2::varchar, $3::varchar, $4::int WHERE NOT EXISTS (SELECT 1 FROM system_options WHERE "group"=$1::varchar AND value=$2::varchar)`,
       ['ARTICLE_CATEGORY', c.value, c.label, c.order]
     );
   }
@@ -149,7 +149,7 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   ];
   for (const c of caseTypes) {
     await pool.query(
-      `INSERT INTO system_options ("group", value, label, sort_order) SELECT $1, $2, $3, $4 WHERE NOT EXISTS (SELECT 1 FROM system_options WHERE "group"=$1 AND value=$2)`,
+      `INSERT INTO system_options ("group", value, label, sort_order) SELECT $1::varchar, $2::varchar, $3::varchar, $4::int WHERE NOT EXISTS (SELECT 1 FROM system_options WHERE "group"=$1::varchar AND value=$2::varchar)`,
       ['CASE_TYPE', c.value, c.label, c.order]
     );
   }
