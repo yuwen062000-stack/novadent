@@ -372,4 +372,13 @@ export class AdminService {
     return updated;
   }
 
+  async mergeClinicDuplicate(keepId: string, removeId: string) {
+    await this.db.execute(sql`UPDATE cases SET clinic_id = ${keepId} WHERE clinic_id = ${removeId}`);
+    await this.db.execute(sql`DELETE FROM partner_links WHERE clinic_id = ${removeId} AND lab_id IN (SELECT lab_id FROM partner_links WHERE clinic_id = ${keepId})`);
+    await this.db.execute(sql`UPDATE partner_links SET clinic_id = ${keepId} WHERE clinic_id = ${removeId}`);
+    await this.db.execute(sql`DELETE FROM clinic_tags WHERE clinic_id = ${removeId}`);
+    await this.db.execute(sql`DELETE FROM clinics WHERE id = ${removeId}`);
+    return { success: true, message: `Merged ${removeId} into ${keepId}` };
+  }
+
 }
