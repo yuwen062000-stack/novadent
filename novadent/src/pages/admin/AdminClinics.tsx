@@ -1,7 +1,7 @@
 // AdminClinics — 診所管理後台
 // 支援：新增 / 編輯 / 審核 / 停用 / 封面照片上傳
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, RefreshCw, Check, XCircle, CheckCircle2, Upload, X, Image } from 'lucide-react';
+import { Plus, Search, RefreshCw, Check, XCircle, CheckCircle2, Upload, X, Image, GitMerge } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 import { TAIWAN_CITIES } from '../../constants/cities';
@@ -48,6 +48,10 @@ export function AdminClinics() {
   const [submitting, setSubmitting]   = useState(false);
   const [toggling, setToggling]       = useState<string | null>(null);
   const [uploading, setUploading]     = useState(false);
+  // 合併重複診所：showMergeModal 控制合併 modal 顯示，mergeForm 記錄保留/刪除的診所 id
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeForm, setMergeForm]     = useState({ keepId: '', removeId: '' });
+  const [merging, setMerging]         = useState(false);
   // 從 clinic_tags 動態讀取（SuperAdmin Tag 管理設定的 tag 清單）
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +120,27 @@ export function AdminClinics() {
     else { const err = await res.json(); alert(err.message || '操作失敗'); }
   };
 
+  // 合併重複診所：把 removeId 的案件/合作連結全部轉移到 keepId，再刪除 removeId
+  const handleMerge = async () => {
+    if (!mergeForm.keepId || !mergeForm.removeId) return alert('請選擇保留與刪除的診所');
+    if (mergeForm.keepId === mergeForm.removeId) return alert('保留與刪除的診所不可相同');
+    if (!window.confirm('確定要合併？刪除的診所所有資料（案件、合作連結）將移轉至保留的診所，此操作無法復原。')) return;
+    setMerging(true);
+    try {
+      const res = await apiFetch('/admin/merge-clinic-duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keepId: mergeForm.keepId, removeId: mergeForm.removeId }),
+      });
+      if (!res.ok) { const err = await res.json(); alert(err.message || '合併失敗'); return; }
+      alert('合併成功！');
+      setShowMergeModal(false);
+      setMergeForm({ keepId: '', removeId: '' });
+      load(); // 重新載入診所列表
+    } catch { alert('合併失敗，請稍後再試'); }
+    finally { setMerging(false); }
+  };
+
   const handleToggleStatus = async (c: Clinic, newStatus: string) => {
     setToggling(c.id);
     try {
@@ -139,9 +164,16 @@ export function AdminClinics() {
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">診所管理</h1>
           <p className="text-slate-500 mt-1 text-sm">管理合作診所資料與審核狀態</p>
         </div>
-        <button onClick={openCreate} className="bg-blue-800 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-blue-900 transition-colors">
-          <Plus size={18} /> 新增診所
-        </button>
+        <div className="flex gap-2">
+          {/* 合併重複診所按鈕：處理同名診所資料合併 */}
+          <button onClick={() => { setMergeForm({ keepId: '', removeId: '' }); setShowMergeModal(true); }}
+            className="border border-amber-300 text-amber-700 bg-amber-50 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-amber-100 transition-colors">
+            <GitMerge size={16} /> 合併重複診所
+          </button>
+          <button onClick={openCreate} className="bg-blue-800 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-blue-900 transition-colors">
+            <Plus size={18} /> 新增診所
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-3 mb-5">
@@ -345,6 +377,74 @@ export function AdminClinics() {
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">取消</button>
               <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2.5 bg-blue-800 text-white rounded-xl text-sm font-bold hover:bg-blue-900 disabled:opacity-50">
                 {submitting ? '儲存中...' : '儲存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 合併重複診所 Modal */}
+      {showMergeModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <GitMerge size={18} className="text-amber-600" /> 合併重複診所
+              </h2>
+              <button onClick={() => setShowMergeModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+            </div>
+
+            {/* 說明文字 */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-800">
+              ⚠️ 「刪除的診所」所有案件與合作連結將轉移至「保留的診所」，刪除的診所記錄將永久移除，此操作無法復原。
+            </div>
+
+            <div className="space-y-4">
+              {/* 保留的診所 */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">
+                  保留的診所 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={mergeForm.keepId}
+                  onChange={e => setMergeForm(p => ({ ...p, keepId: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 bg-white"
+                >
+                  <option value="">-- 選擇要保留的診所 --</option>
+                  {clinics.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}（{c.city}）{c.status === 'DISABLED' ? '［已停用］' : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 刪除的診所（重複的那筆） */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">
+                  刪除的診所（重複那筆）<span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={mergeForm.removeId}
+                  onChange={e => setMergeForm(p => ({ ...p, removeId: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800 bg-white"
+                >
+                  <option value="">-- 選擇要刪除的重複診所 --</option>
+                  {clinics
+                    .filter(c => c.id !== mergeForm.keepId) // 排除已選為保留的診所
+                    .map(c => (
+                      <option key={c.id} value={c.id}>{c.name}（{c.city}）{c.status === 'DISABLED' ? '［已停用］' : ''}</option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowMergeModal(false)}
+                className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">
+                取消
+              </button>
+              <button onClick={handleMerge} disabled={merging || !mergeForm.keepId || !mergeForm.removeId}
+                className="flex-1 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 disabled:opacity-50">
+                {merging ? '合併中...' : '確認合併'}
               </button>
             </div>
           </div>
