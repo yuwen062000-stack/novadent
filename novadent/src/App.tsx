@@ -1253,7 +1253,7 @@ function AppContent() {
       <main className="flex-1 overflow-y-auto">
         {isPublicView && <PublicHeader />}
         <AnimatePresence mode="wait">
-          <motion.div key={`${role}-${view}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+          <motion.div key={`${role}-${view}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
             {view === 'HOME' && <HomePage homeBanners={homeBanners} heroBannerIndex={heroBannerIndex} setHeroBannerIndex={setHeroBannerIndex} homeConfig={homeConfig} homeBottomImage={homeBottomImage} />}
             {view === 'KNOWLEDGE' && <KnowledgeCenter setView={handleSetView} setSelectedArticle={setSelectedArticle} />}
             {view === 'VIDEOS' && <VideosPage />}
