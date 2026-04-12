@@ -185,8 +185,9 @@ export class CasesService {
     return { data: rows, total: count, page, pageSize };
   }
 
-  // ── Lab 取配對診所的案件（跨診所隔離）───────────────────
-  // Lab 只能看到 partner_links 中有關聯的診所案件
+  // ── Lab 取案件（合作診所案件 + 直接指派給本牙技所的案件）──
+  // 修正：原邏輯只看 partner_links 的 clinicId，導致診所直接指派
+  // 給牙技所的案件（cases.lab_id = lab.id）看不到
   async findByLab(labUserId: string, query: {
     status?: string;
     type?: string;
@@ -207,16 +208,19 @@ export class CasesService {
         eq(partnerLinks.status, 'ACTIVE'),
       ));
 
-    if (linkedClinics.length === 0) {
-      return { data: [], total: 0, page, pageSize };
-    }
-
     const clinicIds = linkedClinics.map(l => l.clinicId);
 
-    // 篩選屬於這些診所的案件
-    const conditions: any[] = [
-      sql`${cases.clinicId} = ANY(ARRAY[${sql.join(clinicIds.map(id => sql`${id}::uuid`), sql`, `)}])`,
-    ];
+    // 基礎條件：合作診所的案件 OR 直接指派給本牙技所的案件
+    let baseCondition;
+    if (clinicIds.length > 0) {
+      // 有合作診所時：案件屬於合作診所 OR 案件的 lab_id 指向本牙技所
+      baseCondition = sql`(${cases.clinicId} = ANY(ARRAY[${sql.join(clinicIds.map(id => sql`${id}::uuid`), sql`, `)}]) OR ${cases.labId} = ${lab.id})`;
+    } else {
+      // 無合作診所時：只看直接指派給本牙技所的案件
+      baseCondition = eq(cases.labId, lab.id);
+    }
+
+    const conditions: any[] = [baseCondition];
     if (query.status) conditions.push(eq(cases.status, query.status as any));
     if (query.type)   conditions.push(eq(cases.type,   query.type   as any));
 

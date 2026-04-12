@@ -2,16 +2,34 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit2, Eye, EyeOff, RefreshCw, Trash2, Tag, Search } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
-interface Article { id: string; title: string; category: string; tags?: string[]; published: boolean; createdAt: string; author: string; summary?: string; content?: string; slug?: string; }
+interface Article { id: string; title: string; category: string; tags?: string[]; published: boolean; createdAt: string; author: string; summary?: string; content?: string; slug?: string; coverUrl?: string; }
 
 export function AdminArticles() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<Article | null>(null);
-  const [form, setForm] = useState({ title: '', category: '', summary: '', content: '', author: 'Novadent 編輯部', slug: '', published: false, tags: '' });
+  const [form, setForm] = useState({ title: '', category: '', summary: '', content: '', author: 'Novadent 編輯部', slug: '', published: false, tags: '', coverUrl: '' });
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);   // 封面圖上傳中狀態
+
+  // ── 封面圖上傳 handler ──
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await apiFetch('/upload', { method: 'POST', body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        setForm(p => ({ ...p, coverUrl: data.url }));
+      } else { alert('封面圖上傳失敗'); }
+    } catch { alert('封面圖上傳失敗'); }
+    finally { setUploading(false); }
+  };
   const [loadError, setLoadError] = useState('');                 // API 載入錯誤訊息（403/網路錯誤等）
   // 從 system_options 動態讀取文章分類（SuperAdmin 在系統選項管理）
   const [categories, setCategories] = useState<string[]>([]);
@@ -73,7 +91,7 @@ export function AdminArticles() {
     setForm({
       title: a.title, category: a.category, summary: a.summary || '', content: a.content || '',
       author: a.author, slug: a.slug || '', published: a.published,
-      tags: (a.tags || []).join(', ')
+      tags: (a.tags || []).join(', '), coverUrl: a.coverUrl || ''
     });
     setShowModal(true);
   };
@@ -211,6 +229,20 @@ export function AdminArticles() {
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">標題 <span className="text-red-500">*</span></label>
                 <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-800" />
+              </div>
+              {/* ── 封面圖上傳區塊 ── */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">封面圖片</label>
+                <div className="flex items-center gap-3">
+                  {form.coverUrl && <img src={form.coverUrl} alt="封面預覽" className="w-24 h-16 object-cover rounded-lg border border-slate-200" />}
+                  <label className={`px-4 py-2 border border-slate-200 rounded-xl text-sm cursor-pointer hover:bg-slate-50 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {uploading ? '上傳中...' : form.coverUrl ? '更換圖片' : '選擇圖片'}
+                    <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" disabled={uploading} />
+                  </label>
+                  {form.coverUrl && (
+                    <button type="button" onClick={() => setForm(p => ({ ...p, coverUrl: '' }))} className="text-xs text-red-500 hover:text-red-600">移除</button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
