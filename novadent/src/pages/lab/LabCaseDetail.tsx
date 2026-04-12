@@ -60,7 +60,8 @@ export function LabCaseDetail({ caseId, setView }: Props) {
   }
 
   useEffect(() => {
-    if (!caseId) return;
+    // 若 caseId 為空（如直接輸入 URL 或 state 遺失），導回案件列表
+    if (!caseId) { setView('LAB_CASES'); return; }
     apiFetch(`/cases/${caseId}`)
       .then(r => r.json())
       .then(data => {

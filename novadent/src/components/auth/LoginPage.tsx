@@ -151,7 +151,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <p>會員：member1@test.com / Member@2026</p>
             <p>診所：taipei-clinic@novadent.com / Clinic@2026</p>
             <p>牙技所：precision-lab@novadent.com / Lab@2026</p>
-            <p>管理員：admin@novadent.com / Admin@2026</p>
+            <p>管理員：admin@novadent.com / admin@123</p>
           </div>
         </details>
       </div>
