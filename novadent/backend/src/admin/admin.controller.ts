@@ -220,4 +220,12 @@ export class AuditLogsController {
       page: page ? parseInt(page) : 1,
     });
   }
+
+  @Post('clinics/merge-duplicate')
+  @Roles('SUPER_ADMIN')
+  async mergeClinicDuplicate(
+    @Body() dto: { keepId: string; removeId: string },
+  ) {
+    return this.adminService.mergeClinicDuplicate(dto.keepId, dto.removeId);
+  }
 }
