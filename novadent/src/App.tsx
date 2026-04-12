@@ -235,7 +235,7 @@ const PublicFooter = React.memo(({ footerContacts, quickLinks }: {
       </div>
     </div>
     <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-slate-800 text-center text-xs">
-      &copy; 2026 Novadent. All rights reserved. 本平台不提供醫療診斷建議。
+      &copy; 2026 Novadent. All rights reserved.
     </div>
   </footer>
 ));
