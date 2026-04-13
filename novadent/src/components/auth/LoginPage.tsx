@@ -141,19 +141,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             {loading ? '登入中...' : '登入'}
           </button>
         </form>
-
-        {/* demo 帳號提示（開發用，上線前移除） */}
-        <details className="mt-6">
-          <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
-            測試帳號（開發用）
-          </summary>
-          <div className="mt-2 space-y-1 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-            <p>會員：member1@test.com / Member@2026</p>
-            <p>診所：taipei-clinic@novadent.com / Clinic@2026</p>
-            <p>牙技所：precision-lab@novadent.com / Lab@2026</p>
-            <p>管理員：admin@novadent.com / admin@123</p>
-          </div>
-        </details>
       </div>
     </div>
   );

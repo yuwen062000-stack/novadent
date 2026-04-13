@@ -2141,8 +2141,8 @@ function MemberCaseManagement({ setView, currentCase, hasActiveCase, qaCompleted
   const [consultations, setConsultations] = useState<Consultation[]>([]);
 
   useEffect(() => {
-    fetch('/api/cases?status=COMPLETED').then(r => r.ok ? r.json() : { data: [] }).then(res => setHistoricalCases(res.data || res)).catch(() => {});
-    fetch('/api/consultations').then(r => r.ok ? r.json() : { data: [] }).then(res => setConsultations(res.data || res)).catch(() => {});
+    apiFetch('/cases?status=COMPLETED').then(r => r.ok ? r.json() : { data: [] }).then(res => setHistoricalCases(res.data || res)).catch(() => {});
+    apiFetch('/consultations').then(r => r.ok ? r.json() : { data: [] }).then(res => setConsultations(res.data || res)).catch(() => {});
   }, []);
 
   if (!qaCompleted) {
@@ -2310,9 +2310,9 @@ function Overview({ role, setView, currentCase, setCaseFilter }: any) {
   useEffect(() => {
     if (role === 'ADMIN') {
       Promise.all([
-        fetch('/api/clinics').then(r => r.ok ? r.json() : { data: [] }),
-        fetch('/api/labs').then(r => r.ok ? r.json() : { data: [] }),
-        fetch('/api/cases').then(r => r.ok ? r.json() : { data: [] }),
+        apiFetch('/clinics').then(r => r.ok ? r.json() : { data: [] }),
+        apiFetch('/labs').then(r => r.ok ? r.json() : { data: [] }),
+        apiFetch('/cases').then(r => r.ok ? r.json() : { data: [] }),
       ]).then(([clinicsRes, labsRes, casesRes]) => {
         const clinicsData = clinicsRes.data || clinicsRes;
         const labsData = labsRes.data || labsRes;
@@ -2573,7 +2573,7 @@ function Dashboard({ role, setView, currentCase, qaCompleted, setSelectedClinic,
   const [allCases, setAllCases] = useState<Case[]>([]);
 
   useEffect(() => {
-    fetch('/api/cases').then(r => r.ok ? r.json() : { data: [] }).then(res => setAllCases(res.data || res)).catch(() => {});
+    apiFetch('/cases').then(r => r.ok ? r.json() : { data: [] }).then(res => setAllCases(res.data || res)).catch(() => {});
   }, []);
 
   if (role === 'MEMBER') {
@@ -2699,7 +2699,7 @@ function CaseCreation({ setView, setHasActiveCase }: any) {
   const [labsList, setLabsList] = useState<Lab[]>([]);
 
   useEffect(() => {
-    fetch('/api/labs').then(r => r.ok ? r.json() : { data: [] }).then(res => setLabsList(res.data || res)).catch(() => {});
+    apiFetch('/labs').then(r => r.ok ? r.json() : { data: [] }).then(res => setLabsList(res.data || res)).catch(() => {});
   }, []);
 
   return (
