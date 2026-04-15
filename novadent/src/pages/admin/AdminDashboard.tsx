@@ -23,7 +23,7 @@ export function AdminDashboard() {
   }, []);
 
   const cards = [
-    { label: '帳號總數', value: stats?.totalUsers ?? '-', icon: <Users size={24} className="text-blue-600" />, bg: 'bg-blue-50' },
+    { label: '會員數', value: stats?.totalUsers ?? '-', icon: <Users size={24} className="text-blue-600" />, bg: 'bg-blue-50' },
     { label: '診所數', value: stats?.totalClinics ?? '-', icon: <Building2 size={24} className="text-green-600" />, bg: 'bg-green-50' },
     { label: '牙技所數', value: stats?.totalLabs ?? '-', icon: <Microscope size={24} className="text-purple-600" />, bg: 'bg-purple-50' },
     { label: '案件總數', value: stats?.totalCases ?? '-', icon: <ClipboardList size={24} className="text-orange-600" />, bg: 'bg-orange-50' },

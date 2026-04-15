@@ -17,7 +17,7 @@ export class AdminService {
     const [
       userCount, clinicCount, labCount, caseCount, articleCount,
     ] = await Promise.all([
-      this.db.select({ count: sql<number>`count(*)::int` }).from(users),
+      this.db.select({ count: sql<number>`count(*)::int` }).from(users).where(eq(users.role, 'MEMBER')),
       this.db.select({ count: sql<number>`count(*)::int` }).from(clinics),
       this.db.select({ count: sql<number>`count(*)::int` }).from(labs),
       this.db.select({ count: sql<number>`count(*)::int` }).from(cases),
