@@ -538,6 +538,11 @@ export async function autoSeed() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
+    // ── Schema 補欄位（ALTER TABLE IF NOT EXISTS 替代 Drizzle migrate）──
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday VARCHAR(10)`);
+    await pool.query(`ALTER TABLE cases ADD COLUMN IF NOT EXISTS patient_birthday VARCHAR(10)`);
+    console.log('[AutoSeed] Schema columns ensured (birthday, patient_birthday)');
+
     // ensureDefaultPasswords 已移除 — 密碼管理應透過後台「重設密碼」功能處理，
     // 不應在每次啟動時由 seed 干預，避免交付客戶後成為安全漏洞
     await deduplicateAndSeedMenu(pool);
