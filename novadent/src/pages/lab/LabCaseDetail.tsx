@@ -60,8 +60,10 @@ export function LabCaseDetail({ caseId, setView }: Props) {
   }
 
   useEffect(() => {
-    // 若 caseId 為空（如直接輸入 URL 或 state 遺失），導回案件列表
-    if (!caseId) { setView('LAB_CASES'); return; }
+    // caseId 可能在下一個 render cycle 才傳入（React state 批次更新）
+    // 此處不做 redirect，等待 caseId 到位後再載入資料
+    if (!caseId) return;
+    setLoading(true);
     apiFetch(`/cases/${caseId}`)
       .then(r => r.json())
       .then(data => {
