@@ -376,14 +376,22 @@ export class CasesService {
       if (matched) memberId = matched.id;
     }
 
+    // 若有指派牙技所，驗證 lab 存在
+    let labId = dto.labId || null;
+    if (labId) {
+      const [lab] = await this.db.select({ id: labs.id }).from(labs).where(eq(labs.id, labId)).limit(1);
+      if (!lab) labId = null; // lab 不存在則不指派
+    }
+
     const [newCase] = await this.db.insert(cases).values({
       clinicId:         clinic.id,
+      labId,
       patientName:      dto.patientName,
       patientBirthday:  dto.patientBirthday || null,
       type:             dto.type as any,
       description:      dto.description,
       memberId,
-      status:           'CREATED',
+      status:           labId ? 'ASSIGNED' : 'CREATED',  // 有指派牙技所 → 直接進 ASSIGNED
       progress:         0,
     } as any).returning();
 
@@ -393,6 +401,7 @@ export class CasesService {
     await this.writeAuditLog(clinicUserId, 'CREATE_CASE', newCase.id, {
       clinicId: clinic.id,
       type:     dto.type,
+      labId,
     });
 
     return newCase;

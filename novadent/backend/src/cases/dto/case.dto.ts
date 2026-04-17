@@ -21,6 +21,10 @@ export class CreateCaseDto {
 
   @IsUUID()
   @IsOptional()
+  labId?: string; // 選填，建案時直接指派牙技所
+
+  @IsUUID()
+  @IsOptional()
   memberId?: string; // 選填，連結會員諮詢
 }
 
