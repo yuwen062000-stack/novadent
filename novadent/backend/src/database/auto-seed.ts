@@ -55,6 +55,17 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   `);
   console.log('[AutoSeed] Deduplicated mfg_step_templates');
 
+  // partner_links 去重：同一對 clinic_id + lab_id 只保留最早建立的一筆
+  await pool.query(`
+    DELETE FROM partner_links
+    WHERE id NOT IN (
+      SELECT DISTINCT ON (clinic_id, lab_id) id
+      FROM partner_links
+      ORDER BY clinic_id, lab_id, created_at ASC
+    )
+  `);
+  console.log('[AutoSeed] Deduplicated partner_links');
+
   await pool.query(`
     DELETE FROM qa_questions
     WHERE question_text LIKE '%CRUD%' OR question_text = 'updated'
