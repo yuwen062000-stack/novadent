@@ -145,6 +145,8 @@ export class ConsultationsService {
         description:        clinics.description,
         coverPhotoUrl:      clinics.coverPhotoUrl,
         leadDoctorName:     clinics.leadDoctorName,
+        phone:              clinics.phone,              // 會員推薦頁需顯示電話
+        detailedAddress:    clinics.detailedAddress,     // 會員推薦頁需顯示地址
         // 地區完全符合得分（district 相符 = 1，否則 0）
         districtMatch: consultation.selectedDistrict
           ? sql<number>`CASE WHEN ${clinics.district} = ${consultation.selectedDistrict} THEN 1 ELSE 0 END`

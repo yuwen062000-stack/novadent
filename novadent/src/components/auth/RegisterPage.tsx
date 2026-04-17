@@ -11,6 +11,7 @@ interface RegisterPageProps {
 export function RegisterPage({ onSuccess }: RegisterPageProps) {
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
+  const [regBirthday, setRegBirthday] = useState('');  // 生日（選填，身分比對用）
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regAgreed, setRegAgreed] = useState(false);
@@ -27,7 +28,7 @@ export function RegisterPage({ onSuccess }: RegisterPageProps) {
     if (!regAgreed) { setRegError('請先同意服務條款'); return; }
 
     setRegLoading(true);
-    const result = await authRegister(regName.trim(), regEmail.trim(), regPassword, regPhone.trim() || undefined);
+    const result = await authRegister(regName.trim(), regEmail.trim(), regPassword, regPhone.trim() || undefined, regBirthday || undefined);
     setRegLoading(false);
 
     if (result.success && result.user) {
@@ -60,6 +61,13 @@ export function RegisterPage({ onSuccess }: RegisterPageProps) {
               <label className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">手機號碼 <span className="text-slate-300 normal-case">(選填)</span></label>
               <input type="tel" placeholder="例：0912345678" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-5 py-3.5 md:py-4 rounded-xl md:rounded-2xl border border-slate-200 focus:ring-2 focus:ring-blue-800 outline-none text-sm md:text-base" />
             </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">生日 <span className="text-slate-300 normal-case">(選填，用於身分比對)</span></label>
+              <input type="date" value={regBirthday} onChange={e => setRegBirthday(e.target.value)} className="w-full px-5 py-3.5 md:py-4 rounded-xl md:rounded-2xl border border-slate-200 focus:ring-2 focus:ring-blue-800 outline-none text-sm md:text-base" />
+            </div>
+            <div></div>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">Email</label>

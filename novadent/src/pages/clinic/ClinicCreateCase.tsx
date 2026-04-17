@@ -31,6 +31,7 @@ export function ClinicCreateCase({ setView }: Props) {
 
   const [form, setForm] = useState({
     patientName: '',
+    patientBirthday: '',
     type: '',
     description: '',
     labId: '',
@@ -87,6 +88,7 @@ export function ClinicCreateCase({ setView }: Props) {
         type: form.type,
         description: form.description.trim(),
       };
+      if (form.patientBirthday) payload.patientBirthday = form.patientBirthday;
       if (form.labId) payload.labId = form.labId;
 
       const res = await apiFetch('/cases', {
@@ -121,7 +123,7 @@ export function ClinicCreateCase({ setView }: Props) {
           查看案件列表
         </button>
         <button
-          onClick={() => { setSuccess(false); setForm({ patientName: '', type: 'FIXED', description: '', labId: '' }); }}
+          onClick={() => { setSuccess(false); setForm({ patientName: '', patientBirthday: '', type: 'FIXED', description: '', labId: '' }); }}
           className="px-6 py-2.5 border border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           再建一筆
@@ -158,6 +160,17 @@ export function ClinicCreateCase({ setView }: Props) {
             required
           />
           <p className="text-xs text-slate-400">注意：會員端顯示時將進行名稱遮罩</p>
+        </div>
+
+        {/* Patient birthday — 防重名比對用 */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-slate-700">病患生日 <span className="text-slate-400 font-normal text-xs">(選填，防重名比對)</span></label>
+          <input
+            type="date"
+            value={form.patientBirthday}
+            onChange={e => updateForm('patientBirthday', e.target.value)}
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 focus:border-blue-800 transition-all"
+          />
         </div>
 
         {/* Case type */}

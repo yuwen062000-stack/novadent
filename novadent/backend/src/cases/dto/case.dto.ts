@@ -13,6 +13,10 @@ export class CreateCaseDto {
 
   @IsString()
   @IsOptional()
+  patientBirthday?: string;  // 病患生日 YYYY-MM-DD（防重名比對）
+
+  @IsString()
+  @IsOptional()
   description?: string;
 
   @IsUUID()

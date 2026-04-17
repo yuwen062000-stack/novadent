@@ -181,6 +181,7 @@ export class AuthService {
         name: users.name,
         role: users.role,
         phone: users.phone,
+        birthday: users.birthday,
         status: users.status,
         forceChangePassword: users.forceChangePassword,
         createdAt: users.createdAt,
@@ -247,6 +248,7 @@ export class AuthService {
       passwordHash,
       name: dto.name,
       phone: dto.phone || null,
+      birthday: dto.birthday || null,
       role: 'MEMBER',
       status: 'ACTIVE',
     } as any);

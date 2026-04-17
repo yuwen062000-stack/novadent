@@ -60,4 +60,8 @@ export class RegisterDto {
   @IsOptional()
   @IsString({ message: '電話格式不正確' })
   phone?: string;
+
+  @IsOptional()
+  @IsString()
+  birthday?: string;  // 生日 YYYY-MM-DD（選填，身分比對用）
 }

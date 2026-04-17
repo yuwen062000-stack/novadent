@@ -40,6 +40,7 @@ export const users = pgTable('users', {
   role:                 userRoleEnum('role').notNull(),
   name:                 varchar('name', { length: 100 }).notNull(),
   phone:                varchar('phone', { length: 20 }),
+  birthday:             varchar('birthday', { length: 10 }),  // 生日 YYYY-MM-DD（身分比對用）
   status:               userStatusEnum('status').notNull().default('ACTIVE'),
   forceChangePassword:  boolean('force_change_password').notNull().default(false),
   parentId:             uuid('parent_id'),   // 子帳號關聯
@@ -130,6 +131,7 @@ export const cases = pgTable('cases', {
   labId:        uuid('lab_id').references(() => labs.id),
   memberId:     uuid('member_id').references(() => users.id),
   patientName:  varchar('patient_name', { length: 100 }).notNull(),
+  patientBirthday: varchar('patient_birthday', { length: 10 }),  // 病患生日 YYYY-MM-DD（防重名比對）
   type:         caseTypeEnum('type').notNull(),
   status:       caseStatusEnum('status').notNull().default('CREATED'),
   description:  text('description'),

@@ -8,6 +8,7 @@ interface UserProfile {
   email: string;
   role: string;
   status: string;
+  birthday?: string;
   createdAt: string;
 }
 
@@ -109,6 +110,12 @@ export function MemberSettings() {
                 </div>
                 <p className="text-sm font-medium text-slate-800">{profile.email}</p>
               </div>
+              {profile.birthday && (
+                <div className="p-4 bg-slate-50 rounded-xl">
+                  <p className="text-xs text-slate-400 mb-1">生日</p>
+                  <p className="text-sm font-medium text-slate-800">{profile.birthday}</p>
+                </div>
+              )}
               <div className="p-4 bg-slate-50 rounded-xl">
                 <p className="text-xs text-slate-400 mb-1">加入日期</p>
                 <p className="text-sm font-medium text-slate-800">
