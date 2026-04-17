@@ -350,18 +350,20 @@ export class CasesService {
 
     if (role === 'LAB') {
       const lab = await this.getLabByUserId(userId);
-      // 確認此案件的診所在 partner_links 中
-      const [link] = await this.db
-        .select({ id: partnerLinks.id })
-        .from(partnerLinks)
-        .where(and(
-          eq(partnerLinks.labId,    lab.id),
-          eq(partnerLinks.clinicId, caseRow.clinicId),
-          eq(partnerLinks.status,   'ACTIVE'),
-        ))
-        .limit(1);
-
-      if (!link) throw new ForbiddenException('無權存取此案件');
+      // 權限：案件的 labId 指向本牙技所 OR 診所在 partner_links 中
+      const isAssigned = caseRow.labId === lab.id;
+      if (!isAssigned) {
+        const [link] = await this.db
+          .select({ id: partnerLinks.id })
+          .from(partnerLinks)
+          .where(and(
+            eq(partnerLinks.labId,    lab.id),
+            eq(partnerLinks.clinicId, caseRow.clinicId),
+            eq(partnerLinks.status,   'ACTIVE'),
+          ))
+          .limit(1);
+        if (!link) throw new ForbiddenException('無權存取此案件');
+      }
 
       // Lab 看 patientName 需遮罩
       return { ...caseRow, patientName: maskPatientName(caseRow.patientName), mfgSteps: steps };
