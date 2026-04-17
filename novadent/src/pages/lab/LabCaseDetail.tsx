@@ -182,7 +182,8 @@ export function LabCaseDetail({ caseId, setView }: Props) {
     </div>
   );
 
-  const c = caseData;
+  // 確保 mfgSteps 為陣列（後端可能未回傳此欄位）
+  const c = { ...caseData, mfgSteps: caseData.mfgSteps ?? [] };
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-8">
