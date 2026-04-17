@@ -274,10 +274,13 @@ export class CasesService {
         currentStage: cases.currentStage,
         createdAt:    cases.createdAt,
         updatedAt:    cases.updatedAt,
-        // Member 看自己的案件不需遮罩 patientName（就是自己）
         patientName:  cases.patientName,
+        clinicName:   clinics.name,     // 顯示哪間診所
+        labName:      labs.name,        // 顯示哪間牙技所
       })
       .from(cases)
+      .leftJoin(clinics, eq(cases.clinicId, clinics.id))
+      .leftJoin(labs, eq(cases.labId, labs.id))
       .where(eq(cases.memberId, memberId))
       .orderBy(desc(cases.createdAt));
 
@@ -312,9 +315,21 @@ export class CasesService {
   // ── 取單一案件（依角色過濾 internalNotes 和 patientName）──
   // 回傳包含 mfgSteps，供前端 LabCaseDetail / ClinicCaseDetail 使用
   async findById(id: string, userId: string, role: string) {
+    // JOIN clinics + labs 帶回名稱，避免前端顯示「未指派」
     const [caseRow] = await this.db
-      .select()
+      .select({
+        id: cases.id, clinicId: cases.clinicId, labId: cases.labId,
+        memberId: cases.memberId, patientName: cases.patientName,
+        patientBirthday: cases.patientBirthday,
+        type: cases.type, status: cases.status, description: cases.description,
+        progress: cases.progress, currentStage: cases.currentStage,
+        createdAt: cases.createdAt, updatedAt: cases.updatedAt,
+        clinicName: clinics.name,
+        labName: labs.name,
+      })
       .from(cases)
+      .leftJoin(clinics, eq(cases.clinicId, clinics.id))
+      .leftJoin(labs, eq(cases.labId, labs.id))
       .where(eq(cases.id, id))
       .limit(1);
 

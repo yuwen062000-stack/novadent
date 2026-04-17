@@ -45,6 +45,7 @@ import { SuperOptionsManager } from './pages/super/SuperOptionsManager';
 // ── Member Pages ───────────────────────────────────────────
 import { MemberQAWizard } from './pages/member/MemberQAWizard';
 import { MemberRecommendations } from './pages/member/MemberRecommendations';
+import { MemberCases } from './pages/member/MemberCases';
 // ── Clinic Pages ───────────────────────────────────────────
 import { ClinicCaseList } from './pages/clinic/ClinicCaseList';
 import { ClinicCreateCase } from './pages/clinic/ClinicCreateCase';
@@ -428,9 +429,10 @@ const Sidebar = React.memo(({ role, view, isMobileMenuOpen, setIsMobileMenuOpen,
 
           {/* ── MEMBER 側邊欄：依後台 visible/order 動態過濾+排序 ── */}
           {role === 'MEMBER' && [
-            { path: '/member/qa',   icon: <ClipboardList size={20}/>, label: '假牙問診', views: ['MEMBER_QA'],              go: 'MEMBER_QA',              def: 16 },
-            { path: '/member/recs', icon: <HeartPulse size={20}/>,    label: '推薦診所', views: ['MEMBER_RECOMMENDATIONS'], go: 'MEMBER_RECOMMENDATIONS', def: 17 },
-            { path: '/settings',    icon: <User size={20}/>,          label: '個人設定', views: ['SETTINGS'],               go: 'SETTINGS',               def: 99 },
+            { path: '/member/qa',    icon: <ClipboardList size={20}/>, label: '假牙問診', views: ['MEMBER_QA'],              go: 'MEMBER_QA',              def: 16 },
+            { path: '/member/recs',  icon: <HeartPulse size={20}/>,    label: '推薦診所', views: ['MEMBER_RECOMMENDATIONS'], go: 'MEMBER_RECOMMENDATIONS', def: 17 },
+            { path: '/member/cases', icon: <FileText size={20}/>,      label: '我的案件', views: ['MEMBER_CASES'],           go: 'MEMBER_CASES',           def: 18 },
+            { path: '/settings',     icon: <User size={20}/>,          label: '個人設定', views: ['SETTINGS'],               go: 'SETTINGS',               def: 99 },
           ].filter(i => mv(i.path))
            .sort((a, b) => mo(a.path, a.def) - mo(b.path, b.def))
            .map(i => (
@@ -1038,6 +1040,7 @@ function AppContent() {
     NOTIFICATIONS: '/notifications',
     MEMBER_QA: '/member/qa',
     MEMBER_RECOMMENDATIONS: '/member/recommendations',
+    MEMBER_CASES: '/member/cases',
     CLINIC_CASES: '/clinic/cases',
     CLINIC_CREATE_CASE: '/clinic/cases/new',
     CLINIC_CASE_DETAIL: '/clinic/cases/detail',
@@ -1305,6 +1308,7 @@ function AppContent() {
             {/* ── Member Pages ─────────────────────────────── */}
             {view === 'MEMBER_QA' && <MemberQAWizard setView={handleSetView} onConsultationCreated={setConsultationId} />}
             {view === 'MEMBER_RECOMMENDATIONS' && <MemberRecommendations setView={handleSetView} consultationId={consultationId} />}
+            {view === 'MEMBER_CASES' && <MemberCases />}
             {/* ── Clinic Pages ─────────────────────────────── */}
             {view === 'CLINIC_CASES' && <ClinicCaseList setView={handleSetView} setSelectedCaseId={setSelectedCaseId} />}
             {view === 'CLINIC_CREATE_CASE' && <ClinicCreateCase setView={handleSetView} />}
