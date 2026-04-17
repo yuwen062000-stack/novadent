@@ -127,6 +127,12 @@ async function deduplicateAndSeedMenu(pool: Pool) {
   // ── 遷移：clinic_tags 加 target_type 欄位（CLINIC/LAB/ALL）──
   await pool.query(`ALTER TABLE clinic_tags ADD COLUMN IF NOT EXISTS target_type VARCHAR(10) NOT NULL DEFAULT 'ALL'`);
 
+  // ── 遷移：users 加 birthday 欄位（會員生日，YYYY-MM-DD）──
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday VARCHAR(10)`);
+
+  // ── 遷移：cases 加 patient_birthday 欄位（病患生日，YYYY-MM-DD）──
+  await pool.query(`ALTER TABLE cases ADD COLUMN IF NOT EXISTS patient_birthday VARCHAR(10)`);
+
   // ── 遷移：建立 system_options 表並塞入預設選項 ───────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS system_options (
