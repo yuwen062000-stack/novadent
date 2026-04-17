@@ -359,14 +359,32 @@ export class CasesService {
   async create(clinicUserId: string, dto: CreateCaseDto) {
     const clinic = await this.getClinicByUserId(clinicUserId);
 
+    // ── 自動比對會員（姓名 + 生日 mapping）──
+    // 若診所填了病患姓名和生日，嘗試在 users 表找到對應的 MEMBER
+    let memberId = dto.memberId || null;
+    if (!memberId && dto.patientBirthday) {
+      const [matched] = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(
+          eq(users.name, dto.patientName),
+          eq(users.birthday, dto.patientBirthday),
+          eq(users.role, 'MEMBER'),
+          eq(users.status, 'ACTIVE'),
+        ))
+        .limit(1);
+      if (matched) memberId = matched.id;
+    }
+
     const [newCase] = await this.db.insert(cases).values({
-      clinicId:    clinic.id,
-      patientName: dto.patientName,
-      type:        dto.type as any,
-      description: dto.description,
-      memberId:    dto.memberId,
-      status:      'CREATED',
-      progress:    0,
+      clinicId:         clinic.id,
+      patientName:      dto.patientName,
+      patientBirthday:  dto.patientBirthday || null,
+      type:             dto.type as any,
+      description:      dto.description,
+      memberId,
+      status:           'CREATED',
+      progress:         0,
     } as any).returning();
 
     // 自動建立預設製程節點（從 mfg_step_templates 動態讀取 SuperAdmin 設定的模板）

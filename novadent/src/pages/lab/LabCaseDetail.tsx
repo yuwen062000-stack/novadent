@@ -108,18 +108,23 @@ export function LabCaseDetail({ caseId, setView }: Props) {
     setStepPhotoPreview(url);
   }
 
+  // ── 更新製程節點（含照片上傳）──
+  // 穩定性：防連點（savingStep guard）+ 上傳失敗清理 + 詳細錯誤訊息
   async function handleSaveStep() {
-    if (!editingStep || !caseData) return;
+    if (!editingStep || !caseData || savingStep) return;  // 防連點
     setSavingStep(true);
     try {
       let photoUrl = editingStep.photoUrl || '';
 
-      // Upload photo if selected
+      // 上傳照片（如有選擇）
       if (stepPhoto) {
         const formData = new FormData();
         formData.append('file', stepPhoto);
         const uploadRes = await apiFetch('/upload', { method: 'POST', body: formData });
-        if (!uploadRes.ok) throw new Error('照片上傳失敗');
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errData.message || '照片上傳失敗，請檢查檔案格式或大小');
+        }
         const uploadData = await uploadRes.json();
         photoUrl = uploadData.url;
       }
@@ -133,20 +138,28 @@ export function LabCaseDetail({ caseId, setView }: Props) {
           photoUrl: photoUrl || undefined,
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || '節點更新失敗');
+      }
       const updatedCase = await res.json();
       setCaseData(updatedCase);
+      // 成功後清理所有暫存狀態
       setEditingStep(null);
+      setStepPhoto(null);
+      setStepPhotoPreview('');
       showToast('✅ 製程節點已更新');
     } catch (err: any) {
-      showToast(`❌ ${err.message || '更新失敗'}`);
+      showToast(`❌ ${err.message || '更新失敗，請稍後再試'}`);
     } finally {
       setSavingStep(false);
     }
   }
 
+  // ── 新增製程節點 ──
+  // 穩定性：防連點（addingStep guard）+ 詳細錯誤訊息
   async function handleAddStep() {
-    if (!newStepName.trim() || !caseData) return;
+    if (!newStepName.trim() || !caseData || addingStep) return;  // 防連點
     setAddingStep(true);
     try {
       const res = await apiFetch(`/cases/${caseData.id}/mfg-steps`, {
@@ -154,14 +167,17 @@ export function LabCaseDetail({ caseId, setView }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newStepName.trim() }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || '新增節點失敗');
+      }
       const updatedCase = await res.json();
       setCaseData(updatedCase);
       setShowAddStep(false);
       setNewStepName('');
       showToast('✅ 已新增製程節點');
-    } catch {
-      showToast('❌ 新增失敗');
+    } catch (err: any) {
+      showToast(`❌ ${err.message || '新增失敗，請稍後再試'}`);
     } finally {
       setAddingStep(false);
     }
