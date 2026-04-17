@@ -56,7 +56,8 @@ export function ClinicCaseDetail({ caseId, setView }: Props) {
   }
 
   useEffect(() => {
-    if (!caseId) return;
+    // caseId 為空代表直接瀏覽 URL 而未帶案件，導回列表避免永遠 loading
+    if (!caseId) { setView('CLINIC_CASES'); return; }
     // 分開載入，避免其中一個失敗導致另一個也拿不到
     apiFetch(`/cases/${caseId}`).then(r => r.ok ? r.json() : Promise.reject())
       .then(c => { setCaseData(c); setSelectedLabId(c.labId || ''); })

@@ -60,9 +60,8 @@ export function LabCaseDetail({ caseId, setView }: Props) {
   }
 
   useEffect(() => {
-    // caseId 可能在下一個 render cycle 才傳入（React state 批次更新）
-    // 此處不做 redirect，等待 caseId 到位後再載入資料
-    if (!caseId) return;
+    // caseId 為空代表直接瀏覽 URL 而未帶案件，導回列表避免永遠 loading
+    if (!caseId) { setView('LAB_CASES'); return; }
     setLoading(true);
     apiFetch(`/cases/${caseId}`)
       .then(r => r.json())

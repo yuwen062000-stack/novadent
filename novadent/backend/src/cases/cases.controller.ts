@@ -135,8 +135,10 @@ export class CasesController {
     return this.mfgStepsService.getStepsByCase(id);
   }
 
-  // ── PATCH /api/cases/:id/steps/:stepId — LAB 更新製程節點
+  // ── PATCH /api/cases/:id/steps/:stepId（或 mfg-steps/:stepId）— LAB 更新製程節點
+  // 兩條路徑都支援：steps 供前端呼叫，mfg-steps 供測試腳本保持命名一致
   // 回傳完整案件（含製程節點），供前端 LabCaseDetail 直接更新畫面
+  @Patch(':id/mfg-steps/:stepId')
   @Patch(':id/steps/:stepId')
   @Roles('LAB')
   async updateStep(
