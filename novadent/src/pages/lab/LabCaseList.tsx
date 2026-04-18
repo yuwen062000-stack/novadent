@@ -132,11 +132,6 @@ export function LabCaseList({ setView, setSelectedCaseId }: Props) {
                     <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
                       {CASE_TYPE_LABELS[c.type as keyof typeof CASE_TYPE_LABELS] || c.type}
                     </span>
-                    {c.status === CaseStatus.ASSIGNED && (
-                      <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-medium animate-pulse">
-                        需接單
-                      </span>
-                    )}
                   </div>
                   <h3 className="font-semibold text-slate-900">{c.patientName}</h3>
                   <p className="text-sm text-slate-500 mt-0.5">來自：{c.clinicName}</p>
