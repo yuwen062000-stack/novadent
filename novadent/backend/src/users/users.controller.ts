@@ -88,7 +88,7 @@ export class UsersController {
   @Patch('me')
   updateMe(
     @CurrentUser() user: any,
-    @Body() dto: { name?: string; phone?: string },
+    @Body() dto: { name?: string; phone?: string; birthday?: string },
   ) {
     return this.usersService.updateSelf(user.id, dto);
   }

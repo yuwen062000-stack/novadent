@@ -353,14 +353,14 @@ export class UsersService {
   }
 
   // ── 更新自己的基本資料（Admin/SuperAdmin/任何角色）──────────
-  async updateSelf(userId: string, dto: { name?: string; phone?: string }) {
+  async updateSelf(userId: string, dto: { name?: string; phone?: string; birthday?: string }) {
     const [updated] = await this.db
       .update(users)
       .set({ ...dto, updatedAt: new Date() } as any)
       .where(eq(users.id, userId))
       .returning({
         id: users.id, email: users.email, name: users.name,
-        phone: users.phone, role: users.role,
+        phone: users.phone, role: users.role, birthday: users.birthday,
       });
     if (!updated) throw new NotFoundException('使用者不存在');
     return updated;

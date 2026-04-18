@@ -3,6 +3,15 @@ import { Plus, Loader2, ChevronRight, Search, Filter } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 import { CaseStatus, STATUS_LABELS, STATUS_COLORS, CASE_TYPE_LABELS } from '../../types';
 
+// 各狀態對診所的說明文字（F3）
+const STATUS_HINTS: Partial<Record<CaseStatus, string>> = {
+  [CaseStatus.CREATED]:     '請指派牙技所以繼續流程',
+  [CaseStatus.ASSIGNED]:    '等待牙技所確認接單',
+  [CaseStatus.ACCEPTED]:    '牙技所已確認，製作即將開始',
+  [CaseStatus.IN_PROGRESS]: '假牙製作進行中',
+  [CaseStatus.COMPLETED]:   '製作完成',
+};
+
 interface CaseItem {
   id: string;
   patientName: string;
@@ -146,9 +155,15 @@ export function ClinicCaseList({ setView, setSelectedCaseId }: Props) {
                     <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
                       {CASE_TYPE_LABELS[c.type as keyof typeof CASE_TYPE_LABELS] || c.type}
                     </span>
+                    {/* F3：案件單號（UUID 前 8 碼，方便口頭溝通） */}
+                    <span className="text-xs text-slate-400 font-mono">#{c.id.slice(0, 8).toUpperCase()}</span>
                   </div>
                   <h3 className="font-semibold text-slate-900">{c.patientName}</h3>
                   {c.labName && <p className="text-sm text-slate-500 mt-0.5">牙技所：{c.labName}</p>}
+                  {/* F3：狀態說明文字 */}
+                  {STATUS_HINTS[c.status] && (
+                    <p className="text-xs text-slate-400 mt-1">{STATUS_HINTS[c.status]}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
                   <div className="text-right">

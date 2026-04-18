@@ -150,22 +150,31 @@ export const CASE_TYPE_LABELS: Record<CaseType, string> = {
   'IMPLANT': '植牙牙冠'
 };
 
+// 診所視角：描述案件「目前狀態 / 等誰做什麼」
 export const STATUS_LABELS: Record<CaseStatus, string> = {
-  [CaseStatus.RECOMMENDED]: '診所推薦',
-  [CaseStatus.CREATED]: '案件已建立',
-  [CaseStatus.ASSIGNED]: '已指派牙技所',
-  [CaseStatus.ACCEPTED]: '牙技所已接單',
+  [CaseStatus.RECOMMENDED]: '診所推薦',        // 僅 consultation 用，cases 不會出現
+  [CaseStatus.CREATED]:     '待指派牙技所',
+  [CaseStatus.ASSIGNED]:    '等待牙技所接單',
+  [CaseStatus.ACCEPTED]:    '已接單，準備製作',
   [CaseStatus.IN_PROGRESS]: '假牙製作中',
-  [CaseStatus.COMPLETED]: '製作完成'
+  [CaseStatus.COMPLETED]:   '製作完成',
+};
+
+// 牙技所視角：描述同一狀態值對 LAB 的意義
+export const LAB_STATUS_LABELS: Record<string, string> = {
+  [CaseStatus.ASSIGNED]:    '新案件，待確認接單',
+  [CaseStatus.ACCEPTED]:    '已接單',
+  [CaseStatus.IN_PROGRESS]: '製作中',
+  [CaseStatus.COMPLETED]:   '已完成',
 };
 
 export const STATUS_COLORS: Record<CaseStatus, string> = {
   [CaseStatus.RECOMMENDED]: 'bg-blue-100 text-blue-700',
-  [CaseStatus.CREATED]: 'bg-slate-100 text-slate-700',
-  [CaseStatus.ASSIGNED]: 'bg-amber-100 text-amber-700',
-  [CaseStatus.ACCEPTED]: 'bg-indigo-100 text-indigo-700',
+  [CaseStatus.CREATED]:     'bg-slate-100 text-slate-700',
+  [CaseStatus.ASSIGNED]:    'bg-amber-100 text-amber-700',
+  [CaseStatus.ACCEPTED]:    'bg-indigo-100 text-indigo-700',
   [CaseStatus.IN_PROGRESS]: 'bg-blue-100 text-blue-900',
-  [CaseStatus.COMPLETED]: 'bg-navy-700 text-white'
+  [CaseStatus.COMPLETED]:   'bg-green-700 text-white',
 };
 
 // ── M-01 Auth ──────────────────────────────────────────────

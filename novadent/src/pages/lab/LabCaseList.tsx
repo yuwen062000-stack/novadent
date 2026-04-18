@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, ChevronRight, Search } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
-import { CaseStatus, STATUS_LABELS, STATUS_COLORS, CASE_TYPE_LABELS } from '../../types';
+import { CaseStatus, LAB_STATUS_LABELS, STATUS_COLORS, CASE_TYPE_LABELS } from '../../types';
 
 interface CaseItem {
   id: string;
@@ -103,14 +103,14 @@ export function LabCaseList({ setView, setSelectedCaseId }: Props) {
         >
           <option value="ALL">所有狀態</option>
           {labStatuses.map(s => (
-            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+            <option key={s} value={s}>{LAB_STATUS_LABELS[s] ?? s}</option>
           ))}
         </select>
       </div>
 
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
-          <p>目前沒有{statusFilter !== 'ALL' ? `「${STATUS_LABELS[statusFilter as CaseStatus]}」` : ''}的案件</p>
+          <p>目前沒有{statusFilter !== 'ALL' ? `「${LAB_STATUS_LABELS[statusFilter] ?? statusFilter}」` : ''}的案件</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -127,7 +127,7 @@ export function LabCaseList({ setView, setSelectedCaseId }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap mb-2">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[c.status]}`}>
-                      {STATUS_LABELS[c.status]}
+                      {LAB_STATUS_LABELS[c.status] ?? c.status}
                     </span>
                     <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
                       {CASE_TYPE_LABELS[c.type as keyof typeof CASE_TYPE_LABELS] || c.type}

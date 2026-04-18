@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, CheckCircle2, User, Lock, Mail } from 'lucide-react';
+import { Loader2, CheckCircle2, User, Lock, Mail, Calendar } from 'lucide-react';
 import { apiFetch } from '../../services/authService';
 
 interface UserProfile {
@@ -15,8 +15,11 @@ interface UserProfile {
 export function MemberSettings() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+
+  // 生日編輯表單（F1）
+  const [birthdayEdit, setBirthdayEdit] = useState('');
+  const [birthdaySaving, setBirthdaySaving] = useState(false);
 
   // Password form
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -31,9 +34,31 @@ export function MemberSettings() {
   useEffect(() => {
     apiFetch('/auth/me')
       .then(r => r.json())
-      .then(data => { setProfile(data); setLoading(false); })
+      .then(data => {
+        setProfile(data);
+        setBirthdayEdit(data.birthday || ''); // 帶入已存的生日
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
+
+  async function handleSaveBirthday() {
+    setBirthdaySaving(true);
+    try {
+      const res = await apiFetch('/admin/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ birthday: birthdayEdit || null }),
+      });
+      if (!res.ok) throw new Error('儲存失敗');
+      setProfile(prev => prev ? { ...prev, birthday: birthdayEdit } : prev);
+      showToast('✅ 生日已更新');
+    } catch {
+      showToast('❌ 儲存失敗，請稍後再試');
+    } finally {
+      setBirthdaySaving(false);
+    }
+  }
 
   async function handleChangePw(e: React.FormEvent) {
     e.preventDefault();
@@ -110,17 +135,35 @@ export function MemberSettings() {
                 </div>
                 <p className="text-sm font-medium text-slate-800">{profile.email}</p>
               </div>
-              {profile.birthday && (
-                <div className="p-4 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-slate-400 mb-1">生日</p>
-                  <p className="text-sm font-medium text-slate-800">{profile.birthday}</p>
-                </div>
-              )}
               <div className="p-4 bg-slate-50 rounded-xl">
                 <p className="text-xs text-slate-400 mb-1">加入日期</p>
                 <p className="text-sm font-medium text-slate-800">
                   {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('zh-TW') : '—'}
                 </p>
+              </div>
+            </div>
+
+            {/* 生日編輯（F1）— 用於病患比對，填寫後案件才能自動關聯 */}
+            <div className="mt-4 p-4 border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar size={14} className="text-slate-400" />
+                <p className="text-xs font-medium text-slate-600">生日（用於假牙案件身份比對）</p>
+              </div>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="date"
+                  value={birthdayEdit}
+                  onChange={e => setBirthdayEdit(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/20 focus:border-blue-800 transition-all"
+                />
+                <button
+                  onClick={handleSaveBirthday}
+                  disabled={birthdaySaving}
+                  className="px-4 py-2 bg-blue-950 text-white rounded-xl text-sm font-medium hover:bg-blue-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                >
+                  {birthdaySaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                  儲存
+                </button>
               </div>
             </div>
           </div>

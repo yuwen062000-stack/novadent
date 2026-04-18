@@ -72,7 +72,7 @@ function ClinicCard({ clinic, rank }: { clinic: RecommendedClinic; rank: number 
             </div>
             <h3 className="text-lg font-bold text-slate-900">{clinic.name}</h3>
             {clinic.leadDoctorName && (
-              <p className="text-sm text-slate-500">{clinic.leadDoctorName} 醫師</p>
+              <p className="text-sm text-slate-500">{clinic.leadDoctorName.replace(/醫師$/, '').trim()} 醫師</p>
             )}
           </div>
           {clinic.rating && clinic.rating > 0 && (
