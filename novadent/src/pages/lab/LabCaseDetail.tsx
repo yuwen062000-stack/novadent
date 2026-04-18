@@ -128,7 +128,7 @@ export function LabCaseDetail({ caseId, setView }: Props) {
         photoUrl = uploadData.url;
       }
 
-      const res = await apiFetch(`/cases/${caseData.id}/steps/${editingStep.id}`, {
+      const res = await apiFetch(`/cases/${caseData.id}/mfg-steps/${editingStep.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
