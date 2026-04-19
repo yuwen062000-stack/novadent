@@ -7,7 +7,6 @@ const ROLE_OPTIONS = [
   { value: 'CLINIC', label: '診所' },
   { value: 'LAB', label: '牙技所' },
   { value: 'ADMIN', label: '管理員' },
-  { value: 'SUPER_ADMIN', label: '超級管理員' },
   { value: 'INSURER', label: '保險業者' },
 ];
 
