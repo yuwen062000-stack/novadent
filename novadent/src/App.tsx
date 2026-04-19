@@ -1006,6 +1006,7 @@ function AppContent() {
       case 'CLINIC':   navigate('/clinic/cases', { replace: true }); break;
       case 'LAB':      navigate('/lab/cases', { replace: true }); break;
       case 'MEMBER':   navigate('/member/recommendations', { replace: true }); break;
+      case 'INSURER':  navigate('/insurer/customers', { replace: true }); break;
       default:         navigate('/', { replace: true });
     }
   };
