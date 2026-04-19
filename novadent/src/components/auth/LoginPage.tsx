@@ -19,6 +19,7 @@ function getRedirectPath(role: UserRole): string {
     case 'CLINIC':      return '/clinic';
     case 'LAB':         return '/lab';
     case 'MEMBER':      return '/member';
+    case 'INSURER':     return '/insurer/customers';
     default:            return '/';
   }
 }
