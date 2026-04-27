@@ -2268,7 +2268,7 @@ function MemberCaseManagement({ setView, currentCase, hasActiveCase, qaCompleted
                     <span className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-bold ${STATUS_COLORS[currentCase.status as CaseStatus]}`}>{STATUS_LABELS[currentCase.status as CaseStatus]}</span>
                   </div>
                   <p className="text-slate-500 text-xs md:text-sm flex items-center gap-2">
-                    <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-[10px] md:text-xs">{currentCase.id}</span>
+                    <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-[10px] md:text-xs">#{currentCase.id.slice(0, 8).toUpperCase()}</span>
                     <Building2 size={14} /> {currentCase.clinicName}
                   </p>
                 </div>
@@ -2438,7 +2438,7 @@ function Overview({ role, setView, currentCase, setCaseFilter }: any) {
               {recentCases.map((c: any) => (
                 <div key={c.id} className="flex items-center justify-between p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100">
                   <div className="min-w-0">
-                    <p className="font-bold text-slate-900 text-xs md:text-sm truncate">{c.id}</p>
+                    <p className="font-bold text-slate-900 text-xs md:text-sm truncate font-mono">#{c.id.slice(0, 8).toUpperCase()}</p>
                     <p className="text-[10px] md:text-xs text-slate-500 truncate">{c.clinicName} → {c.labName || '未指派'}</p>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-bold whitespace-nowrap ml-2 ${STATUS_COLORS[c.status as CaseStatus]}`}>
@@ -2734,7 +2734,7 @@ function Dashboard({ role, setView, currentCase, qaCompleted, setSelectedClinic,
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="font-bold text-base md:text-lg text-slate-900 truncate">{c.id}</span>
+                        <span className="font-bold text-base md:text-lg text-slate-900 truncate font-mono">#{c.id.slice(0, 8).toUpperCase()}</span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs font-bold whitespace-nowrap ${STATUS_COLORS[c.status as CaseStatus]}`}>{STATUS_LABELS[c.status as CaseStatus]}</span>
                         <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-bold tracking-wider whitespace-nowrap">{CASE_TYPE_LABELS[c.type as CaseType]}</span>
                       </div>
@@ -2875,7 +2875,7 @@ function CaseDetail({ role, setView, currentCase, setCurrentCase }: any) {
           <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm lg:sticky lg:top-24">
             <h3 className="font-bold text-slate-900 mb-4 sm:mb-6">案件資訊</h3>
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex justify-between text-sm gap-2"><span className="text-slate-500 shrink-0">案件編號</span><span className="font-bold break-all text-right">{currentCase.id}</span></div>
+              <div className="flex justify-between text-sm gap-2"><span className="text-slate-500 shrink-0">案件編號</span><span className="font-bold break-all text-right font-mono">#{currentCase.id.slice(0, 8).toUpperCase()}</span></div>
               <div className="flex justify-between text-sm gap-2"><span className="text-slate-500 shrink-0">案件類型</span><span className="font-bold text-blue-800 text-right">{CASE_TYPE_LABELS[currentCase.type]}</span></div>
               <div className="flex justify-between text-sm gap-2"><span className="text-slate-500 shrink-0">患者</span><span className="font-bold text-right">{currentCase.patientName}</span></div>
               <div className="flex justify-between text-sm gap-2"><span className="text-slate-500 shrink-0">診所</span><span className="font-bold text-right">{currentCase.clinicName}</span></div>
