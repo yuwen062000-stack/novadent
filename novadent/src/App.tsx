@@ -1082,6 +1082,10 @@ function AppContent() {
     PATH_VIEW_MAP[p] = v;
   }
 
+  // 案件詳情類視圖 — 這些視圖的 URL 需要帶 ?id=xxx 參數
+  // 用途：支援深層連結（複製貼上、F5 重新整理、書籤）不會掉狀態
+  const DETAIL_VIEWS = new Set(['DETAIL', 'CLINIC_CASE_DETAIL', 'LAB_CASE_DETAIL']);
+
   const resolveViewFromPath = (path: string): string => {
     if (PATH_VIEW_MAP[path]) return PATH_VIEW_MAP[path];
     if (path === '/admin' || path.startsWith('/admin/')) return 'ADMIN_DASHBOARD';
@@ -1150,10 +1154,50 @@ function AppContent() {
     }
   }, [location]);
 
+  // URL → state：當網址有 ?id=xxx 時，把 case id 同步到 selectedCaseId
+  // 用途：支援直接開啟 /cases/detail?id=xxx 這種深層連結，不依賴前一頁設定的狀態
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const idFromUrl = params.get('id');
+    if (idFromUrl && idFromUrl !== selectedCaseId) {
+      setSelectedCaseId(idFromUrl);
+    }
+  }, [location.search]);
+
+  // state → URL：在詳情視圖中，把 selectedCaseId 寫回網址列
+  // 用途：使用者從列表點進詳情後，網址會變成 /xxx/detail?id=yyy，可複製分享或書籤
+  useEffect(() => {
+    if (DETAIL_VIEWS.has(view) && selectedCaseId) {
+      const path = VIEW_PATH_MAP[view];
+      const currentParams = new URLSearchParams(location.search);
+      if (currentParams.get('id') !== selectedCaseId) {
+        navigate(`${path}?id=${selectedCaseId}`, { replace: true });
+      }
+    }
+  }, [view, selectedCaseId]);
+
+  // 自動載入案件資料：DETAIL 視圖（會員/管理員用）依賴 selectedCase 物件而非僅 id
+  // 當使用者透過深層連結進入時，selectedCase 會是 null，需從 API 重新撈取
+  useEffect(() => {
+    if (view === 'DETAIL' && selectedCaseId && !selectedCase && !currentCase) {
+      apiFetch(`/cases/${selectedCaseId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(c => { if (c) setSelectedCase(c); })
+        .catch(() => {});
+    }
+  }, [view, selectedCaseId, selectedCase, currentCase]);
+
   const handleSetView = (newView: string) => {
     setView(newView);
     const path = VIEW_PATH_MAP[newView];
-    if (path) navigate(path);
+    if (path) {
+      // 進入詳情視圖時，若已選定案件則網址帶上 ?id=xxx，方便分享與重整
+      if (DETAIL_VIEWS.has(newView) && selectedCaseId) {
+        navigate(`${path}?id=${selectedCaseId}`);
+      } else {
+        navigate(path);
+      }
+    }
   };
 
   // --- Public Website Components (defined at module level) ---
@@ -2741,6 +2785,21 @@ function CaseDetail({ role, setView, currentCase, setCurrentCase }: any) {
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
   const [editNote, setEditNote] = useState('');
   const [editPhoto, setEditPhoto] = useState<string | undefined>(undefined);
+
+  // 防呆：當深層連結 /cases/detail?id=xxx 進入時，App 層會非同步從 API 撈案件
+  // 在 currentCase 還沒回來前，先顯示載入中而不是讓底下的存取爆掉造成空白頁
+  if (!currentCase) {
+    return (
+      <div className="p-8 max-w-5xl mx-auto">
+        <button onClick={() => setView('CASE_MANAGEMENT')} className="text-slate-500 hover:text-blue-800 flex items-center gap-2 mb-6 font-medium transition-colors">
+          <ArrowRight size={18} className="rotate-180" /> 返回案件列表
+        </button>
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-center text-slate-500">
+          載入案件資料中...
+        </div>
+      </div>
+    );
+  }
 
   const handleUpdateStep = (stepId: string) => {
     setCurrentCase((prev: Case) => {
