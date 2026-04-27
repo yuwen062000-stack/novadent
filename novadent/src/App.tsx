@@ -1176,14 +1176,37 @@ function AppContent() {
     }
   }, [view, selectedCaseId]);
 
-  // 自動載入案件資料：DETAIL 視圖（會員/管理員用）依賴 selectedCase 物件而非僅 id
-  // 當使用者透過深層連結進入時，selectedCase 會是 null，需從 API 重新撈取
+  // 自動載入案件資料：DETAIL 視圖（會員/管理員用）依賴 selectedCase 物件且需要完整欄位（含 mfgSteps）
+  // 三種情境會觸發 API 重新撈：
+  //   1. 深層連結進入（URL 有 ?id= 但 state 是空的）
+  //   2. 從列表點進來但物件不完整（API 列表只回精簡欄位，缺 mfgSteps）
+  //   3. selectedCaseId 跟 selectedCase.id 不一致（切換不同案件）
   useEffect(() => {
-    if (view === 'DETAIL' && selectedCaseId && !selectedCase && !currentCase) {
-      apiFetch(`/cases/${selectedCaseId}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(c => { if (c) setSelectedCase(c); })
-        .catch(() => {});
+    if (view !== 'DETAIL') return;
+    const activeCase = selectedCase || currentCase;
+    const targetId = selectedCaseId || activeCase?.id;
+    if (!targetId) return;
+    // 已有完整資料就不重撈
+    if (activeCase && activeCase.id === targetId && Array.isArray((activeCase as any).mfgSteps)) return;
+    apiFetch(`/cases/${targetId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(c => { if (c) setSelectedCase(c); })
+      .catch(() => {});
+  }, [view, selectedCaseId, selectedCase, currentCase]);
+
+  // 同步 selectedCase.id → selectedCaseId，讓網址列也能帶上案件 id（從列表點進來時必經這條）
+  useEffect(() => {
+    const activeCase = selectedCase || currentCase;
+    if (DETAIL_VIEWS.has(view) && activeCase?.id && activeCase.id !== selectedCaseId) {
+      setSelectedCaseId(activeCase.id);
+    }
+  }, [view, selectedCase, currentCase]);
+
+  // DETAIL 視圖直連但完全沒指定案件（網址 /cases/detail 無 ?id=）→ 自動導回列表
+  // 避免使用者卡在「載入案件資料中...」永遠不會結束
+  useEffect(() => {
+    if (view === 'DETAIL' && !selectedCaseId && !selectedCase && !currentCase) {
+      navigate(VIEW_PATH_MAP['CASE_MANAGEMENT'], { replace: true });
     }
   }, [view, selectedCaseId, selectedCase, currentCase]);
 
@@ -2786,9 +2809,10 @@ function CaseDetail({ role, setView, currentCase, setCurrentCase }: any) {
   const [editNote, setEditNote] = useState('');
   const [editPhoto, setEditPhoto] = useState<string | undefined>(undefined);
 
-  // 防呆：當深層連結 /cases/detail?id=xxx 進入時，App 層會非同步從 API 撈案件
-  // 在 currentCase 還沒回來前，先顯示載入中而不是讓底下的存取爆掉造成空白頁
-  if (!currentCase) {
+  // 防呆：currentCase 為 null 或欄位不完整（缺 mfgSteps）時都先顯示載入中
+  // 兩種情境：(1) 深層連結 /cases/detail?id=xxx 進入，App 層尚未撈完
+  //         (2) 從列表點進來，列表 API 只回精簡物件，缺 mfgSteps 等詳情欄位
+  if (!currentCase || !Array.isArray(currentCase.mfgSteps)) {
     return (
       <div className="p-8 max-w-5xl mx-auto">
         <button onClick={() => setView('CASE_MANAGEMENT')} className="text-slate-500 hover:text-blue-800 flex items-center gap-2 mb-6 font-medium transition-colors">
